@@ -1,0 +1,233 @@
+/* =====================================================================
+   Process — "How we work" cards pinned to a board.
+
+   Every default below is the design file's value; the Style tab overrides
+   them through the --szp-* knobs or direct properties, so an untouched
+   widget renders the design exactly.
+
+   Structure:
+     ol.sz-process                 the board: grid + faded graph-paper lines
+       li.sz-process__item         grid cell — never transformed (see below)
+         div.sz-process__card      tilt + stagger + hover live here
+         svg.sz-process__arrow     hand-drawn arrow to the next card
+
+   Why the transform is on the card and not on the <li>: a transform creates
+   a stacking context. On the <li>, each arrow would be trapped inside its own
+   cell and the *next* card would paint over its tip on narrow gaps. With the
+   cells untransformed, every arrow shares the board's stacking context and
+   z-index:3 keeps it above all cards — as in the design.
+
+   Specificity contract — every property a theme could also set is written
+   with at least two classes (0,2,0):
+     • beats the usual theme pattern `.entry-content li`, `.elementor-kit-N h3`
+       (one class + one element, 0,1,1) — so no theme reshapes the cards;
+     • loses to every Style-tab control, which Elementor prefixes with the
+       widget wrapper (0,3,0 and up) — so the user always wins.
+   Only the --szp-* knobs sit on a single class: no theme sets them.
+   ===================================================================== */
+
+.sz-process{
+  /* knobs */
+  --szp-gap-x:clamp(28px,4vw,56px);
+  --szp-gap-y:clamp(28px,4vw,56px);
+  --szp-stagger:40px;
+  --szp-tilt:1;
+  --szp-arrows:1;
+  --szp-lift:4px;
+  --szp-keep-tilt:0;
+  --szp-dur:.5s;
+  --szp-arrow-w:54px;
+  --szp-grid-color:rgba(13,27,42,.05);
+  --szp-grid-size:96px;
+  --szp-grid-line:1px;
+  --szp-grid-x:20px;
+  --szp-grid-y:40px;
+  --szp-grid-fade:30%;
+}
+
+.sz-w.sz-process{
+  position:relative;
+  display:grid;
+  grid-template-columns:repeat(var(--szp-cols),minmax(0,1fr));
+  column-gap:var(--szp-gap-x);
+  row-gap:var(--szp-gap-y);
+  margin:0;
+  /* room below for the staggered cards, which move by transform and so take no layout space */
+  padding:0 0 var(--szp-stagger);
+  list-style:none;
+  counter-reset:none;
+}
+
+/* graph-paper lines, fading out radially from the middle */
+.sz-w.sz-process::before{
+  content:"";
+  position:absolute;
+  inset:calc(-1 * var(--szp-grid-y)) calc(-1 * var(--szp-grid-x));
+  background-image:
+    linear-gradient(var(--szp-grid-color) var(--szp-grid-line),transparent var(--szp-grid-line)),
+    linear-gradient(90deg,var(--szp-grid-color) var(--szp-grid-line),transparent var(--szp-grid-line));
+  background-size:var(--szp-grid-size) var(--szp-grid-size);
+  -webkit-mask-image:radial-gradient(ellipse 60% 70% at 50% 50%,#000 var(--szp-grid-fade),transparent 100%);
+          mask-image:radial-gradient(ellipse 60% 70% at 50% 50%,#000 var(--szp-grid-fade),transparent 100%);
+  pointer-events:none;
+}
+.sz-w.sz-process--no-grid::before{content:none}
+
+/* ---------- generated: per-position layout (php tools/build-process-css.php) ---------- */
+/* BEGIN GENERATED */
+.sz-process{--szp-cols:4;--szp-r1:-2;--szp-y1:0;--szp-a1:1;--szp-s1:0;--szp-o1:4;--szp-r2:1.5;--szp-y2:1;--szp-a2:1;--szp-s2:1;--szp-o2:3;--szp-r3:-1;--szp-y3:0.15;--szp-a3:1;--szp-s3:0;--szp-o3:2;--szp-r4:2;--szp-y4:1.15;--szp-a4:0;--szp-s4:1;--szp-o4:4;--szp-r5:-2;--szp-y5:0;--szp-a5:1;--szp-s5:0;--szp-o5:4;--szp-r6:1.5;--szp-y6:1;--szp-a6:1;--szp-s6:1;--szp-o6:3;--szp-r7:-1;--szp-y7:0.15;--szp-a7:1;--szp-s7:0;--szp-o7:2;--szp-r8:2;--szp-y8:1.15;--szp-a8:0;--szp-s8:1;--szp-o8:4;--szp-r9:-2;--szp-y9:0;--szp-a9:1;--szp-s9:0;--szp-o9:4;--szp-r10:1.5;--szp-y10:1;--szp-a10:1;--szp-s10:1;--szp-o10:3;--szp-r11:-1;--szp-y11:0.15;--szp-a11:1;--szp-s11:0;--szp-o11:2;--szp-r12:2;--szp-y12:1.15;--szp-a12:0;--szp-s12:1;--szp-o12:4;}
+@media (max-width:900px){.sz-process{--szp-cols:2;--szp-r1:-2;--szp-y1:0;--szp-a1:1;--szp-s1:0;--szp-o1:4;--szp-r2:2;--szp-y2:0.65;--szp-a2:0;--szp-s2:1;--szp-o2:4;--szp-r3:-2;--szp-y3:0;--szp-a3:1;--szp-s3:0;--szp-o3:4;--szp-r4:2;--szp-y4:0.65;--szp-a4:0;--szp-s4:1;--szp-o4:4;--szp-r5:-2;--szp-y5:0;--szp-a5:1;--szp-s5:0;--szp-o5:4;--szp-r6:2;--szp-y6:0.65;--szp-a6:0;--szp-s6:1;--szp-o6:4;--szp-r7:-2;--szp-y7:0;--szp-a7:1;--szp-s7:0;--szp-o7:4;--szp-r8:2;--szp-y8:0.65;--szp-a8:0;--szp-s8:1;--szp-o8:4;--szp-r9:-2;--szp-y9:0;--szp-a9:1;--szp-s9:0;--szp-o9:4;--szp-r10:2;--szp-y10:0.65;--szp-a10:0;--szp-s10:1;--szp-o10:4;--szp-r11:-2;--szp-y11:0;--szp-a11:1;--szp-s11:0;--szp-o11:4;--szp-r12:2;--szp-y12:0.65;--szp-a12:0;--szp-s12:1;--szp-o12:4;}}
+.sz-process__item:nth-child(12n+1){--r:var(--szp-r1);--y:var(--szp-y1);--a:var(--szp-a1);--s:var(--szp-s1);--o:var(--szp-o1)}
+.sz-process__item:nth-child(12n+2){--r:var(--szp-r2);--y:var(--szp-y2);--a:var(--szp-a2);--s:var(--szp-s2);--o:var(--szp-o2)}
+.sz-process__item:nth-child(12n+3){--r:var(--szp-r3);--y:var(--szp-y3);--a:var(--szp-a3);--s:var(--szp-s3);--o:var(--szp-o3)}
+.sz-process__item:nth-child(12n+4){--r:var(--szp-r4);--y:var(--szp-y4);--a:var(--szp-a4);--s:var(--szp-s4);--o:var(--szp-o4)}
+.sz-process__item:nth-child(12n+5){--r:var(--szp-r5);--y:var(--szp-y5);--a:var(--szp-a5);--s:var(--szp-s5);--o:var(--szp-o5)}
+.sz-process__item:nth-child(12n+6){--r:var(--szp-r6);--y:var(--szp-y6);--a:var(--szp-a6);--s:var(--szp-s6);--o:var(--szp-o6)}
+.sz-process__item:nth-child(12n+7){--r:var(--szp-r7);--y:var(--szp-y7);--a:var(--szp-a7);--s:var(--szp-s7);--o:var(--szp-o7)}
+.sz-process__item:nth-child(12n+8){--r:var(--szp-r8);--y:var(--szp-y8);--a:var(--szp-a8);--s:var(--szp-s8);--o:var(--szp-o8)}
+.sz-process__item:nth-child(12n+9){--r:var(--szp-r9);--y:var(--szp-y9);--a:var(--szp-a9);--s:var(--szp-s9);--o:var(--szp-o9)}
+.sz-process__item:nth-child(12n+10){--r:var(--szp-r10);--y:var(--szp-y10);--a:var(--szp-a10);--s:var(--szp-s10);--o:var(--szp-o10)}
+.sz-process__item:nth-child(12n+11){--r:var(--szp-r11);--y:var(--szp-y11);--a:var(--szp-a11);--s:var(--szp-s11);--o:var(--szp-o11)}
+.sz-process__item:nth-child(12n+12){--r:var(--szp-r12);--y:var(--szp-y12);--a:var(--szp-a12);--s:var(--szp-s12);--o:var(--szp-o12)}
+/* END GENERATED */
+
+/* ---------- grid cell ----------
+   Themes like to restyle list items (bullets, margins, custom counters drawn
+   with ::before). The cell resets all of it. */
+.sz-process .sz-process__item{
+  position:relative;min-width:0;
+  margin:0;padding:0;
+  list-style:none;
+  background:none;border:0;
+}
+.sz-process .sz-process__item::marker{content:none}
+.sz-process .sz-process__item::before,
+.sz-process .sz-process__item::after{content:none}
+
+/* ---------- the card ---------- */
+.sz-process .sz-process__card{
+  position:relative;
+  height:100%;
+  overflow:hidden;
+  border-radius:26px;
+  background:var(--sz-card);
+  box-shadow:var(--sz-s2);
+  padding:22px 22px 26px;
+  min-height:176px;
+  transform:translateY(calc(var(--szp-stagger) * var(--y))) rotate(calc(var(--r) * var(--szp-tilt) * 1deg));
+  transition:transform var(--szp-dur) var(--sz-spring),box-shadow .4s;
+}
+
+/*
+ * Hover: straighten and lift by 4px *from where the card already sits*.
+ * The design file replaced the whole transform on hover, which dropped the
+ * stagger — the second and fourth cards jumped up ~44px and left their arrow
+ * behind. Re-stating the stagger in the hover transform keeps the lift a lift.
+ *
+ * (hover:hover) keeps a tap on a phone from leaving a card stuck straightened.
+ */
+@media (hover:hover){
+  .sz-process .sz-process__card:hover{
+    transform:translateY(calc(var(--szp-stagger) * var(--y) - var(--szp-lift))) rotate(calc(var(--r) * var(--szp-tilt) * var(--szp-keep-tilt) * 1deg));
+    box-shadow:var(--sz-s3);
+  }
+}
+
+/* Gradient behind a variable, so a background picked in the Style tab can
+   switch it off without fighting over `background-image` (see sz-base.css). */
+.sz-process .sz-process__item--dark .sz-process__card{
+  background-color:var(--sz-navy);
+  background-image:var(--szp-card-bg,radial-gradient(90% 80% at 80% 0%,#203650 0%,var(--sz-navy) 60%));
+}
+
+/* ---------- content ---------- */
+.sz-process .sz-process__icon{
+  position:relative;z-index:1;
+  width:40px;height:40px;border-radius:12px;
+  font-size:19px;
+}
+.sz-process .sz-process__icon svg{display:block;width:1em;height:1em}
+
+/*
+ * Text properties themes commonly put on h3/p and that change how a line
+ * breaks or looks. Measured, not guessed: on Twenty Twenty-Five the only
+ * difference from the design was `text-wrap: pretty`, which re-broke the
+ * third card's description. Pinning the whole set keeps the card identical
+ * on every theme instead of on this one.
+ */
+.sz-process .sz-process__title,
+.sz-process .sz-process__desc{
+  text-align:start;text-indent:0;text-shadow:none;text-wrap:wrap;
+  word-spacing:normal;hyphens:manual;font-variant:normal;
+  overflow-wrap:break-word;
+}
+
+.sz-process .sz-process__title{
+  position:relative;z-index:1;
+  margin:16px 0 0;padding:0;
+  font-family:var(--sz-font);font-size:19px;font-weight:600;font-style:normal;
+  line-height:1.25;letter-spacing:-.02em;text-transform:none;text-decoration:none;
+  color:var(--sz-ink);
+}
+
+.sz-process .sz-process__desc{
+  position:relative;z-index:1;
+  margin:6px 0 0;padding:0;
+  max-width:24ch;
+  font-family:var(--sz-font);font-size:14px;font-weight:400;font-style:normal;
+  line-height:1.5;letter-spacing:normal;text-transform:none;
+  color:var(--sz-t2);
+}
+
+/* the big step number, cut off by the card's bottom edge */
+.sz-process .sz-process__num{
+  position:absolute;z-index:0;
+  inset-inline-end:10px;bottom:-26px;
+  font-family:var(--sz-font-mark);font-size:130px;font-weight:400;font-style:normal;
+  line-height:1;letter-spacing:0;text-transform:none;
+  color:#F0F1F3;
+  pointer-events:none;user-select:none;
+}
+
+.sz-process .sz-process__item--dark .sz-process__title{color:#fff}
+.sz-process .sz-process__item--dark .sz-process__desc{color:#B6C0CB}
+.sz-process .sz-process__item--dark .sz-process__num{color:rgba(255,255,255,.05)}
+
+/* ---------- arrow to the next card ----------
+   Centred in the gap. Above the cards for odd columns, below for even ones
+   (--s), offset by how far the tilt pushes the card's corner out (--o).
+   Hidden on the last card of every row (--a) and where arrows are off. */
+.sz-process .sz-process__arrow{
+  position:absolute;z-index:3;
+  display:block;
+  width:var(--szp-arrow-w);height:auto;max-width:none;aspect-ratio:54/30;
+  inset-inline-start:calc(100% + var(--szp-gap-x) / 2 - var(--szp-arrow-w) / 2);
+  top:calc(
+    var(--szp-stagger) * var(--y)
+    + (1 - var(--s)) * (-6px - var(--o) * var(--szp-tilt) * 1px)
+    + var(--s) * (100% + var(--o) * var(--szp-tilt) * 1px - 10px)
+  );
+  margin:0;
+  overflow:visible;
+  fill:none;stroke:#A9B0B9;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;
+  opacity:calc(var(--a) * var(--szp-arrows));
+  pointer-events:none;
+}
+.sz-process .sz-process__arrow-over{opacity:calc(1 - var(--s))}
+.sz-process .sz-process__arrow-under{opacity:var(--s)}
+
+.rtl .sz-process .sz-process__arrow,
+[dir="rtl"] .sz-process .sz-process__arrow{transform:scaleX(-1)}
+
+/* ---------- design default below 900px: two columns, no arrows ---------- */
+@media (max-width:900px){
+  .sz-process{
+    --szp-arrows:0;
+    --szp-gap-x:14px;
+    --szp-gap-y:18px;
+  }
+}
+
+@media (prefers-reduced-motion:reduce){
+  .sz-process .sz-process__card{transition:none}
+}

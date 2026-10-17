@@ -1,0 +1,103 @@
+/* =====================================================================
+   Saman Zavarian — shared layer for every widget.
+   Design tokens, the two bundled fonts, and the "app icon" tile that the
+   whole design uses in place of emoji.
+
+   Tokens live on :root with an --sz- prefix: they cannot collide with a
+   theme's variables, and a site can re-theme every widget at once by
+   overriding them.
+   ===================================================================== */
+
+/*
+ * Self-hosted, latin subset only (the site is English). Both are SIL OFL —
+ * licence files sit next to them. Self-hosting removes a third-party request
+ * on every visit, the dependency on Google's availability, and the visitor-IP
+ * leak that Google Fonts embeds carry.
+ * Inter ships as one variable file covering every weight.
+ */
+@font-face{
+  font-family:"Inter";font-style:normal;font-weight:100 900;font-display:swap;
+  src:url("../fonts/inter-latin-var.woff2") format("woff2");
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+@font-face{
+  font-family:"Bebas Neue";font-style:normal;font-weight:400;font-display:swap;
+  src:url("../fonts/bebas-neue-latin.woff2") format("woff2");
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+:root{
+  --sz-bg:#F6F6F7; --sz-card:#FFFFFF; --sz-fill:#F1F2F4; --sz-line:#E8EAED;
+  --sz-navy:#0D1B2A; --sz-navy-2:#17293D; --sz-orange:#FF6B2C; --sz-peach:#FFE6DA;
+  --sz-ink:#111318; --sz-t2:#525A65; --sz-t3:#6E7681;
+
+  --sz-font:"Inter",-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --sz-font-mark:"Bebas Neue","Arial Narrow",Impact,sans-serif;
+
+  /* layered "iOS" depth: contact + ambient + long soft fall-off */
+  --sz-s1:0 1px 1px rgba(13,27,42,.03),0 2px 6px rgba(13,27,42,.04);
+  --sz-s2:0 1px 2px rgba(13,27,42,.04),0 10px 24px -8px rgba(13,27,42,.10),0 30px 60px -30px rgba(13,27,42,.14);
+  --sz-s3:0 2px 4px rgba(13,27,42,.05),0 20px 40px -12px rgba(13,27,42,.16),0 60px 100px -40px rgba(13,27,42,.22);
+
+  --sz-spring:cubic-bezier(.34,1.4,.64,1);
+  --sz-ease:cubic-bezier(.22,.8,.24,1);
+}
+
+/*
+ * Every widget root carries .sz-w and recreates the context the design was
+ * drawn in — the design file's <body>: Inter, 16px, line-height 1.6, plain
+ * text settings. Without it a widget inherits whatever the theme put on
+ * <body>, and that is not only cosmetic: an inline-level icon tile sits on a
+ * line box whose height comes from the inherited font-size × line-height, so
+ * a theme with line-height 2.1 made every Process card ~13px taller.
+ *
+ * The design file also set box-sizing and display:block on svg globally; a
+ * WordPress theme guarantees neither, so the widgets set them themselves.
+ */
+.sz-w{
+  font-family:var(--sz-font);
+  font-size:16px;
+  font-weight:400;
+  font-style:normal;
+  line-height:1.6;
+  letter-spacing:normal;
+  word-spacing:normal;
+  text-align:start;
+  text-transform:none;
+  color:var(--sz-ink);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+.sz-w,.sz-w *,.sz-w *::before,.sz-w *::after{box-sizing:border-box}
+.sz-w svg{display:block}
+
+/* ---------- the app-icon tile ----------
+   The design gradient sits behind var(--sz-app-bg, …). A widget's
+   background control sets --sz-app-bg:none when the user picks their own
+   background — see Control_Helpers::clears_design_gradient(). That is the
+   only reliable switch: Elementor merges declarations by property name, so a
+   `background-image:none` written by the control would collide with (and,
+   depending on processing order, erase) the user's own image. */
+.sz-app{
+  display:inline-grid;place-items:center;flex:none;
+  border-radius:28%;
+  background-color:var(--sz-navy);
+  background-image:var(--sz-app-bg,linear-gradient(160deg,#22364D,var(--sz-navy)));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 6px 14px -4px rgba(13,27,42,.4);
+  color:var(--sz-orange);
+  line-height:1;
+}
+.sz-app svg,.sz-app i{width:1em;height:1em;font-size:inherit}
+.sz-app svg:not(.szi){fill:currentColor}
+.sz-app--orange{
+  background-color:var(--sz-orange);
+  background-image:var(--sz-app-bg,linear-gradient(160deg,#FF8A55,var(--sz-orange)));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 6px 14px -4px rgba(255,107,44,.55);
+  color:#fff;
+}
+.sz-app--white{
+  background-color:#fff;
+  background-image:var(--sz-app-bg,linear-gradient(160deg,#fff,#EEF0F3));
+  box-shadow:inset 0 1px 0 #fff,0 6px 14px -4px rgba(13,27,42,.18);
+  color:var(--sz-navy);
+}
