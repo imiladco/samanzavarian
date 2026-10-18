@@ -53,6 +53,11 @@ szw_ok( false !== strpos( $html, '>B</span>' ), 'an empty label falls back to th
 $html = szw_render( [ 'cards' => [ $card( 'A', [ 'image' => [ 'url' => 'https://example.com/a.jpg', 'id' => '' ], 'monogram' => 'yes' ] ), $card( 'B' ) ] ], 'sz-stack' );
 szw_ok( false !== strpos( $html, '<img class="sz-stack__img" src="https://example.com/a.jpg" alt="A"' ) && false === strpos( $html, 'sz-stack__mono' ), 'a photo replaces gradient and monogram, with its title as alt text' );
 
+$html = szw_render( [ 'cards' => [ $card( 'A', [ 'video' => [ 'url' => 'https://example.com/a.mp4', 'id' => '' ] ] ), $card( 'B', [ 'video' => [ 'url' => 'https://example.com/b.pdf', 'id' => '' ] ] ) ] ], 'sz-stack' );
+szw_ok( 1 === substr_count( $html, 'has-video' ) && false !== strpos( $html, '<video class="sz-stack__video" data-src="https://example.com/a.mp4" muted loop playsinline preload="none"' ), 'a video: over the photo, muted, nothing downloaded until the deck nears the screen' );
+szw_ok( false === strpos( $html, ' src="https://example.com/a.mp4"' ) && false === strpos( $html, 'b.pdf' ), 'no src on the page; a file that is not a video is ignored' );
+szw_ok( false !== strpos( $html, 'sz-stack__mesh--' ) , 'the photo (here the gradient) stays under the video' );
+
 $html = szw_render( [ 'sticker' => 'icon' ], 'sz-stack' );
 szw_ok( false !== strpos( $html, 'sz-stack__sticker is-icon' ) && false !== strpos( $html, 'szi-cam' ), 'icon sticker' );
 szw_ok( false === strpos( szw_render( [ 'sticker' => '' ], 'sz-stack' ), 'sz-stack__sticker' ), 'no sticker' );

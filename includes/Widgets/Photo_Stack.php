@@ -118,6 +118,17 @@ class Photo_Stack extends Widget_Base {
 		);
 
 		$r->add_control(
+			'video',
+			[
+				'label'       => esc_html__( 'Video', 'samanzavarian-widgets' ),
+				'type'        => Controls_Manager::MEDIA,
+				'media_types' => [ 'video' ],
+				'default'     => [ 'url' => '' ],
+				'description' => esc_html__( 'Optional. Plays without sound while this photo is in front and the deck is open: on hover with a mouse, after a tap on a phone. The photo shows until the video\'s first frame is ready. A short loop (5–15 s, under 4 MB, MP4) works best. Not played with reduced motion or data saver on.', 'samanzavarian-widgets' ),
+			]
+		);
+
+		$r->add_control(
 			'monogram',
 			[
 				'label'        => esc_html__( 'Monogram on it', 'samanzavarian-widgets' ),
@@ -491,6 +502,7 @@ class Photo_Stack extends Widget_Base {
 				'image'       => $image,
 				'placeholder' => $ph >= 1 && $ph <= 8 ? $ph : 2,
 				'monogram'    => '' === (string) ( $image['url'] ?? '' ) && 'yes' === ( $c['monogram'] ?? '' ),
+				'video'       => self::video_url( $c['video'] ?? [] ),
 			];
 
 			if ( count( $out ) === self::MAX_CARDS ) {
@@ -499,6 +511,20 @@ class Photo_Stack extends Widget_Base {
 		}
 
 		return $out;
+	}
+
+	/** A video file's URL, or '' when the media is not a video. @param mixed $media */
+	public static function video_url( $media ): string {
+		$url = is_array( $media ) ? trim( (string) ( $media['url'] ?? '' ) ) : '';
+
+		if ( '' === $url ) {
+			return '';
+		}
+		if ( preg_match( '/\.(mp4|webm|mov|m4v|ogv)(\?|#|$)/i', $url ) ) {
+			return $url;
+		}
+
+		return ! empty( $media['id'] ) && 0 === strpos( (string) get_post_mime_type( (int) $media['id'] ), 'video/' ) ? $url : '';
 	}
 
 	/** Which side a slot sits on: odd slots left, even right; 0 is the front. */
@@ -576,7 +602,7 @@ class Photo_Stack extends Widget_Base {
 		$front = 0 === $slot;
 		$el    = $deck ? 'button' : 'div';
 		$attrs = [
-			'class'     => 'sz-stack__card' . ( $c['id'] ? ' elementor-repeater-item-' . $c['id'] : '' ),
+			'class'     => 'sz-stack__card' . ( $c['video'] ? ' has-video' : '' ) . ( $c['id'] ? ' elementor-repeater-item-' . $c['id'] : '' ),
 			'data-i'    => (string) $slot,
 			'data-slot' => (string) $slot,
 			'data-side' => self::side( $slot ),
@@ -613,8 +639,20 @@ class Photo_Stack extends Widget_Base {
 		<?php
 	}
 
-	/** @param array<string,mixed> $c */
+	/**
+	 * The photo (or gradient), and over it the video, which gets its src
+	 * only when the deck comes near the screen.
+	 *
+	 * @param array<string,mixed> $c
+	 */
 	public static function media( array $c, int $slot ): string {
+		$video = ! empty( $c['video'] ) ? '<video class="sz-stack__video" data-src="' . esc_url( $c['video'] ) . '" muted loop playsinline preload="none" aria-hidden="true" tabindex="-1"></video>' : '';
+
+		return self::picture( $c ) . $video;
+	}
+
+	/** @param array<string,mixed> $c */
+	private static function picture( array $c ): string {
 		$id  = (int) ( $c['image']['id'] ?? 0 );
 		$url = (string) ( $c['image']['url'] ?? '' );
 		$alt = '' !== $c['title'] ? $c['title'] : $c['label'];

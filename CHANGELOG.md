@@ -4,6 +4,23 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.12.1 — Photo Stack: a video behind any photo
+Asked for by the site owner: hovering the main photo plays a video.
+
+- Each photo can have a video. It plays without sound while that photo is in
+  front and the deck is open: on hover with a mouse, after a tap on a
+  phone. Bringing another photo forward pauses the first video and plays
+  the new photo's video, if it has one. Closing the deck pauses everything
+  and shows the photos again.
+- No black flash: the video fades in on its first frame, and until then the
+  photo (or monogram) stays.
+- Light: the src is set only when the deck comes within 300px of the screen,
+  and only the first frames load then.
+- While it plays, a thin ring round the caption icon fills with the video's
+  time.
+- Never with reduced motion or data saver: then nothing is downloaded or
+  played.
+
 ## 0.12.0 — Photo Stack: the About photos, fanned and shuffled
 A new widget, **Photo Stack**, from the prototype approved by the site owner,
 with more on top.

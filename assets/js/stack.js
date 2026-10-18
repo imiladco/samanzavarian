@@ -11,6 +11,11 @@
  *   left, measured on every resize.
  * - A short peek the first time the deck is seen, depth under the mouse,
  *   and hints that say what to do on this device until it has been done.
+ * - A photo with a video plays it, muted, while it is in front and the deck
+ *   is open (hover with a mouse, a tap on touch). The src is set when the
+ *   deck nears the screen (first frames only); the video fades in on its
+ *   first frame, and a ring round the caption icon fills with its time.
+ *   Never with reduced motion or data saver.
  * - Analytics through szwTrack (GTM dataLayer, else GA4).
  *
  * The resting geometry matches stack.css exactly (same numbers, there in
@@ -50,6 +55,9 @@
 			this.edit = !! ( window.elementorFrontend && window.elementorFrontend.isEditMode && window.elementorFrontend.isEditMode() );
 			this.off = [];
 			this.timers = [];
+			this.videos = this.cards.map( ( c ) => c.querySelector( '.sz-stack__video' ) );
+			this.autoplay = ! this.reduce && ! ( navigator.connection && navigator.connection.saveData );
+			this.playing = -1;
 
 			// order[slot] = card; slot 0 is in front
 			this.order = this.cards.map( ( c, i ) => i ).sort( ( a, b ) => this.cards[ a ].dataset.slot - this.cards[ b ].dataset.slot );
@@ -76,6 +84,7 @@
 			this.render();
 			requestAnimationFrame( () => root.classList.add( 'is-ready' ) );
 			this.teach();
+			this.prime();
 		}
 
 		on( target, type, fn, opts ) {
@@ -97,6 +106,10 @@
 			if ( this.io ) {
 				this.io.disconnect();
 			}
+			if ( this.near ) {
+				this.near.disconnect();
+			}
+			this.video( -1 );
 		}
 
 		/* ---------------- geometry ---------------- */
@@ -167,6 +180,94 @@
 				}
 			} );
 			this.root.classList.toggle( 'is-open', this.open );
+			this.video( this.open && this.autoplay ? this.order[ 0 ] : -1 );
+		}
+
+		/* ---------------- video ---------------- */
+
+		/** Near the screen: give the videos their src, so a hover starts at once. */
+		prime() {
+			if ( ! this.autoplay || ! this.videos.some( Boolean ) ) {
+				return;
+			}
+			const load = () => this.videos.forEach( ( v ) => {
+				if ( v && ! v.getAttribute( 'src' ) ) {
+					v.preload = 'metadata';
+					v.src = v.dataset.src;
+				}
+			} );
+			if ( ! ( 'IntersectionObserver' in window ) ) {
+				load();
+				return;
+			}
+			this.near = new IntersectionObserver( ( es ) => {
+				if ( es.some( ( e ) => e.isIntersecting ) ) {
+					this.near.disconnect();
+					load();
+				}
+			}, { rootMargin: '300px 0px' } );
+			this.near.observe( this.deck );
+		}
+
+		/** Play the video of this card (or none: -1); every other one pauses. */
+		video( card ) {
+			if ( ! this.videos[ card ] ) {
+				card = -1;
+			}
+			if ( card === this.playing ) {
+				return;
+			}
+			const was = this.playing;
+			this.playing = card;
+			if ( was >= 0 ) {
+				this.videos[ was ].pause();
+				this.cards[ was ].classList.remove( 'is-playing' );
+			}
+			if ( card < 0 ) {
+				return;
+			}
+			const v = this.videos[ card ], el = this.cards[ card ];
+			if ( ! v.getAttribute( 'src' ) ) {
+				v.src = v.dataset.src;
+			}
+			const shown = () => {
+				if ( this.playing === card ) {
+					el.classList.add( 'is-playing' );
+					this.ring();
+				}
+			};
+			if ( ! v.paused && v.readyState > 2 ) {
+				shown();
+			} else {
+				v.addEventListener( 'playing', shown, { once: true } );
+			}
+			const p = v.play();
+			if ( p && p.catch ) {
+				p.catch( () => {} );
+			}
+		}
+
+		/** The ring round the caption icon fills with the video's time. */
+		ring() {
+			if ( this.ringing ) {
+				return;
+			}
+			this.ringing = true;
+			let last = -1;
+			const step = () => {
+				const card = this.playing, v = this.videos[ card ];
+				if ( card < 0 || ! v ) {
+					this.ringing = false;
+					return;
+				}
+				const p = Number.isFinite( v.duration ) && v.duration > 0 ? v.currentTime / v.duration : 0;
+				if ( Math.abs( p - last ) > 0.002 ) {
+					last = p;
+					this.cards[ card ].style.setProperty( '--szk-p', p.toFixed( 4 ) );
+				}
+				requestAnimationFrame( step );
+			};
+			requestAnimationFrame( step );
 		}
 
 		/* ---------------- state ---------------- */

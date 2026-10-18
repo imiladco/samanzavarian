@@ -64,6 +64,12 @@
 .sz-stack__mesh--7{background:radial-gradient(60% 60% at 70% 30%,#FFE1C9 0%,transparent 60%),radial-gradient(70% 70% at 20% 85%,#C25A2C 0%,transparent 60%),#E89A6E}
 .sz-stack__mesh--8{background:radial-gradient(60% 60% at 30% 70%,#4E6A88 0%,transparent 60%),radial-gradient(60% 60% at 80% 20%,#FF8A55 0%,transparent 55%),#14243A}
 
+/* the video: over the photo, shown only once its first frame is ready */
+.sz-stack .sz-stack__media > .sz-stack__video{opacity:0;transition:opacity .45s ease;pointer-events:none}
+.sz-stack__card.is-playing .sz-stack__video{opacity:1}
+.sz-stack__card.is-playing .sz-stack__mono{opacity:0}
+.sz-stack__mono{transition:opacity .45s ease}
+
 /* initials in place of a portrait */
 .sz-stack__mono{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--sz-font-mark);font-size:37cqw;font-weight:400;line-height:1;letter-spacing:.02em;color:var(--szk-mono);pointer-events:none}
 .sz-stack__mono b{font-weight:inherit;color:var(--szk-mono-b)}
@@ -82,7 +88,13 @@
   background:var(--szk-cap);-webkit-backdrop-filter:blur(20px) saturate(170%);backdrop-filter:blur(20px) saturate(170%);
   opacity:0;transform:translateY(8px);transition:opacity .25s,transform .45s var(--sz-spring)}
 .sz-stack__card[data-slot="0"] .sz-stack__cap{opacity:1;transform:none;transition-delay:.18s}
-.sz-stack__cap .sz-app{width:38px;height:38px;border-radius:11px;font-size:18px}
+.sz-stack__cap .sz-app{position:relative;width:38px;height:38px;border-radius:11px;font-size:18px}
+/* while the video plays: a ring round the icon, filling with its time */
+.sz-stack__cap .sz-app::after{content:"";position:absolute;inset:-4px;padding:2px;border-radius:14px;
+  background:conic-gradient(var(--sz-orange) calc(var(--szk-p,0) * 1turn),rgba(13,27,42,.12) 0);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0);
+  opacity:0;transition:opacity .3s}
+.sz-stack__card.is-playing .sz-stack__cap .sz-app::after{opacity:1}
 .sz-stack__cap-t{min-width:0}
 .sz-stack__cap b{display:block;overflow:hidden;font-size:15px;font-weight:600;line-height:1.25;white-space:nowrap;text-overflow:ellipsis;color:var(--szk-cap-title)}
 .sz-stack__cap small{display:block;overflow:hidden;font-size:13px;line-height:1.35;white-space:nowrap;text-overflow:ellipsis;color:var(--szk-cap-text)}
