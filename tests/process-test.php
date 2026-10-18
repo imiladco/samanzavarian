@@ -4,9 +4,8 @@
  * active. No stubs: the widget is built exactly the way Elementor builds it,
  * and the CSS Elementor generates from the controls is checked too.
  *
- *   wp eval-file tests/process-test.php
- *
- * Exits non-zero on the first failing group, so it can gate a commit.
+ *   wp eval-file tests/process-test.php     this widget only
+ *   wp eval-file tests/all.php              everything (gate a commit on this)
  */
 
 use Elementor\Core\Files\CSS\Post as Post_CSS;
@@ -16,60 +15,7 @@ use Samanzavarian_Widgets\Icon_Library;
 use Samanzavarian_Widgets\Widgets\Process;
 use Samanzavarian_Widgets\Widgets\Process_Layout;
 
-/*
- * Through $GLOBALS on purpose: `wp eval-file` runs this file inside a
- * function, so a top-level `$failed` would be local and a `global $failed`
- * in the helper would count into a different variable — every failure would
- * still end in "ALL PASSED". (It did, once.)
- */
-$GLOBALS['szw_failed'] = 0;
-
-function szw_ok( bool $condition, string $label ): void {
-	echo ( $condition ? "  ✓ " : "  ✗ " ) . $label . "\n";
-	if ( ! $condition ) {
-		$GLOBALS['szw_failed']++;
-	}
-}
-
-function szw_group( string $title ): void {
-	echo "\n" . $title . "\n";
-}
-
-/** Render one Process widget with the given settings, through Elementor. */
-function szw_render( array $settings = [] ): string {
-	$element = Elementor::$instance->elements_manager->create_element_instance(
-		[
-			'id'         => 'szwtest',
-			'elType'     => 'widget',
-			'widgetType' => 'sz-process',
-			'settings'   => $settings,
-		]
-	);
-
-	ob_start();
-	$element->print_element();
-
-	return (string) ob_get_clean();
-}
-
-/** @return string[] the n-th capture of every match */
-function szw_all( string $pattern, string $html, int $group = 1 ): array {
-	preg_match_all( $pattern, $html, $m );
-
-	return $m[ $group ] ?? [];
-}
-
-function szw_step( string $id, string $title, string $desc = '', string $glyph = 'chat', array $extra = [] ): array {
-	return array_merge(
-		[
-			'_id'         => $id,
-			'title'       => $title,
-			'description' => $desc,
-			'icon'        => Icon_Library::value( $glyph ),
-		],
-		$extra
-	);
-}
+require_once __DIR__ . '/lib.php';
 
 /* ------------------------------------------------------------------ */
 
@@ -354,30 +300,4 @@ wp_delete_post( $post_id, true );
 
 /* ------------------------------------------------------------------ */
 
-szw_group( 'Version' );
-
-$root   = dirname( __DIR__ );
-$header = get_file_data( $root . '/samanzavarian-elementor-widgets.php', [ 'Version' => 'Version' ] )['Version'];
-preg_match( '/^## (\S+)/m', (string) file_get_contents( $root . '/CHANGELOG.md' ), $latest );
-szw_ok( SZW_VERSION === $header, "plugin header Version ({$header}) = SZW_VERSION (" . SZW_VERSION . ')' );
-szw_ok( ( $latest[1] ?? '' ) === SZW_VERSION, 'CHANGELOG.md has an entry for ' . SZW_VERSION . ' at the top' );
-
-/* ------------------------------------------------------------------ */
-
-szw_group( 'Generated files are in sync with their source' );
-
-$root = dirname( __DIR__ );
-
-foreach ( [ 'tools/build-icons.php', 'tools/build-process-css.php' ] as $tool ) {
-	exec( escapeshellarg( PHP_BINARY ) . ' ' . escapeshellarg( $root . '/' . $tool ) . ' --check 2>&1', $lines, $code );
-	szw_ok( 0 === $code, $tool . ' --check' );
-	$lines = [];
-}
-
-/* ------------------------------------------------------------------ */
-
-echo "\n" . ( $GLOBALS['szw_failed'] ? 'FAILED: ' . $GLOBALS['szw_failed'] : 'ALL PASSED' ) . "\n";
-
-if ( $GLOBALS['szw_failed'] ) {
-	exit( 1 );
-}
+szw_finish();

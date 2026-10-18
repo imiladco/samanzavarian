@@ -12,6 +12,8 @@ final class Plugin {
 	/** Every widget class this plugin registers, in panel order. */
 	private const WIDGETS = [
 		Widgets\Process::class,
+		Widgets\Service_Tabs::class,
+		Widgets\Service_Panel::class,
 	];
 
 	public const CATEGORY = 'samanzavarian';
@@ -85,6 +87,11 @@ final class Plugin {
 	/** @param \Elementor\Widgets_Manager $widgets_manager */
 	public function register_widgets( $widgets_manager ): void {
 		foreach ( self::WIDGETS as $class ) {
+			// A nested widget needs Elementor's container support; skip it, not the plugin.
+			if ( method_exists( $class, 'is_supported' ) && ! $class::is_supported() ) {
+				continue;
+			}
+
 			$widgets_manager->register( new $class() );
 		}
 	}

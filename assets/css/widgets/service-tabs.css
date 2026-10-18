@@ -1,0 +1,190 @@
+/* =====================================================================
+   Service Tabs — the "What I do" list of services with a panel per tab.
+
+   Structure:
+     div.sz-tabs
+       div.sz-tabs__nav                 the white card
+         div.sz-tabs__list[role=tablist]
+           span.sz-tabs__hl             highlight sliding to the active tab
+           button.sz-tabs__tab[role=tab] × n
+         p.sz-tabs__note
+       div.sz-tabs__stage               all panels stacked in one grid cell
+         .e-con.sz-tabs__panel × n      Elementor containers (nested)
+
+   Layout: the "side"/"top" families of --szt-* properties come from
+   Service_Tabs_Layout (the default below is generated from it). There are
+   no width breakpoints here — the Layout control writes the family per
+   Elementor breakpoint.
+
+   Specificity: as in process.css — at least two classes against themes, and
+   button states at three, because kits style `button:hover` at (0,2,1).
+   ===================================================================== */
+
+/* BEGIN GENERATED */
+.sz-tabs{--szt-cols:minmax(300px,.82fr) 1.5fr;--szt-dir:column;--szt-scroll:visible;--szt-list-pad:8px;--szt-list-radius:30px;--szt-tab-flex:1 1 0%;--szt-tab-w:100%;--szt-tab-pad:16px 14px;--szt-tab-gap:14px;--szt-tab-radius:22px;--szt-icon-box:46px;--szt-icon-radius:13px;--szt-icon-size:22px;--szt-title-size:17px;--szt-title-wrap:normal;--szt-sub:block;--szt-chev:block;--szt-note:flex;--szt-icon-on:scale(1.06) rotate(-4deg);--szt-stage-min:560px;}
+/* END GENERATED */
+
+.sz-tabs{
+  --szt-hl-dur:.55s;
+  --szt-hl-x:0px;--szt-hl-y:0px;--szt-hl-w:0px;--szt-hl-h:0px;
+}
+
+.sz-w.sz-tabs{
+  display:grid;
+  grid-template-columns:var(--szt-cols);
+  gap:18px;
+  align-items:stretch;
+}
+
+/* ---------- the list card ---------- */
+.sz-tabs .sz-tabs__nav{
+  position:relative;
+  display:flex;flex-direction:column;
+  min-width:0;
+  padding:var(--szt-list-pad);
+  border-radius:var(--szt-list-radius);
+  background-color:var(--sz-card);
+  box-shadow:var(--sz-s2);
+}
+
+.sz-tabs .sz-tabs__list{
+  position:relative;
+  display:flex;flex-direction:var(--szt-dir);
+  flex:1 1 auto;
+  gap:4px;
+  min-width:0;
+  margin:0;padding:0;
+  overflow-x:var(--szt-scroll);
+  overscroll-behavior-x:contain;
+  scrollbar-width:none;
+}
+.sz-tabs .sz-tabs__list::-webkit-scrollbar{display:none}
+
+/* Placed by the script (x, y, width, height of the active tab). Before the
+   script runs it has no size, and the active tab shows its own fill below. */
+.sz-tabs .sz-tabs__hl{
+  position:absolute;left:0;top:0;z-index:0;
+  width:var(--szt-hl-w);height:var(--szt-hl-h);
+  border-radius:var(--szt-tab-radius);
+  background-color:var(--sz-fill);
+  transform:translate(var(--szt-hl-x),var(--szt-hl-y));
+  transition:transform var(--szt-hl-dur) var(--sz-spring),width calc(var(--szt-hl-dur) * .82) var(--sz-spring),height calc(var(--szt-hl-dur) * .82) var(--sz-spring);
+  pointer-events:none;
+}
+.sz-tabs:not(.is-ready) .sz-tabs__hl{transition:none}
+
+/* ---------- a tab ---------- */
+.sz-tabs .sz-tabs__tab{
+  position:relative;z-index:1;
+  display:flex;align-items:center;gap:var(--szt-tab-gap);
+  flex:var(--szt-tab-flex);
+  width:var(--szt-tab-w);min-width:0;min-height:0;height:auto;
+  margin:0;padding:var(--szt-tab-pad);
+  border:0;border-radius:var(--szt-tab-radius);
+  background:transparent;box-shadow:none;
+  font:inherit;color:inherit;
+  text-align:start;text-transform:none;text-decoration:none;letter-spacing:normal;white-space:normal;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+  transition:background-color .2s;
+}
+.sz-tabs .sz-tabs__tab:is(:hover,:focus,:active){background:transparent;color:inherit;box-shadow:none;text-decoration:none}
+.sz-tabs .sz-tabs__tab:not([aria-selected="true"]):hover{background-color:rgba(13,27,42,.025)}
+.sz-tabs .sz-tabs__tab:focus{outline:none}
+.sz-tabs .sz-tabs__tab:focus-visible{outline:2px solid var(--sz-orange);outline-offset:-2px}
+/* until the highlight is placed, the active tab carries the fill itself */
+.sz-tabs:not(.is-ready) .sz-tabs__tab[aria-selected="true"]{background-color:var(--sz-fill)}
+
+.sz-tabs .sz-tabs__icon{
+  width:var(--szt-icon-box);height:var(--szt-icon-box);
+  border-radius:var(--szt-icon-radius);
+  font-size:var(--szt-icon-size);
+  transition:transform .5s var(--sz-spring);
+}
+.sz-tabs .sz-tabs__tab[aria-selected="true"] .sz-tabs__icon{transform:var(--szt-icon-on)}
+.sz-tabs-tilt- .sz-tabs .sz-tabs__tab[aria-selected="true"] .sz-tabs__icon{transform:none}
+
+.sz-tabs .sz-tabs__text{display:block;flex:1 1 auto;min-width:0}
+
+.sz-tabs .sz-tabs__title{
+  display:block;margin:0;
+  font-family:var(--sz-font);font-size:var(--szt-title-size);font-weight:600;font-style:normal;
+  line-height:1.25;letter-spacing:-.02em;white-space:var(--szt-title-wrap);
+  color:var(--sz-ink);
+}
+.sz-tabs .sz-tabs__sub{
+  display:var(--szt-sub);margin:3px 0 0;
+  font-family:var(--sz-font);font-size:14px;font-weight:400;
+  line-height:1.4;letter-spacing:normal;
+  color:var(--sz-t2);
+}
+
+.sz-tabs .sz-tabs__chev{
+  display:var(--szt-chev);flex:none;
+  width:18px;height:18px;
+  color:#B9BFC7;
+  transition:transform .4s var(--sz-spring),color .2s;
+}
+.sz-tabs .sz-tabs__tab[aria-selected="true"] .sz-tabs__chev{color:var(--sz-orange);transform:translateX(3px)}
+.rtl .sz-tabs .sz-tabs__chev,[dir="rtl"] .sz-tabs .sz-tabs__chev{transform:scaleX(-1)}
+.rtl .sz-tabs .sz-tabs__tab[aria-selected="true"] .sz-tabs__chev,
+[dir="rtl"] .sz-tabs .sz-tabs__tab[aria-selected="true"] .sz-tabs__chev{transform:translateX(-3px) scaleX(-1)}
+
+/* ---------- note under the list ---------- */
+.sz-tabs .sz-tabs__note{
+  display:var(--szt-note);align-items:center;gap:10px;
+  /* 4px = the list's gap, 1em below = the design's paragraph margin */
+  margin:4px 0 1em;padding:14px 14px 8px;
+  border-top:1px solid var(--sz-line);
+  font-family:var(--sz-font);font-size:13px;line-height:1.6;
+  color:var(--sz-t3);
+}
+.sz-tabs .sz-tabs__note svg,.sz-tabs .sz-tabs__note i{flex:none;width:16px;height:16px;font-size:16px}
+.sz-tabs .sz-tabs__note svg.szi{stroke-width:1.8}
+
+/* ---------- panels ----------
+   All in one grid cell, so the stage is as tall as the tallest panel and
+   switching tabs never moves the page. The frame (radius, shadow, clip)
+   belongs to the tab's container, so anything built inside gets it. */
+.sz-tabs .sz-tabs__stage{
+  display:grid;
+  min-width:0;
+  min-height:var(--szt-stage-min);
+}
+.sz-tabs .sz-tabs__stage > .sz-tabs__panel{
+  grid-area:1/1;
+  position:relative;
+  min-width:0;
+  overflow:hidden;
+  border-radius:30px;
+  box-shadow:var(--sz-s2);
+  opacity:0;visibility:hidden;
+  transform:scale(.985);
+  transition:opacity .45s var(--sz-ease),transform .6s var(--sz-spring),visibility 0s .45s;
+}
+.sz-tabs .sz-tabs__stage > .sz-tabs__panel.is-active{
+  opacity:1;visibility:visible;
+  transform:none;
+  transition:opacity .45s var(--sz-ease),transform .6s var(--sz-spring),visibility 0s;
+}
+.sz-tabs .sz-tabs__stage > .sz-tabs__panel:focus{outline:none}
+.sz-tabs .sz-tabs__stage > .sz-tabs__panel:focus-visible{outline:2px solid var(--sz-orange);outline-offset:3px}
+
+/* each panel its own height: inactive ones leave the layout */
+.sz-tabs--auto .sz-tabs__stage > .sz-tabs__panel:not(.is-active){display:none}
+.sz-tabs--auto .sz-tabs__stage > .sz-tabs__panel.is-active{animation:sz-tabs-in .45s var(--sz-ease)}
+@keyframes sz-tabs-in{from{opacity:0;transform:scale(.985)}}
+
+.sz-tabs-fx-fade .sz-tabs .sz-tabs__stage > .sz-tabs__panel{transform:none}
+.sz-tabs-fx-none .sz-tabs .sz-tabs__stage > .sz-tabs__panel{transition:none;animation:none}
+
+/* a Service Panel fills its tab and leaves the frame to the tab */
+.sz-tabs .sz-tabs__panel > .elementor-widget-sz-service-panel{flex:1 1 auto;align-self:stretch;width:100%}
+.sz-tabs .sz-tabs__panel > .elementor-widget-sz-service-panel > .elementor-widget-container{height:100%}
+
+@media (prefers-reduced-motion:reduce){
+  .sz-tabs .sz-tabs__hl,
+  .sz-tabs .sz-tabs__icon,
+  .sz-tabs .sz-tabs__chev,
+  .sz-tabs .sz-tabs__stage > .sz-tabs__panel{transition:none;animation:none}
+}
