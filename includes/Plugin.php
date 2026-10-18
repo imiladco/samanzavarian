@@ -16,6 +16,8 @@ final class Plugin {
 		Widgets\Service_Panel::class,
 		Widgets\Work_Rail::class,
 		Widgets\Photo_Stack::class,
+		Widgets\Section_Tag::class,
+		Widgets\Status_Pill::class,
 	];
 
 	public const CATEGORY = 'samanzavarian';

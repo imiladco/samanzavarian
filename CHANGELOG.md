@@ -4,6 +4,35 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.13.0 — Status and Section Tag
+Two small widgets from the design, and one stylesheet for both.
+
+- **Status**: the "Available for new projects" pill.
+  - Three states, each with its own text and dot: available (green,
+    pulsing), limited (amber), booked (grey).
+  - An "available again on" date fills {date} ("Booked until Jun 3"). From
+    that day on the pill reads available by itself, on the server and in
+    the browser, so a cached page cannot keep an expired status.
+  - Optional local time ("00:06 Tehran", any time zone, 24- or 12-hour). It
+    is already on the first paint and is updated on each new minute.
+  - Optional link, with an arrow that leans forward on hover.
+  - Light glass skin, or dark for the footer. The pulse can be switched
+    off, and stops with reduced motion.
+  - The script loads only for a pill with a date or a clock; otherwise the
+    pill is plain HTML.
+- **Section Tag**: the pill above a section title (.tag in the design).
+  - An icon tile (orange, navy, white) and an optional badge ("106+",
+    "New").
+  - An optional link, with the same arrow.
+  - The HTML tag can be chosen (span by default, so the section title
+    stays the heading).
+  - Light or dark skin.
+  - The tile springs up as the tag scrolls into view. This uses CSS
+    scroll-driven animation with no script, is off with reduced motion,
+    and browsers without that feature simply show the tag.
+- Both have typography, height, colour and shadow controls, and alignment
+  per breakpoint.
+
 ## 0.12.1 — Photo Stack: a video behind any photo
 Asked for by the site owner: hovering the main photo plays a video.
 

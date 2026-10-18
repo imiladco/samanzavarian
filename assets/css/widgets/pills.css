@@ -1,0 +1,63 @@
+/* =====================================================================
+   Pills — Status (Widgets/Status_Pill.php) and Section Tag
+   (Widgets/Section_Tag.php). One small stylesheet for both: they sit
+   together on most sections and share their shape.
+   ===================================================================== */
+
+.sz-pillrow{display:flex;flex-wrap:wrap}
+/* .sz-pillrow in front: a heading tag must not take the theme's heading styles */
+.sz-pillrow .sz-pill{
+  --szp-h:34px; --szp-bg:var(--sz-card); --szp-text:var(--sz-t2); --szp-text-hover:var(--sz-ink);
+  --szp-tile:24px; --szp-badge:rgba(13,27,42,.06); --szp-badge-text:var(--sz-t2);
+  display:inline-flex;align-items:center;gap:8px;height:var(--szp-h);max-width:100%;margin:0;
+  padding:0 14px 0 calc((var(--szp-h) - var(--szp-tile)) / 2);border-radius:99px;
+  background:var(--szp-bg);box-shadow:var(--sz-s1);
+  font-family:inherit;font-size:13px;font-weight:500;line-height:1;letter-spacing:normal;text-transform:none;white-space:nowrap;color:var(--szp-text);text-decoration:none;
+  transition:color .2s,box-shadow .3s,transform .35s var(--sz-spring);
+}
+.sz-pillrow .sz-pill.no-icon{padding-left:14px}
+.sz-pill > span:not(.sz-app){min-width:0;overflow:hidden;text-overflow:ellipsis}
+.sz-pill:focus-visible{outline:2.5px solid rgba(255,107,44,.85);outline-offset:3px}
+
+/* a pill that links: the arrow says so, and leans forward on hover */
+.sz-pill__arrow{flex:none;width:14px;height:14px;margin-right:-3px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;opacity:.45;transition:opacity .2s,transform .35s var(--sz-spring)}
+.sz-pillrow .sz-pill.is-link:hover{color:var(--szp-text-hover)}
+.sz-pill.is-link:hover .sz-pill__arrow{opacity:1;transform:translateX(3px)}
+.sz-pillrow .sz-pill.is-link:active{transform:scale(.97)}
+
+/* ---------- Section Tag ---------- */
+.sz-tag__tile{width:var(--szp-tile);height:var(--szp-tile);border-radius:29%;font-size:calc(var(--szp-tile) * .54)}
+.sz-tag__badge{display:inline-grid;place-items:center;min-width:20px;height:20px;margin-right:-6px;padding:0 7px;border-radius:99px;background:var(--szp-badge);font-size:11px;font-weight:600;color:var(--szp-badge-text);font-variant-numeric:tabular-nums}
+.sz-tag.is-link .sz-tag__badge{margin-right:0}
+/* the tile springs up as the tag scrolls in: scroll-driven, no script */
+@supports (animation-timeline: view()){
+  @media (prefers-reduced-motion:no-preference){
+    .sz-tag.is-pop .sz-tag__tile{animation:szp-pop linear both;animation-timeline:view();animation-range:entry 20% entry 100%}
+  }
+}
+@keyframes szp-pop{0%{transform:scale(.3) rotate(-24deg);opacity:0}65%{transform:scale(1.14) rotate(6deg);opacity:1}100%{transform:none;opacity:1}}
+
+/* ---------- Status ---------- */
+.sz-pillrow .sz-status{
+  --szp-h:36px; --szp-bg:rgba(255,255,255,.8);
+  --szp-dot-available:#30B46C; --szp-dot-limited:#E8962E; --szp-dot-booked:#9AA2AD;
+  gap:9px;padding:0 14px 0 12px;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  box-shadow:var(--sz-s1),inset 0 0 0 1px rgba(13,27,42,.04);
+}
+.sz-status__dot{--d:var(--szp-dot-available);position:relative;flex:none;width:8px;height:8px;border-radius:50%;background:var(--d)}
+.sz-status.is-limited .sz-status__dot{--d:var(--szp-dot-limited)}
+.sz-status.is-booked .sz-status__dot{--d:var(--szp-dot-booked)}
+.sz-status.is-available:not(.no-pulse) .sz-status__dot::after{content:"";position:absolute;inset:-4px;border-radius:50%;background:var(--d);opacity:.25;animation:szp-pulse 2.4s ease-out infinite}
+@keyframes szp-pulse{0%{transform:scale(.6);opacity:.4}100%{transform:scale(1.8);opacity:0}}
+.sz-status__clock{display:inline-flex;align-items:center;gap:6px;flex:none}
+.sz-status__sep{width:1px;height:12px;margin-right:3px;background:currentColor;opacity:.25}
+.sz-status__time{font-weight:600;color:var(--sz-ink);font-variant-numeric:tabular-nums}
+
+/* ---------- dark skin (footer, dark sections) ---------- */
+.sz-pillrow .sz-pill--dark{--szp-bg:rgba(255,255,255,.08);--szp-text:#C9D1DA;--szp-text-hover:#fff;--szp-badge:rgba(255,255,255,.1);--szp-badge-text:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);-webkit-backdrop-filter:none;backdrop-filter:none}
+.sz-pill--dark .sz-status__time{color:#fff}
+
+@media (prefers-reduced-motion:reduce){
+  .sz-status__dot::after{animation:none!important}
+  .sz-pill,.sz-pill__arrow{transition:none}
+}
