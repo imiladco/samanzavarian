@@ -275,6 +275,8 @@
 .sz-process .sz-process__arrow--icon svg,
 .sz-process .sz-process__arrow--icon i{width:1em;height:1em;font-size:inherit}
 .sz-process .sz-process__arrow--icon svg:not(.szi){fill:currentColor}
+/* different icons above and below: both stacked in one cell, one shown */
+.sz-process .sz-process__arrow--icon > span{grid-area:1/1;display:grid;place-items:center}
 
 .rtl .sz-process,
 [dir="rtl"] .sz-process{--szp-rtl:1}

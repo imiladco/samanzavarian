@@ -225,6 +225,15 @@ $html = szw_render(
 $arrows = szw_all( '/<li class="sz-process__item[^"]*elementor-repeater-item-(a\d)">.*?<\/(?:a|div)>\s*(<svg class="sz-process__arrow"|<span class="sz-process__arrow sz-process__arrow--icon" aria-hidden="true"><svg class="szi szi-[a-z]+")?/s', $html, 2 );
 szw_ok( [ '', '<span class="sz-process__arrow sz-process__arrow--icon" aria-hidden="true"><svg class="szi szi-up"', '<svg class="sz-process__arrow"', '' ] === $arrows, 'per step: none, own icon, default — and never after the last step' );
 
+$html = szw_render( [ 'arrow_type' => 'icon', 'arrow_icon' => Icon_Library::value( 'send' ), 'arrow_icon_under' => Icon_Library::value( 'up' ) ] );
+szw_ok( 3 === substr_count( $html, '<span class="sz-process__arrow-over"><svg class="szi szi-send"' ) && 3 === substr_count( $html, '<span class="sz-process__arrow-under"><svg class="szi szi-up"' ), 'different icons above and below the cards' );
+
+$html = szw_render( [ 'arrow_type' => 'icon', 'arrow_icon' => Icon_Library::value( 'send' ), 'arrow_icon_under' => Icon_Library::value( 'send' ) ] );
+szw_ok( false === strpos( $html, 'sz-process__arrow-under' ), 'the same icon twice is printed once' );
+
+$html = szw_render( [ 'steps' => [ szw_step( 'u1', 'One', '', 'chat', [ 'arrow' => 'icon', 'arrow_icon' => Icon_Library::value( 'send' ), 'arrow_icon_under' => Icon_Library::value( 'up' ) ] ), szw_step( 'u2', 'Two' ) ] ] );
+szw_ok( false !== strpos( $html, '<span class="sz-process__arrow-under"><svg class="szi szi-up"' ), 'a step can set its own icon below the cards' );
+
 $html = szw_render( [ 'arrow_type' => 'icon', 'arrow_icon' => [ 'value' => '', 'library' => '' ] ] );
 szw_ok( 3 === substr_count( $html, '<svg class="sz-process__arrow"' ), 'an empty icon falls back to the drawn arrow instead of leaving gaps' );
 
@@ -342,6 +351,16 @@ szw_ok( false !== strpos( $at( $mobile_max ), '--szp-grid-x:0px' ), 'mobile: the
 szw_ok( false === strpos( (string) file_get_contents( dirname( __DIR__ ) . '/assets/css/widgets/process.css' ), '@media (max-width' ), 'the stylesheet itself has no width breakpoints' );
 
 wp_delete_post( $post_id, true );
+
+/* ------------------------------------------------------------------ */
+
+szw_group( 'Version' );
+
+$root   = dirname( __DIR__ );
+$header = get_file_data( $root . '/samanzavarian-elementor-widgets.php', [ 'Version' => 'Version' ] )['Version'];
+preg_match( '/^## (\S+)/m', (string) file_get_contents( $root . '/CHANGELOG.md' ), $latest );
+szw_ok( SZW_VERSION === $header, "plugin header Version ({$header}) = SZW_VERSION (" . SZW_VERSION . ')' );
+szw_ok( ( $latest[1] ?? '' ) === SZW_VERSION, 'CHANGELOG.md has an entry for ' . SZW_VERSION . ' at the top' );
 
 /* ------------------------------------------------------------------ */
 

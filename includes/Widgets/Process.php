@@ -190,10 +190,20 @@ class Process extends Widget_Base {
 		$repeater->add_control(
 			'arrow_icon',
 			[
-				'label'     => esc_html__( 'Arrow icon', 'samanzavarian-widgets' ),
+				'label'     => esc_html__( 'Icon above the cards', 'samanzavarian-widgets' ),
 				'type'      => Controls_Manager::ICONS,
 				'default'   => self::ARROW_ICON_DEFAULT,
 				'condition' => [ 'arrow' => 'icon' ],
+			]
+		);
+
+		$repeater->add_control(
+			'arrow_icon_under',
+			[
+				'label'       => esc_html__( 'Icon below the cards', 'samanzavarian-widgets' ),
+				'type'        => Controls_Manager::ICONS,
+				'description' => esc_html__( 'Optional. Empty uses the icon above.', 'samanzavarian-widgets' ),
+				'condition'   => [ 'arrow' => 'icon' ],
 			]
 		);
 
@@ -366,10 +376,20 @@ class Process extends Widget_Base {
 		$this->add_control(
 			'arrow_icon',
 			[
-				'label'       => esc_html__( 'Arrow icon', 'samanzavarian-widgets' ),
+				'label'       => esc_html__( 'Icon above the cards', 'samanzavarian-widgets' ),
 				'type'        => Controls_Manager::ICONS,
 				'default'     => self::ARROW_ICON_DEFAULT,
-				'description' => esc_html__( 'Pick one that points right; it is turned to point down in one column and mirrored on right-to-left sites. Each step can override it.', 'samanzavarian-widgets' ),
+				'description' => esc_html__( 'Pick icons that point right; they are turned to point down in one column and mirrored on right-to-left sites. Each step can override them.', 'samanzavarian-widgets' ),
+				'condition'   => [ 'arrow_type' => 'icon' ],
+			]
+		);
+
+		$this->add_control(
+			'arrow_icon_under',
+			[
+				'label'       => esc_html__( 'Icon below the cards', 'samanzavarian-widgets' ),
+				'type'        => Controls_Manager::ICONS,
+				'description' => esc_html__( 'Optional. Like the design, arrows alternate above and below the cards (in one column: odd and even steps). Empty uses the icon above.', 'samanzavarian-widgets' ),
 				'condition'   => [ 'arrow_type' => 'icon' ],
 			]
 		);
@@ -1051,7 +1071,9 @@ class Process extends Widget_Base {
 		$start      = isset( $settings['number_start'] ) && '' !== $settings['number_start'] ? (int) $settings['number_start'] : 1;
 		$pad        = 'yes' === ( $settings['number_pad'] ?? '' );
 		$dark_first = 'dark' === ( $settings['skin_pattern'] ?? 'light' );
-		$arrow      = 'icon' === ( $settings['arrow_type'] ?? 'drawn' ) ? $settings['arrow_icon'] ?? self::ARROW_ICON_DEFAULT : null;
+		$arrow      = 'icon' === ( $settings['arrow_type'] ?? 'drawn' )
+			? [ $settings['arrow_icon'] ?? self::ARROW_ICON_DEFAULT, $settings['arrow_icon_under'] ?? null ]
+			: null;
 
 		$this->add_render_attribute(
 			'board',
@@ -1082,7 +1104,7 @@ class Process extends Widget_Base {
 
 	/**
 	 * @param array<string,mixed>      $step
-	 * @param array<string,mixed>|null $arrow the widget's arrow icon, or null for the drawn arrow
+	 * @param array<int,mixed>|null    $arrow the widget's arrow icons [above, below], or null for the drawn arrow
 	 */
 	private function render_step( array $step, int $index, bool $has_next, string $tag, ?string $number, bool $dark_first, ?array $arrow ): void {
 		$skin = self::skin( $step['skin'] ?? '', $index, $dark_first );
@@ -1139,21 +1161,31 @@ class Process extends Widget_Base {
 	 * widget's. An icon that renders nothing falls back to the drawn arrow
 	 * rather than leaving a gap in the sequence.
 	 *
-	 * @param array<string,mixed>      $step
-	 * @param array<string,mixed>|null $widget_icon
+	 * Which side of the cards an arrow sits on depends on the column count,
+	 * which can differ per breakpoint, so with two different icons both are
+	 * printed and the stylesheet shows one — exactly like the two paths of
+	 * the drawn arrow.
+	 *
+	 * @param array<string,mixed>   $step
+	 * @param array<int,mixed>|null $widget_icons [above, below]
 	 */
-	private static function render_arrow( array $step, ?array $widget_icon ): void {
+	private static function render_arrow( array $step, ?array $widget_icons ): void {
 		$choice = $step['arrow'] ?? '';
 
 		if ( 'none' === $choice ) {
 			return;
 		}
 
-		$icon = 'icon' === $choice ? $step['arrow_icon'] ?? null : $widget_icon;
-		$html = is_array( $icon ) ? Icon_Library::html( $icon ) : '';
+		$icons = 'icon' === $choice ? [ $step['arrow_icon'] ?? null, $step['arrow_icon_under'] ?? null ] : $widget_icons;
+		$over  = $icons && is_array( $icons[0] ) ? Icon_Library::html( $icons[0] ) : '';
 
-		if ( '' !== $html ) {
-			echo '<span class="sz-process__arrow sz-process__arrow--icon" aria-hidden="true">' . $html . '</span>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- markup from Elementor's icon renderer or our static glyph map
+		if ( '' !== $over ) {
+			$under = is_array( $icons[1] ?? null ) ? Icon_Library::html( $icons[1] ) : '';
+			$inner = '' === $under || $under === $over
+				? $over
+				: '<span class="sz-process__arrow-over">' . $over . '</span><span class="sz-process__arrow-under">' . $under . '</span>';
+
+			echo '<span class="sz-process__arrow sz-process__arrow--icon" aria-hidden="true">' . $inner . '</span>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- markup from Elementor's icon renderer or our static glyph map
 			return;
 		}
 		?>
