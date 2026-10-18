@@ -231,4 +231,24 @@ $html = szw_render( array_merge( $fixed, [ 'content_week_label' => '<i>W{n}</i>'
 szw_ok( false !== strpos( $html, '&lt;i&gt;W42&lt;/i&gt;' ) && false !== strpos( $html, '4 &lt;b&gt;x&lt;/b&gt;' ), 'labels are escaped' );
 szw_ok( [ 'sz-service-panel', 'sz-scene-content' ] === $make( [ 'scene' => 'content' ] )->get_script_depends(), 'a Content panel loads only its own scene script' );
 
+/* ------------------------------------------------------------------ */
+
+szw_group( 'Panel — Creative direction scene' );
+
+$html = szw_render( Service_Panel::preset( 'direction' ), 'sz-service-panel' );
+szw_ok( [ '6', '5', '3' ] === szw_all( '/szs-mesh szs-mesh--(\d) szs-mood szs-mood--[abc] szs-a/', $html ), 'the design\'s three pictures in slots a, b, c' );
+szw_ok( [ '#0D1B2A', '#FF6B2C', '#FFE6DA', '#E7E9EC' ] === szw_all( '/<b style="background:([^"]+)"><\/b>/', $html ), 'the design\'s palette' );
+szw_ok( false !== strpos( $html, '<b>Direction note</b><span class="szs-note__text">Quiet, warm light. Honest materials. One hero object per frame.</span>' ), 'the design\'s note' );
+preg_match( '/data-szs-direction="([^"]+)"/', $html, $m );
+$cfg = json_decode( html_entity_decode( $m[1] ?? '' ), true );
+szw_ok( is_array( $cfg ) && 2 === count( $cfg['boards'] ) && 4000.0 === (float) $cfg['hold'] && true === $cfg['cycle'], 'two boards by default for the script, 4s each, cycling' );
+szw_ok( [ '1', '2', '4' ] === array_column( $cfg['boards'][0]['refs'], 'mesh' ), 'without reference images, the pile uses the gradients the chosen three don\'t' );
+
+$pool   = array_map( static fn( $n ) => [ 'url' => 'https://x.test/r' . $n . '.jpg', 'id' => '' ], range( 1, 7 ) );
+$boards = Service_Panel::dir_boards( [ 'dir_refs' => $pool, 'dir_boards' => [ [ 'pick_a' => [ 'url' => 'https://x.test/a.mp4', 'id' => '' ], 'mesh_a' => 'x', 'c1' => '#123', 'c2' => 'red;x', 'note' => '  hi ' ], [ 'note' => 'two' ] ] ] );
+szw_ok( false !== strpos( $boards[0]['picks'][0]['html'], '<video class="szs-mood__media"' ) && '6' === $boards[0]['picks'][0]['mesh'], 'a chosen picture can be a video; a bad placeholder falls back' );
+szw_ok( 5 === count( $boards[0]['refs'] ) && [ '#123' ] === $boards[0]['palette'] && 'hi' === $boards[0]['note'], 'at most five other references; unsafe colours dropped; note trimmed' );
+szw_ok( false !== strpos( $boards[1]['refs'][0]['html'], 'r6.jpg' ) && false !== strpos( $boards[1]['refs'][2]['html'], 'r1.jpg' ), 'the shared reference pool: board 2 takes the next five, wrapping round' );
+szw_ok( [ 'sz-service-panel', 'sz-scene-direction' ] === $make( [ 'scene' => 'direction' ] )->get_script_depends(), 'a Direction panel loads only its own scene script' );
+
 szw_finish();

@@ -4,6 +4,20 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.8.0
+- Service Panel — **Creative direction scene, "from chaos to direction"**:
+  references land on the board in a loose pile, a pointer chooses three
+  (orange ring), the rest are cleared away, the chosen three glide into the
+  design's composition, the palette's colours fly out of the pictures into the
+  swatch, and the direction note is written. Then the next board.
+  - Boards repeater: three chosen pictures (image, video, or a design gradient),
+    up to four palette colours, the note. Other references come from one
+    shared gallery; each board takes the next few (gradients when empty).
+  - Controls: note title, time per board, cycling; Style: note, palette and
+    selection-ring colours.
+  - Rest state, no JS, reduced motion: board one finished — the design.
+- All four design scenes are now editable and animated.
+
 ## 0.7.0
 - Service Panel — **Content calendar scene that plans itself**:
   - Real week (default): the visitor's own ISO week number and today, from

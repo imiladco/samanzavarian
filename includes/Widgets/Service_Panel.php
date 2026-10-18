@@ -29,7 +29,7 @@ class Service_Panel extends Widget_Base {
 	public const SCENES = [ 'ai', 'direction', 'post', 'content' ];
 
 	/** Scenes that have a script (assets/js/scenes/<name>.js). */
-	public const ANIMATED_SCENES = [ 'ai', 'post', 'content' ];
+	public const ANIMATED_SCENES = [ 'ai', 'post', 'content', 'direction' ];
 
 	/** Scenes with controls a visitor can use. */
 	public const INTERACTIVE_SCENES = [ 'post' ];
@@ -195,6 +195,7 @@ class Service_Panel extends Widget_Base {
 		$this->controls_ai();
 		$this->controls_post();
 		$this->controls_content();
+		$this->controls_direction();
 
 		$this->start_controls_section( 'section_info', [ 'label' => esc_html__( 'Card', 'samanzavarian-widgets' ) ] );
 
@@ -294,6 +295,7 @@ class Service_Panel extends Widget_Base {
 		$this->style_ai();
 		$this->style_post();
 		$this->style_content();
+		$this->style_direction();
 		$this->style_card();
 		$this->style_chips();
 		$this->style_button();
@@ -343,14 +345,7 @@ class Service_Panel extends Widget_Base {
 				'label'       => esc_html__( 'Placeholder', 'samanzavarian-widgets' ),
 				'type'        => Controls_Manager::SELECT,
 				'default'     => '1',
-				'options'     => [
-					'1' => esc_html__( 'Peach glow', 'samanzavarian-widgets' ),
-					'2' => esc_html__( 'Night orange', 'samanzavarian-widgets' ),
-					'3' => esc_html__( 'Pearl', 'samanzavarian-widgets' ),
-					'4' => esc_html__( 'Ember', 'samanzavarian-widgets' ),
-					'5' => esc_html__( 'Apricot', 'samanzavarian-widgets' ),
-					'6' => esc_html__( 'Slate', 'samanzavarian-widgets' ),
-				],
+				'options'     => self::mesh_options(),
 				'description' => esc_html__( 'The gradient shown while no image or video is set (the design uses these).', 'samanzavarian-widgets' ),
 			]
 		);
@@ -1073,6 +1068,226 @@ class Service_Panel extends Widget_Base {
 		$css .= 'box-shadow:' . ( $type['line'] ? '0 0 0 1px ' . $type['line'] : 'none' ) . ';';
 
 		return $css;
+	}
+
+	/* -----------------------------------------------------------------
+	 * Scene: Creative direction
+	 * ----------------------------------------------------------------- */
+
+	/** Two boards: the design's, and a second direction to curate next. */
+	private const DIR_BOARDS = [
+		[
+			'mesh_a' => '6', 'mesh_b' => '5', 'mesh_c' => '3',
+			'c1' => '#0D1B2A', 'c2' => '#FF6B2C', 'c3' => '#FFE6DA', 'c4' => '#E7E9EC',
+			'note' => 'Quiet, warm light. Honest materials. One hero object per frame.',
+		],
+		[
+			'mesh_a' => '2', 'mesh_b' => '1', 'mesh_c' => '4',
+			'c1' => '#17293D', 'c2' => '#F1A27F', 'c3' => '#FFD3BF', 'c4' => '#F6F6F7',
+			'note' => 'Night streets, warm practical light. Grain welcome. Faces lit from the side.',
+		],
+	];
+
+	/** @return array<string,string> placeholder gradients, as named in the AI scene */
+	private static function mesh_options(): array {
+		return [
+			'1' => esc_html__( 'Peach glow', 'samanzavarian-widgets' ),
+			'2' => esc_html__( 'Night orange', 'samanzavarian-widgets' ),
+			'3' => esc_html__( 'Pearl', 'samanzavarian-widgets' ),
+			'4' => esc_html__( 'Ember', 'samanzavarian-widgets' ),
+			'5' => esc_html__( 'Apricot', 'samanzavarian-widgets' ),
+			'6' => esc_html__( 'Slate', 'samanzavarian-widgets' ),
+		];
+	}
+
+	private function controls_direction(): void {
+		$this->start_controls_section(
+			'section_direction',
+			[
+				'label'     => esc_html__( 'Creative direction scene', 'samanzavarian-widgets' ),
+				'condition' => [ 'scene' => 'direction' ],
+			]
+		);
+
+		$board = new Repeater();
+
+		foreach ( [ 'a' => esc_html__( 'Chosen image 1 (large, left)', 'samanzavarian-widgets' ), 'b' => esc_html__( 'Chosen image 2 (middle, on top)', 'samanzavarian-widgets' ), 'c' => esc_html__( 'Chosen image 3 (square, right)', 'samanzavarian-widgets' ) ] as $k => $label ) {
+			$board->add_control(
+				'pick_' . $k,
+				[
+					'label'       => $label,
+					'type'        => Controls_Manager::MEDIA,
+					'media_types' => [ 'image', 'video' ],
+					'separator'   => 'a' === $k ? 'none' : 'before',
+				]
+			);
+			$board->add_control(
+				'mesh_' . $k,
+				[
+					'label'   => esc_html__( 'Placeholder', 'samanzavarian-widgets' ),
+					'type'    => Controls_Manager::SELECT,
+					'default' => '1',
+					'options' => self::mesh_options(),
+				]
+			);
+		}
+
+		foreach ( [ 1, 2, 3, 4 ] as $i ) {
+			$board->add_control(
+				'c' . $i,
+				[
+					/* translators: %d: palette colour number */
+					'label'     => sprintf( esc_html__( 'Palette colour %d', 'samanzavarian-widgets' ), $i ),
+					'type'      => Controls_Manager::COLOR,
+					'separator' => 1 === $i ? 'before' : 'none',
+				]
+			);
+		}
+
+		$board->add_control(
+			'note',
+			[
+				'label'     => esc_html__( 'Direction note', 'samanzavarian-widgets' ),
+				'type'      => Controls_Manager::TEXTAREA,
+				'rows'      => 3,
+				'default'   => 'One clear idea, written down.',
+				'separator' => 'before',
+			]
+		);
+
+		$this->add_control(
+			'dir_boards',
+			[
+				'label'       => esc_html__( 'Boards', 'samanzavarian-widgets' ),
+				'type'        => Controls_Manager::REPEATER,
+				'fields'      => $board->get_controls(),
+				'default'     => self::DIR_BOARDS,
+				'title_field' => '{{{ note }}}',
+				'description' => esc_html__( 'Each board: references land, three are chosen and composed, the palette is pulled from them and the note is written. Then the next board.', 'samanzavarian-widgets' ),
+			]
+		);
+
+		// One shared pool rather than a gallery per board: references are
+		// interchangeable, and filling one gallery is quicker than one per board.
+		$this->add_control(
+			'dir_refs',
+			[
+				'label'       => esc_html__( 'Other references', 'samanzavarian-widgets' ),
+				'type'        => Controls_Manager::GALLERY,
+				'description' => esc_html__( 'The ones not chosen: they land on each board and are cleared away. Each board takes the next few (up to five). None → gradient placeholders.', 'samanzavarian-widgets' ),
+				'separator'   => 'before',
+			]
+		);
+
+		$this->add_control( 'dir_title', [ 'label' => esc_html__( 'Note title', 'samanzavarian-widgets' ), 'type' => Controls_Manager::TEXT, 'default' => 'Direction note', 'separator' => 'before' ] );
+
+		$this->add_control(
+			'dir_hold',
+			[
+				'label'       => esc_html__( 'Time per board', 'samanzavarian-widgets' ),
+				'placeholder' => Control_Helpers::ph( 4, 's' ),
+				'type'        => Controls_Manager::SLIDER,
+				'size_units'  => [ 's' ],
+				'range'       => [ 's' => [ 'min' => 1, 'max' => 20, 'step' => 0.5 ] ],
+				'description' => esc_html__( 'How long a finished board stays before the next.', 'samanzavarian-widgets' ),
+			]
+		);
+
+		$this->add_control(
+			'dir_cycle',
+			[
+				'label'        => esc_html__( 'Keep cycling boards', 'samanzavarian-widgets' ),
+				'type'         => Controls_Manager::SWITCHER,
+				'default'      => 'yes',
+				'return_value' => 'yes',
+				'description'  => esc_html__( 'With a single board it plays each time the panel comes into view.', 'samanzavarian-widgets' ),
+			]
+		);
+
+		$this->end_controls_section();
+	}
+
+	private function style_direction(): void {
+		$this->start_controls_section(
+			'style_direction',
+			[
+				'label'     => esc_html__( 'Creative direction scene', 'samanzavarian-widgets' ),
+				'tab'       => Controls_Manager::TAB_STYLE,
+				'condition' => [ 'scene' => 'direction' ],
+			]
+		);
+
+		foreach ( [
+			'dir_note_bg'    => [ esc_html__( 'Note', 'samanzavarian-widgets' ), '.szs-note', 'background-color' ],
+			'dir_note_fg'    => [ esc_html__( 'Note text', 'samanzavarian-widgets' ), '.szs-note', 'color' ],
+			'dir_note_title' => [ esc_html__( 'Note title', 'samanzavarian-widgets' ), '.szs-note b', 'color' ],
+			'dir_swatch_bg'  => [ esc_html__( 'Palette', 'samanzavarian-widgets' ), '.szs-swatch', 'background-color' ],
+			'dir_ring'       => [ esc_html__( 'Selection ring', 'samanzavarian-widgets' ), '.szs--direction', '--szs-ring' ],
+		] as $id => $def ) {
+			$this->add_control(
+				$id,
+				[
+					'label'     => $def[0],
+					'type'      => Controls_Manager::COLOR,
+					'selectors' => [ '{{WRAPPER}} ' . $def[1] => $def[2] . ': {{VALUE}};' ],
+				]
+			);
+		}
+
+		$this->end_controls_section();
+	}
+
+	/**
+	 * Boards, cleaned and ready to print or hand to the script.
+	 *
+	 * @param array<string,mixed> $s
+	 * @return array<int,array{picks:array<int,array{mesh:string,html:string}>,refs:array<int,array{mesh:string,html:string}>,palette:string[],note:string}>
+	 */
+	public static function dir_boards( array $s ): array {
+		$raw  = isset( $s['dir_boards'] ) && is_array( $s['dir_boards'] ) && $s['dir_boards'] ? $s['dir_boards'] : self::DIR_BOARDS;
+		$pool = isset( $s['dir_refs'] ) && is_array( $s['dir_refs'] ) ? array_values( array_filter( $s['dir_refs'], static fn( $i ) => ! empty( $i['url'] ) ) ) : [];
+		$out  = [];
+
+		foreach ( array_values( $raw ) as $b => $board ) {
+			$mesh  = static fn( $v, $fallback ) => in_array( (string) $v, [ '1', '2', '3', '4', '5', '6' ], true ) ? (string) $v : $fallback;
+			$picks = [];
+			foreach ( [ 'a' => '6', 'b' => '5', 'c' => '3' ] as $k => $fallback ) {
+				$picks[] = [
+					'mesh' => $mesh( $board[ 'mesh_' . $k ] ?? '', $fallback ),
+					'html' => self::media_html( $board[ 'pick_' . $k ] ?? [], 'szs-mood__media' ),
+				];
+			}
+
+			// each board takes the next five of the shared pool, wrapping
+			$refs = [];
+			$take = min( 5, count( $pool ) );
+			for ( $i = 0; $i < $take; $i++ ) {
+				$refs[] = [ 'mesh' => '3', 'html' => self::media_html( $pool[ ( $b * $take + $i ) % count( $pool ) ], 'szs-mood__media' ) ];
+			}
+			if ( ! $refs ) {
+				// placeholders that differ from the picks
+				foreach ( array_slice( array_values( array_diff( [ '1', '2', '4', '5', '6', '3' ], array_column( $picks, 'mesh' ) ) ), 0, 4 ) as $m ) {
+					$refs[] = [ 'mesh' => $m, 'html' => '' ];
+				}
+			}
+
+			$palette = [];
+			foreach ( [ 1, 2, 3, 4 ] as $i ) {
+				$c = self::css_color( (string) ( $board[ 'c' . $i ] ?? '' ) );
+				if ( '' !== $c ) {
+					$palette[] = $c;
+				}
+			}
+
+			$out[] = [
+				'picks'   => $picks,
+				'refs'    => $refs,
+				'palette' => $palette,
+				'note'    => trim( (string) ( $board['note'] ?? '' ) ),
+			];
+		}
+
+		return $out;
 	}
 
 	private function style_panel(): void {
