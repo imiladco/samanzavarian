@@ -222,7 +222,7 @@ class Service_Tabs extends Widget_Nested_Base {
 				'label'       => esc_html__( 'Link ID', 'samanzavarian-widgets' ),
 				'type'        => Controls_Manager::TEXT,
 				'placeholder' => 'ai-visuals',
-				'description' => esc_html__( 'Optional. A link to #this-id anywhere on the site opens this tab and scrolls to it.', 'samanzavarian-widgets' ),
+				'description' => esc_html__( 'A link to #this-id anywhere on the site opens this tab and scrolls to it. Empty: made from the title (AI visual production → #ai-visual-production).', 'samanzavarian-widgets' ),
 				'ai'          => [ 'active' => false ],
 			]
 		);
@@ -346,6 +346,18 @@ class Service_Tabs extends Widget_Nested_Base {
 				'default'      => '',
 				'return_value' => 'yes',
 				'description'  => esc_html__( 'Only for tabs with a Link ID. Lets visitors share or bookmark a tab.', 'samanzavarian-widgets' ),
+			]
+		);
+
+		$this->add_control(
+			'analytics',
+			[
+				'label'        => esc_html__( 'Report to analytics', 'samanzavarian-widgets' ),
+				'type'         => Controls_Manager::SWITCHER,
+				'default'      => 'yes',
+				'return_value' => 'yes',
+				'separator'    => 'before',
+				'description'  => esc_html__( 'Sends sz_services_view (the list was seen) and sz_service_tab (a service was opened, with its name) to Google Tag Manager\'s dataLayer, or to GA4 directly when it is installed without GTM. Does nothing if neither is on the site.', 'samanzavarian-widgets' ),
 			]
 		);
 
@@ -815,6 +827,7 @@ class Service_Tabs extends Widget_Nested_Base {
 				'class'         => [ 'sz-tabs', 'sz-w', 'yes' === ( $settings['equal_height'] ?? 'yes' ) ? 'sz-tabs--equal' : 'sz-tabs--auto' ],
 				'data-sz-tabs'  => '',
 				'data-sz-hash'  => 'yes' === ( $settings['update_url'] ?? '' ) ? '1' : '0',
+				'data-sz-track' => 'yes' === ( $settings['analytics'] ?? 'yes' ) ? '1' : '0',
 			]
 		);
 
@@ -826,7 +839,7 @@ class Service_Tabs extends Widget_Nested_Base {
 					<span class="sz-tabs__hl" aria-hidden="true"></span>
 					<?php
 					foreach ( $tabs as $index => $tab ) {
-						$ids = self::ids( $uid, $index, $tab['tab_anchor'] ?? '' );
+						$ids = self::ids( $uid, $index, $tab['tab_anchor'] ?? '', (string) ( $tab['tab_title'] ?? '' ) );
 
 						$this->panels[ $index ] = [
 							'id'     => $ids['panel'],
@@ -939,19 +952,37 @@ class Service_Tabs extends Widget_Nested_Base {
 		return $n >= 1 && $n <= $count ? $n - 1 : 0;
 	}
 
+	/** Tab ids already printed on this page, so two tabs never share one. */
+	private static array $used_ids = [];
+
 	/**
-	 * The id pair for a tab. A Link ID, when set, becomes the tab button's
-	 * id — so a plain #link to it both scrolls there natively and is picked
-	 * up by the script to open the tab.
+	 * The id pair for a tab. The Link ID — or, when empty, a slug of the
+	 * title — becomes the tab button's id, so a plain #link to it both
+	 * scrolls there natively and is picked up by the script to open the tab.
+	 * Titles that make no usable slug (e.g. non-Latin) fall back to a
+	 * generated id; repeats on the page get -2, -3…
 	 *
 	 * @return array{tab:string,panel:string}
 	 */
-	public static function ids( string $uid, int $index, $anchor ): array {
-		$anchor = sanitize_html_class( (string) $anchor );
-		$n      = $index + 1;
+	public static function ids( string $uid, int $index, $anchor, string $title = '' ): array {
+		$n    = $index + 1;
+		$slug = sanitize_html_class( (string) $anchor );
+
+		if ( '' === $slug && '' !== $title ) {
+			$slug = sanitize_html_class( sanitize_title( $title ) );
+		}
+		if ( '' === $slug || is_numeric( $slug[0] ) ) {
+			$slug = 'sz-tab-' . $uid . '-' . $n;
+		}
+
+		$id = $slug;
+		for ( $k = 2; isset( self::$used_ids[ $id ] ) && self::$used_ids[ $id ] !== $uid . '-' . $n; $k++ ) {
+			$id = $slug . '-' . $k;
+		}
+		self::$used_ids[ $id ] = $uid . '-' . $n;
 
 		return [
-			'tab'   => '' !== $anchor ? $anchor : 'sz-tab-' . $uid . '-' . $n,
+			'tab'   => $id,
 			'panel' => 'sz-panel-' . $uid . '-' . $n,
 		];
 	}
@@ -971,12 +1002,12 @@ class Service_Tabs extends Widget_Nested_Base {
 			active = activeSetting >= 1 && activeSetting <= count ? activeSetting - 1 : 0;
 		#>
 		<# if ( count ) { #>
-		<div class="sz-tabs sz-w {{ 'yes' === settings.equal_height ? 'sz-tabs--equal' : 'sz-tabs--auto' }}" data-sz-tabs data-sz-hash="0">
+		<div class="sz-tabs sz-w {{ 'yes' === settings.equal_height ? 'sz-tabs--equal' : 'sz-tabs--auto' }}" data-sz-tabs data-sz-hash="0" data-sz-track="0">
 			<div class="sz-tabs__nav">
 				<div class="sz-tabs__list" role="tablist" aria-orientation="vertical" aria-label="{{ settings.list_label }}">
 					<span class="sz-tabs__hl" aria-hidden="true"></span>
 					<# _.each( tabs, function( tab, index ) {
-						const ids = window.szwTabIds( uid, index, tab.tab_anchor ),
+						const ids = window.szwTabIds( uid, index, tab.tab_anchor, tab.tab_title ),
 							on = index === active,
 							style = [ 'orange', 'white' ].includes( tab.tab_icon_style ) ? ' sz-app--' + tab.tab_icon_style : '',
 							icon = window.szwIcon( view, tab.tab_icon );

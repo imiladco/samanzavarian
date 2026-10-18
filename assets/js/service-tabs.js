@@ -19,6 +19,22 @@
 ( function () {
 	'use strict';
 
+	/**
+	 * Analytics: to Google Tag Manager's dataLayer when GTM is on the page,
+	 * else to GA4's gtag() when that is installed directly, else nowhere.
+	 * Never both, so nothing is counted twice. Parameters use GA4's
+	 * snake_case so they map to custom dimensions as they are.
+	 */
+	window.szwTrack = window.szwTrack || function ( event, params ) {
+		try {
+			if ( window.google_tag_manager || ( Array.isArray( window.dataLayer ) && typeof window.gtag !== 'function' ) ) {
+				window.dataLayer.push( Object.assign( { event }, params ) );
+			} else if ( typeof window.gtag === 'function' ) {
+				window.gtag( 'event', event, params );
+			}
+		} catch ( e ) {}
+	};
+
 	const TABS = '.sz-tabs__tab';
 	const instances = new WeakMap();
 
@@ -29,6 +45,7 @@
 			this.hl = root.querySelector( '.sz-tabs__hl' );
 			this.stage = root.querySelector( '.sz-tabs__stage' );
 			this.writeHash = root.dataset.szHash === '1';
+			this.track = root.dataset.szTrack === '1';
 
 			this.onClick = this.onClick.bind( this );
 			this.onKey = this.onKey.bind( this );
@@ -37,8 +54,20 @@
 
 			this.list.addEventListener( 'click', this.onClick );
 			this.list.addEventListener( 'keydown', this.onKey );
+			this.list.addEventListener( 'scroll', () => this.edges(), { passive: true } );
 			root.addEventListener( 'sz:select', ( e ) => this.select( +e.detail ) );
 			window.addEventListener( 'hashchange', this.onHash );
+
+			// One "seen" per widget per page, when half of it is on screen.
+			if ( this.track && 'IntersectionObserver' in window ) {
+				this.seen = new IntersectionObserver( ( entries ) => {
+					if ( entries.some( ( e ) => e.isIntersecting ) ) {
+						this.seen.disconnect();
+						window.szwTrack( 'sz_services_view', { tab_count: this.tabs().length, open_service: this.title( this.current() ) } );
+					}
+				}, { threshold: 0.5 } );
+				this.seen.observe( root );
+			}
 
 			if ( 'ResizeObserver' in window ) {
 				this.ro = new ResizeObserver( this.place );
@@ -65,6 +94,12 @@
 
 		panels() {
 			return this.stage ? Array.from( this.stage.children ).filter( ( el ) => ! el.classList.contains( 'elementor-empty-view' ) ) : [];
+		}
+
+		title( i ) {
+			const t = this.tabs()[ i ];
+			const el = t && t.querySelector( '.sz-tabs__title' );
+			return el ? el.textContent.trim() : '';
 		}
 
 		current() {
@@ -106,6 +141,10 @@
 
 			if ( changed && opts.user && this.writeHash && tab.id && ! tab.id.startsWith( 'sz-tab-' ) && history.replaceState ) {
 				history.replaceState( null, '', '#' + tab.id );
+			}
+
+			if ( changed && opts.user && this.track ) {
+				window.szwTrack( 'sz_service_tab', { service_name: this.title( index ), tab_id: tab.id, position: index + 1 } );
 			}
 
 			if ( changed ) {
@@ -151,6 +190,16 @@
 			s.setProperty( '--szt-hl-y', tab.offsetTop + 'px' );
 			s.setProperty( '--szt-hl-w', tab.offsetWidth + 'px' );
 			s.setProperty( '--szt-hl-h', tab.offsetHeight + 'px' );
+			this.edges();
+		}
+
+		/** A row that scrolls fades at the edge with more tabs behind it. */
+		edges() {
+			const l = this.list;
+			const max = l.scrollWidth - l.clientWidth;
+			const at = Math.abs( l.scrollLeft ); // negative in right-to-left
+			l.classList.toggle( 'can-scroll-start', max > 2 && at > 2 );
+			l.classList.toggle( 'can-scroll-end', max > 2 && at < max - 2 );
 		}
 
 		onClick( e ) {
@@ -216,6 +265,9 @@
 			window.removeEventListener( 'resize', this.place );
 			if ( this.ro ) {
 				this.ro.disconnect();
+			}
+			if ( this.seen ) {
+				this.seen.disconnect();
 			}
 		}
 	}

@@ -5,10 +5,10 @@
  * in "real week" mode the calendar shows the visitor's own ISO week number
  * and highlights today, from their device's clock.
  *
- * While live: the week empties, its posts land day by day, "This week is
- * planned · N posts scheduled" comes in, and after a while the page is
- * lifted and turned like a desk calendar to the next week, which fills from
- * the next plan. Weeks count on (wrapping after week 52/53); only the first
+ * While live: the week empties, its posts land day by day and "This week
+ * is planned · N posts scheduled" comes in. "Play once" rests there; "Keep
+ * playing" then lifts and turns the page like a desk calendar to the next
+ * week, which fills from the next plan. Weeks count on (wrapping after week 52/53); only the first
  * page — the current week — has a "today".
  *
  * Paused, it shows the current page finished, as the server prints it.
@@ -28,7 +28,7 @@
 		return Math.ceil( ( ( d - jan1 ) / DAY + 1 ) / 7 );
 	}
 
-	function create( scene ) {
+	function create( scene, api ) {
 		const week = scene.querySelector( '[data-szs-content]' );
 		const noop = { play() {}, pause() {} };
 
@@ -165,6 +165,12 @@
 					return;
 				}
 				announce( current );
+			}
+
+			// "Play once": this week is planned, and that is the story.
+			if ( 'loop' !== api.mode ) {
+				api.done();
+				return;
 			}
 
 			for ( ;; ) {

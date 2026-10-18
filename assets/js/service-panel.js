@@ -1,118 +1,194 @@
 /**
  * Service Panel runtime — decides when things move.
  *
- * A panel is "live" while it is on screen, in an open tab (or not in tabs at
- * all), the page is in the foreground and the visitor has not asked for
- * reduced motion. Only then:
- *   • its videos play (data-sz-autoplay; never the autoplay attribute), and
- *   • its scene plays (each scene script registers a controller here).
- * Everything else is paused, so four tabs of scenes and video cost what one
- * visible tab costs.
+ * Per panel there is at most one scene and any number of videos (the
+ * scene's frames, or the panel's own image-or-video). They move only while:
+ *   • the panel is on screen, in an open tab (or not in tabs), page visible;
+ *   • the visitor has not asked for reduced motion;
+ *   • nobody pressed pause. The visitor's pause is one choice for every
+ *     panel and is remembered across pages (WCAG 2.2.2: a way to stop
+ *     motion that lasts longer than five seconds).
+ * A scene also follows the widget's Animation setting: "Still" never plays,
+ * "Play once" plays its story the first time and then rests (done).
+ * The pause button shows only while something actually moves.
+ *
+ * In the Elementor editor panels start paused — editing next to moving
+ * pictures is distracting — and the same button previews one panel.
  *
  * Scene contract:
- *   window.szwScenes.register( 'ai', ( root ) => ( { play(), pause() } ) )
- * root is the scene's .szs element. play() and pause() may be called any
- * number of times; with reduced motion play() is never called, and the
- * server markup — the design's finished state — is what shows. A factory
- * may also wire up controls the visitor uses by hand; those work always.
+ *   window.szwScenes.register( name, ( root, api ) => ( { play(), pause() } ) )
+ *   api.mode      'once' | 'loop' | 'static'
+ *   api.done()    a "once" story has finished; the scene rests from now on
+ *   api.refresh() re-evaluate (e.g. after putting other videos on show)
+ * play()/pause() may be called any number of times; pause() must leave the
+ * scene in a finished state. Hand controls a factory wires up always work.
  */
 ( function () {
 	'use strict';
 
+	/**
+	 * Analytics: to Google Tag Manager's dataLayer when GTM is on the page,
+	 * else to GA4's gtag() when that is installed directly, else nowhere.
+	 * Never both, so nothing is counted twice. Parameters use GA4's
+	 * snake_case so they map to custom dimensions as they are.
+	 */
+	window.szwTrack = window.szwTrack || function ( event, params ) {
+		try {
+			if ( window.google_tag_manager || ( Array.isArray( window.dataLayer ) && typeof window.gtag !== 'function' ) ) {
+				window.dataLayer.push( Object.assign( { event }, params ) );
+			} else if ( typeof window.gtag === 'function' ) {
+				window.gtag( 'event', event, params );
+			}
+		} catch ( e ) {}
+	};
+
+	// A service's button was clicked (only buttons with analytics on carry data-sz-track).
+	document.addEventListener( 'click', ( e ) => {
+		const btn = e.target.closest && e.target.closest( '.sz-svc__btn[data-sz-track]' );
+		if ( btn ) {
+			window.szwTrack( 'sz_service_cta', { service_name: btn.dataset.szTrack, link_url: btn.getAttribute( 'href' ) || '' } );
+		}
+	} );
+
+	const PREF = 'szwMotionPaused';
 	const reduce = window.matchMedia( '(prefers-reduced-motion: reduce)' );
 	const onScreen = new WeakMap();
-	const controllers = new WeakMap();
+	const panels = new Map(); // .sz-svc -> state
 	const factories = {};
-	const tracked = new Set();
+
+	const inEditor = () => document.body.classList.contains( 'elementor-editor-active' );
+
+	let userPaused = false;
+	try {
+		userPaused = window.localStorage.getItem( PREF ) === '1';
+	} catch ( e ) {}
 
 	const io = 'IntersectionObserver' in window
-		? new IntersectionObserver( ( entries ) => entries.forEach( ( e ) => {
-			onScreen.set( e.target, e.isIntersecting );
-			update( e.target );
-		} ), { threshold: 0.15 } )
+		? new IntersectionObserver( ( entries ) => {
+			entries.forEach( ( e ) => onScreen.set( e.target, e.isIntersecting ) );
+			refresh();
+		}, { threshold: 0.15 } )
 		: null;
 
-	/** On screen, in an open tab, not in a hidden round, page visible. */
-	function live( el ) {
-		const panel = el.closest( '.sz-tabs__panel' );
-		return ( ! panel || panel.classList.contains( 'is-active' ) )
-			&& ! el.closest( '.szs-off' )
-			&& ( io ? onScreen.get( el ) === true : true )
-			&& document.visibilityState === 'visible'
-			&& ! reduce.matches;
+	const paused = ( state ) => ( inEditor() ? ! state.preview : userPaused );
+
+	function visible( svc ) {
+		const tab = svc.closest( '.sz-tabs__panel' );
+		return ( ! tab || tab.classList.contains( 'is-active' ) )
+			&& ( io ? onScreen.get( svc ) === true : true )
+			&& document.visibilityState === 'visible';
 	}
 
-	function update( el ) {
-		if ( el.tagName === 'VIDEO' ) {
-			if ( live( el ) ) {
-				const p = el.play();
+	const shownVideos = ( svc ) => Array.from( svc.querySelectorAll( 'video[data-sz-autoplay]' ) ).filter( ( v ) => ! v.closest( '.szs-off' ) );
+
+	function update( svc, state ) {
+		const free = visible( svc ) && ! reduce.matches && ! paused( state );
+		const sceneOn = !! state.ctrl && 'static' !== state.mode && ! state.done;
+
+		if ( state.ctrl ) {
+			state.root.classList.toggle( 'is-paused', paused( state ) && sceneOn );
+			state.root.classList.toggle( 'is-settled', state.done );
+			if ( sceneOn && free ) {
+				state.ctrl.play();
+			} else {
+				state.ctrl.pause();
+			}
+		}
+
+		const vids = Array.from( svc.querySelectorAll( 'video[data-sz-autoplay]' ) );
+		const shown = shownVideos( svc );
+		vids.forEach( ( v ) => {
+			v.muted = true; // required for autoplay everywhere; set as a property too
+			if ( free && shown.includes( v ) ) {
+				if ( 'none' === v.preload ) {
+					v.preload = 'auto'; // fetched only once it is actually shown
+				}
+				const p = v.play();
 				if ( p && p.catch ) {
 					p.catch( () => {} );
 				}
-			} else if ( ! el.paused ) {
-				el.pause();
+			} else if ( ! v.paused ) {
+				v.pause();
 			}
-			return;
-		}
+		} );
 
-		const ctrl = controllers.get( el );
-		if ( ctrl ) {
-			if ( live( el ) ) {
-				ctrl.play();
-			} else {
-				ctrl.pause();
-			}
+		if ( state.button ) {
+			const moving = ( sceneOn || shown.length > 0 ) && ! reduce.matches;
+			state.button.hidden = ! moving;
+			state.button.setAttribute( 'aria-pressed', paused( state ) ? 'true' : 'false' );
+			state.button.setAttribute( 'aria-label', paused( state ) ? state.button.dataset.labelPlay : state.button.dataset.labelPause );
+			state.button.classList.toggle( 'is-paused', paused( state ) );
 		}
 	}
 
-	function track( el ) {
-		if ( tracked.has( el ) ) {
-			return;
-		}
-		tracked.add( el );
-		if ( io ) {
-			io.observe( el );
-		}
-		update( el );
+	/** Re-evaluate every panel (tab switched, round changed, page shown, pause pressed…). */
+	function refresh() {
+		panels.forEach( ( state, svc ) => {
+			if ( ! svc.isConnected ) {
+				if ( state.ctrl ) {
+					state.ctrl.pause();
+				}
+				panels.delete( svc );
+				if ( io ) {
+					io.unobserve( svc );
+				}
+				return;
+			}
+			update( svc, state );
+		} );
 	}
 
 	function scan( scope ) {
-		const root = scope || document;
-
-		root.querySelectorAll( '.sz-svc video[data-sz-autoplay]' ).forEach( ( v ) => {
-			v.muted = true; // required for autoplay everywhere; set as a property too
-			track( v );
-		} );
-
-		root.querySelectorAll( '.sz-svc .szs[data-szs]' ).forEach( ( el ) => {
-			const factory = factories[ el.dataset.szs ];
-			// Created even with reduced motion (a scene may have controls the
-			// visitor uses by hand); live() keeps play() from ever being called.
-			if ( ! factory || controllers.has( el ) ) {
-				return;
-			}
-			controllers.set( el, factory( el, { refresh } ) );
-			track( el );
-		} );
-	}
-
-	/** Re-evaluate everything (tab switched, round changed, page shown…). */
-	function refresh() {
-		tracked.forEach( ( el ) => {
-			if ( ! el.isConnected ) {
-				tracked.delete( el );
+		( scope || document ).querySelectorAll( '.sz-svc' ).forEach( ( svc ) => {
+			let state = panels.get( svc );
+			if ( ! state ) {
+				const root = svc.querySelector( '.szs[data-szs]' );
+				state = {
+					root,
+					mode: root ? root.dataset.szsMotion || 'once' : 'loop',
+					button: svc.querySelector( ':scope > .sz-svc__motion' ),
+					ctrl: null,
+					done: false,
+					preview: false,
+				};
+				panels.set( svc, state );
 				if ( io ) {
-					io.unobserve( el );
+					io.observe( svc );
 				}
-				const ctrl = controllers.get( el );
-				if ( ctrl ) {
-					ctrl.pause();
-				}
-				return;
 			}
-			update( el );
+			// The scene's script may register after the panel is first seen.
+			if ( state.root && ! state.ctrl && factories[ state.root.dataset.szs ] ) {
+				state.ctrl = factories[ state.root.dataset.szs ]( state.root, {
+					mode: state.mode,
+					refresh,
+					done() {
+						state.done = true;
+						refresh();
+					},
+				} );
+			}
 		} );
+
+		refresh();
 	}
+
+	// The pause / play button (one handler for every panel).
+	document.addEventListener( 'click', ( e ) => {
+		const btn = e.target.closest && e.target.closest( '.sz-svc__motion' );
+		const state = btn && panels.get( btn.parentElement );
+		if ( ! state ) {
+			return;
+		}
+		if ( inEditor() ) {
+			state.preview = ! state.preview; // preview this one panel
+		} else {
+			userPaused = ! userPaused; // the visitor's choice, for all of them
+			try {
+				window.localStorage.setItem( PREF, userPaused ? '1' : '0' );
+			} catch ( err ) {}
+		}
+		refresh();
+	} );
 
 	window.szwScenes = {
 		register( name, factory ) {

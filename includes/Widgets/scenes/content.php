@@ -45,4 +45,5 @@ $szs_config = [
 			<div class="szs-day<?php echo $d + 1 === $szs_plan['today'] ? ' is-today' : ''; ?>"><span class="szs-day__name"><?php echo esc_html( $szs_name ); ?></span><?php foreach ( $szs_week[ $d ] as $szs_post ) : ?><?php $szs_type = is_int( $szs_post ) ? $szs_plan['types'][ $szs_post ] : [ 'name' => $szs_post['name'], 'bg' => '', 'fg' => '', 'line' => '' ]; ?><em class="szs-post" style="<?php echo esc_attr( Service_Panel::content_post_style( $szs_type ) ); ?>"><?php echo esc_html( $szs_type['name'] ); ?></em><?php endforeach; ?></div>
 		<?php endforeach; ?>
 	</div>
+	<div class="szs-week__legend" aria-hidden="true"><?php foreach ( $szs_plan['types'] as $szs_t ) : ?><span><i style="<?php echo esc_attr( Service_Panel::content_post_style( $szs_t ) ); ?>"></i><?php echo esc_html( $szs_t['name'] ); ?></span><?php endforeach; ?></div>
 </div>

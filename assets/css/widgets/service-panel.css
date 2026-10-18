@@ -107,6 +107,35 @@
 .sz-svc .sz-svc__btn:active{transform:scale(.96)}
 .sz-svc .sz-svc__btn:focus-visible{outline:2px solid var(--sz-orange);outline-offset:3px}
 
+/* ---------- pause / play (shown by the script only while something moves) ---------- */
+.sz-svc .sz-svc__motion{
+  position:absolute;top:10px;inset-inline-end:10px;z-index:8;
+  display:grid;place-items:center;
+  width:30px;height:30px;min-height:0;margin:0;padding:0;
+  border:0;border-radius:50%;
+  background-color:rgba(255,255,255,.72);
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  box-shadow:var(--sz-s1);
+  color:var(--sz-navy);
+  font:inherit;line-height:1;text-transform:none;
+  cursor:pointer;opacity:.7;
+  transition:opacity .2s,transform .2s var(--sz-spring);
+}
+.sz-svc .sz-svc__motion[hidden]{display:none}
+.sz-svc .sz-svc__motion:is(:hover,:focus,:active){background-color:rgba(255,255,255,.72);color:var(--sz-navy);box-shadow:var(--sz-s1)}
+.sz-svc .sz-svc__motion:is(:hover,:focus-visible){opacity:1}
+.sz-svc .sz-svc__motion:active{transform:scale(.92)}
+.sz-svc .sz-svc__motion:focus{outline:none}
+.sz-svc .sz-svc__motion:focus-visible{outline:2px solid var(--sz-orange);outline-offset:2px}
+.sz-svc .sz-svc__motion svg{display:block;width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.sz-svc .sz-svc__motion .sz-svc__motion-play{display:none;fill:currentColor;stroke:none}
+.sz-svc .sz-svc__motion.is-paused .sz-svc__motion-pause{display:none}
+.sz-svc .sz-svc__motion.is-paused .sz-svc__motion-play{display:inline}
+
+/* editor only: notes about input the widget had to work around */
+.sz-svc .sz-svc__editor-note{position:absolute;top:10px;inset-inline-start:10px;z-index:9;display:grid;gap:4px;max-width:min(360px,70%);padding:10px 12px;border-radius:12px;background:#FFF6D9;box-shadow:var(--sz-s2);font-family:var(--sz-font);font-size:12px;line-height:1.4;color:#5B4A1B}
+.sz-svc .sz-svc__editor-note b{font-weight:600;color:#8A7330}
+
 /* =====================================================================
    Scenes
    ===================================================================== */
@@ -162,7 +191,7 @@
 .sz-svc .szs .szs-twk--2{animation-delay:1.3s}
 @keyframes szs-twinkle{0%,100%{opacity:0;transform:scale(.4) rotate(0)}45%,55%{opacity:1;transform:scale(1) rotate(20deg)}}
 .szs .szs-gen__frame.is-picked{overflow:hidden}
-.szs .szs-gen__frame.is-picked::before{content:"";position:absolute;inset:-20% auto -20% -60%;width:45%;z-index:2;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-12deg);pointer-events:none}
+.szs .szs-gen__frame.is-picked::before{content:"";position:absolute;inset:-20% auto -20% 0;width:45%;z-index:2;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:translateX(-133%) skewX(-12deg);pointer-events:none}
 .sz-svc .szs .szs-gen__frame.is-picked::before{animation:szs-sweep 3.6s ease-in-out 1s infinite}
 
 /* ---------- AI: the generation states (driven by assets/js/scenes/ai.js) ---------- */
@@ -188,9 +217,20 @@
 
 .szs .szs-picked.is-pop{animation:szs-pop .55s var(--sz-spring)}
 @keyframes szs-pop{0%{transform:rotate(var(--ar)) scale(.82);opacity:.2}60%{transform:rotate(var(--ar)) scale(1.05);opacity:1}100%{transform:rotate(var(--ar)) scale(1)}}
-@keyframes szs-sweep{0%{left:-60%}35%,100%{left:130%}}
-/* nothing loops inside a closed tab */
-.sz-tabs__panel:not(.is-active) .szs *{animation-play-state:paused}
+/* by transform (the design moved `left`, re-laying out every frame); 45% wide, so -133% ≈ -60% and 289% ≈ 130% of the frame */
+@keyframes szs-sweep{0%{transform:translateX(-133%) skewX(-12deg)}35%,100%{transform:translateX(289%) skewX(-12deg)}}
+/* Decorative loops (twinkles, the sweep) stop: in a closed tab, when the
+   visitor paused, once a "play once" scene has settled, and in "Still".
+   Pseudo-elements listed too — `*` alone does not reach ::before/::after. */
+.sz-tabs__panel:not(.is-active) .szs *,
+.sz-tabs__panel:not(.is-active) .szs *::before,
+.sz-tabs__panel:not(.is-active) .szs *::after,
+.szs.is-paused *,.szs.is-paused *::before,.szs.is-paused *::after{animation-play-state:paused}
+/* named one by one: each must outrank the rule that starts the loop */
+.sz-svc .szs.is-settled .szs-twk,
+.sz-svc .szs.is-settled .szs-gen__frame.is-picked::before,
+.sz-svc .szs[data-szs-motion="static"] .szs-twk,
+.sz-svc .szs[data-szs-motion="static"] .szs-gen__frame.is-picked::before{animation:none}
 
 /* ---------- Direction: palette, references and a note ---------- */
 .szs .szs-mood{position:absolute;overflow:hidden;border-radius:20px;box-shadow:var(--sz-s3)}
@@ -206,7 +246,7 @@
 /* ---------- Direction: curating a board (assets/js/scenes/direction.js) ---------- */
 .szs--direction{--szs-ring:var(--sz-orange)}
 /* every reference — chosen or not — glides between the pile and the composition */
-.szs .szs-mood,.szs .szs-ref{transition:left .9s var(--sz-spring),top .9s var(--sz-spring),width .9s var(--sz-spring),transform .9s var(--sz-spring),opacity .5s var(--sz-ease),box-shadow .35s var(--sz-ease),filter .5s var(--sz-ease)}
+.szs .szs-mood,.szs .szs-ref{transition:transform .9s var(--sz-spring),opacity .5s var(--sz-ease),box-shadow .35s var(--sz-ease),filter .5s var(--sz-ease)}
 .szs .szs-ref{position:absolute;z-index:1;overflow:hidden;aspect-ratio:4/5;border-radius:16px;box-shadow:var(--sz-s3);transform:rotate(var(--ar,0deg))}
 .szs .szs-mood.is-landing,.szs .szs-ref.is-landing{opacity:0;transform:translateY(-40px) rotate(var(--ar,0deg)) scale(1.08)}
 .szs .szs-mood.is-chosen{box-shadow:0 0 0 3px #fff,0 0 0 5px var(--szs-ring),var(--sz-s3)}
@@ -233,11 +273,18 @@
    (its centre at --p of the width — a native thumb would sit up to 11px off) */
 .szs .szs-grade__track{position:relative;height:6px;margin:12px 0 14px;border-radius:9px;background:linear-gradient(90deg,#8FB3E0,#E9ECEF 50%,#FFB07F);cursor:pointer;touch-action:none}
 .szs .szs-grade__track::before{content:"";position:absolute;inset:-12px -6px}
-.szs .szs-grade__knob{position:absolute;top:50%;left:calc(var(--p) * 100%);width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(13,27,42,.25),0 0 0 .5px rgba(13,27,42,.08);transition:transform .25s var(--sz-spring),box-shadow .25s;pointer-events:none}
-.szs .szs-grade__track.is-held .szs-grade__knob{transform:scale(1.14);box-shadow:0 4px 14px rgba(13,27,42,.3),0 0 0 .5px rgba(13,27,42,.08)}
+.szs .szs-grade__knob{position:absolute;top:50%;left:calc(var(--p) * 100%);width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(13,27,42,.25),0 0 0 .5px rgba(13,27,42,.08);transition:scale .25s var(--sz-spring),box-shadow .25s;pointer-events:none}
+.szs .szs-grade__track.is-held .szs-grade__knob{scale:1.14;box-shadow:0 4px 14px rgba(13,27,42,.3),0 0 0 .5px rgba(13,27,42,.08)}
 /* the real control: invisible, but there for keyboards and screen readers */
 .szs .szs-grade__input{position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;opacity:0;pointer-events:none;appearance:none;-webkit-appearance:none;background:none}
 .szs .szs-grade__input:focus-visible + .szs-grade__knob{outline:2px solid var(--sz-orange);outline-offset:2px}
+/* "you can move this": a grab cursor, and two pulses the first time the scene plays */
+.szs .szs-grade__track{cursor:grab}
+.szs .szs-grade__track.is-held{cursor:grabbing}
+.szs .szs-grade__knob::after{content:"";position:absolute;inset:-6px;border:2px solid var(--sz-orange);border-radius:50%;opacity:0;pointer-events:none}
+.szs .szs-grade.is-hint .szs-grade__knob::after{animation:szs-hint 1.2s var(--sz-ease) 2}
+.szs .szs-grade.is-hint .szs-grade__track:nth-of-type(n+3) .szs-grade__knob::after{animation-delay:.3s}
+@keyframes szs-hint{0%{opacity:.75;transform:scale(.7)}100%{opacity:0;transform:scale(1.55)}}
 
 /* the grade, applied to what it grades (set by the script; none at rest) */
 .szs .szs-tl__row i,.szs .szs-shot__media{filter:var(--szs-grade,none);transition:filter .25s var(--sz-ease)}
@@ -254,10 +301,9 @@
 .szs .szs-pill__text{font-variant-numeric:tabular-nums}
 
 /* ---------- Post: the running timeline (driven by assets/js/scenes/post.js) ---------- */
-/* while running, the playhead travels the part of the clip area you can see:
-   inside the 16px padding, and short of the 30px the card hangs past the panel */
-.szs .szs-tl.is-playing .szs-tl__head{left:calc(16px + var(--h,0) * (100% - 62px))}
-.szs .szs-tl.is-rewinding .szs-tl__head{transition:left .6s var(--sz-ease)}
+/* the playhead keeps its place in the layout; the script moves it with
+   `translate` (left would re-lay out every frame and count as layout shift) */
+.szs .szs-tl.is-rewinding .szs-tl__head{transition:translate .6s var(--sz-ease)}
 .szs .szs-pill.is-working i{background:var(--sz-orange);animation:szs-pulse 1.1s ease-in-out infinite}
 @keyframes szs-pulse{50%{transform:scale(1.6);opacity:.55}}
 .szs .szs-pill.is-pop{animation:szs-pop .55s var(--sz-spring)}
@@ -286,6 +332,8 @@
 .szs .szs-notif{position:absolute;left:50%;top:22px;z-index:4;width:min(320px,70%);margin-left:max(-160px,-35%);display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:18px;background:rgba(255,255,255,.82);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:var(--sz-s2);font-size:13px;line-height:1.3;color:var(--sz-t2)}
 .szs .szs-notif .sz-app{width:30px;height:30px;border-radius:8px;font-size:15px}
 .szs .szs-notif b{display:block;color:var(--sz-ink);font-weight:600}
+/* the type legend, used only where posts become colour chips (narrow) */
+.szs .szs-week__legend{display:none}
 
 /* ---------- narrow panel (the design's phone composition) ---------- */
 @container szs (max-width:484px){
@@ -302,11 +350,19 @@
   .szs .szs-pill{right:4%;top:150px}
   .szs .szs-shot{right:4%;top:24px;width:44%}
   .szs .szs-week{width:90%;margin-left:-45%;padding:12px}
-  .szs .szs-day{min-height:100px}
-  .szs .szs-post{font-size:9.5px}
+  .szs .szs-day{min-height:80px}
+  /* 9.5px names overflowed a 27px day; colour chips plus a legend read better */
+  .szs .szs-post{height:9px;padding:0;overflow:hidden;border-radius:4px;font-size:0;line-height:0}
+  /* a legend row under the days; days 20px shorter, so the card keeps its size */
+  .szs .szs-week__legend{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 10px;height:12px;margin-top:8px;overflow:hidden;font-size:9.5px;font-weight:500;line-height:12px;color:var(--sz-t2)}
+  .szs .szs-week__legend span{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+  .szs .szs-week__legend i{flex:none;width:8px;height:8px;border-radius:2px}
 }
 
 @media (prefers-reduced-motion:reduce){
   .szs .szs-a,.szs .szs-gen__frame{transition:none}
-  .sz-svc .szs *{animation:none}
+  /* as specific as the rules that start them, or they win (they did) */
+  .sz-svc .szs .szs-twk,
+  .sz-svc .szs .szs-gen__frame.is-picked::before,
+  .sz-svc .szs *,.sz-svc .szs *::before,.sz-svc .szs *::after{animation:none}
 }

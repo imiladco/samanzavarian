@@ -22,7 +22,6 @@ $szs_hold   = isset( $s['dir_hold']['size'] ) && '' !== $s['dir_hold']['size'] ?
 $szs_config = [
 	'boards' => $szs_boards,
 	'hold'   => max( 1, $szs_hold ) * 1000,
-	'cycle'  => 'yes' === ( $s['dir_cycle'] ?? 'yes' ),
 ];
 ?>
 <div class="szs-swatch szs-a" data-szs-direction="<?php echo esc_attr( (string) wp_json_encode( $szs_config ) ); ?>"><?php foreach ( $szs_board['palette'] as $szs_c ) : ?><b style="background:<?php echo esc_attr( $szs_c ); ?>"></b><?php endforeach; ?></div>

@@ -8,8 +8,8 @@
  *   4. the chosen three glide into the design's composition;
  *   5. the palette's colours fly out of the pictures into the swatch;
  *   6. the direction note is written.
- * Then the board is put away and the next one starts. One board plays each
- * time the panel becomes live.
+ * Then the board is put away and the next one starts. "Play once" goes
+ * through the boards once and rests on the last; "Keep playing" cycles.
  *
  * The server prints board one finished (the design); that shows without
  * JavaScript, with reduced motion and whenever the scene is paused.
@@ -25,7 +25,7 @@
 
 	const POINTER = '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 2l15 11-6.5 1.2L16 21l-3 1.4-3.4-6.6L4 20z" fill="#0D1B2A" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>';
 
-	function create( scene ) {
+	function create( scene, api ) {
 		const swatch = scene.querySelector( '[data-szs-direction]' );
 		const noop = { play() {}, pause() {} };
 
@@ -66,15 +66,44 @@
 			el.innerHTML = item.html || ''; // printed and escaped by the server (Service_Panel::media_html)
 		}
 
+		/** Where a spot of the pile is, in px of the art box. */
+		function pile( spot, i, height ) {
+			const w = scene.clientWidth;
+			const pw = ( narrow() ? 0.3 : 0.22 ) * w;
+			return {
+				x: ( SPOTS[ spot ][ 0 ] / 100 ) * w,
+				y: ( SPOTS[ spot ][ 1 ] / 100 ) * scene.clientHeight,
+				w: pw,
+				r: TILTS[ ( spot + i ) % TILTS.length ],
+			};
+		}
+
+		/** A reference that is not chosen: new on the board, placed for real. */
 		function place( el, spot, i ) {
-			el.style.left = SPOTS[ spot ][ 0 ] + '%';
-			el.style.top = SPOTS[ spot ][ 1 ] + '%';
-			el.style.width = narrow() ? '30%' : '22%';
-			el.style.setProperty( '--ar', TILTS[ ( spot + i ) % TILTS.length ] + 'deg' );
+			const p = pile( spot, i );
+			el.style.left = p.x + 'px';
+			el.style.top = p.y + 'px';
+			el.style.width = p.w + 'px';
+			el.style.setProperty( '--ar', p.r + 'deg' );
+		}
+
+		/**
+		 * A chosen picture never leaves its place in the layout: it is moved
+		 * into the pile by transform only (FLIP), so the page never shifts —
+		 * moving left/top/width counted as layout shift (CLS) against the site.
+		 */
+		function placePick( el, spot, i ) {
+			const p = pile( spot, i );
+			const fw = el.offsetWidth;
+			const fh = el.offsetHeight;
+			const sc = p.w / fw;
+			const tx = p.x + p.w / 2 - ( el.offsetLeft + fw / 2 );
+			const ty = p.y + ( fh * sc ) / 2 - ( el.offsetTop + fh / 2 );
+			el.style.transform = `translate(${ tx.toFixed( 1 ) }px, ${ ty.toFixed( 1 ) }px) rotate(${ p.r }deg) scale(${ sc.toFixed( 4 ) })`;
 		}
 
 		function unplace( el ) {
-			[ 'left', 'top', 'width', '--ar' ].forEach( ( p ) => el.style.removeProperty( p ) );
+			[ 'transform', 'left', 'top', 'width', '--ar' ].forEach( ( prop ) => el.style.removeProperty( prop ) );
 		}
 
 		function swatchDots( b, filled ) {
@@ -141,7 +170,7 @@
 
 			picks.forEach( ( el, i ) => {
 				dress( el, board.picks[ i ], 'szs-mood szs-mood--' + 'abc'[ i ] + ' szs-a is-landing' );
-				place( el, spots[ i ], i );
+				placePick( el, spots[ i ], i );
 				all.push( el );
 			} );
 			board.refs.forEach( ( item, i ) => {
@@ -272,7 +301,6 @@
 		let token = 0;
 		let running = false;
 		let current = 0;
-		let done = false;
 
 		async function run( tk ) {
 			const alive = () => tk === token;
@@ -280,9 +308,10 @@
 			if ( ! ( await play( current, alive ) ) ) {
 				return;
 			}
-			while ( boards.length > 1 ) {
-				if ( ! cfg.cycle && current === boards.length - 1 ) {
-					done = true;
+			for ( ;; ) {
+				// "Play once": every board once, then rest on the last.
+				if ( 'loop' !== api.mode && current === boards.length - 1 ) {
+					api.done();
 					return;
 				}
 				await sleep( cfg.hold );
@@ -301,7 +330,7 @@
 
 		return {
 			play() {
-				if ( running || done ) {
+				if ( running ) {
 					return;
 				}
 				running = true;

@@ -34,14 +34,18 @@
 		return out && out.rendered ? out.value : '';
 	};
 
-	/** Same rule as Service_Tabs::ids(). */
-	window.szwTabIds = function ( uid, index, anchor ) {
-		const clean = String( anchor || '' ).replace( /%[a-fA-F0-9][a-fA-F0-9]/g, '' ).replace( /[^A-Za-z0-9_-]/g, '' );
+	const htmlClass = ( v ) => String( v || '' ).replace( /%[a-fA-F0-9][a-fA-F0-9]/g, '' ).replace( /[^A-Za-z0-9_-]/g, '' );
+	// close to sanitize_title(): accents dropped, lower case, dashes
+	const slug = ( t ) => String( t || '' ).normalize( 'NFKD' ).replace( /[\u0300-\u036f]/g, '' ).toLowerCase().replace( /[^a-z0-9]+/g, '-' ).replace( /^-+|-+$/g, '' );
+
+	/** Same rule as Service_Tabs::ids() (minus the page-wide de-duplication). */
+	window.szwTabIds = function ( uid, index, anchor, title ) {
 		const n = index + 1;
-		return {
-			tab: clean || 'sz-tab-' + uid + '-' + n,
-			panel: 'sz-panel-' + uid + '-' + n,
-		};
+		let id = htmlClass( anchor ) || htmlClass( slug( title ) );
+		if ( ! id || /^[0-9]/.test( id ) ) {
+			id = 'sz-tab-' + uid + '-' + n;
+		}
+		return { tab: id, panel: 'sz-panel-' + uid + '-' + n };
 	};
 
 	function register() {

@@ -84,6 +84,13 @@ szw_ok( false !== strpos( $html, 'aria-label="My &quot;services&quot;"' ), 'the 
 szw_ok( false === strpos( $html, 'sz-tabs__sub' ), 'empty subtitles are skipped' );
 
 szw_ok( false === strpos( szw_render( [ 'tabs' => [] ], 'sz-service-tabs', [] ), 'sz-tabs' ), 'no tabs → nothing rendered' );
+szw_ok( 'unit-test-service' === Service_Tabs::ids( 'idt1', 0, '', 'Unit test service' )['tab'], 'no Link ID: the id is made from the title' );
+szw_ok( 'unit-test-service-2' === Service_Tabs::ids( 'idt2', 0, '', 'Unit test service' )['tab'], 'a second tab with the same title on the page gets -2' );
+szw_ok( 'unit-test-service' === Service_Tabs::ids( 'idt1', 0, '', 'Unit test service' )['tab'], 'the same tab rendered again keeps its id' );
+szw_ok( 'sz-tab-idt3-1' === Service_Tabs::ids( 'idt3', 0, '', 'خدمات' )['tab'] && 'sz-tab-idt4-1' === Service_Tabs::ids( 'idt4', 0, '', '2024 plan' )['tab'], 'a title that makes no usable id (non-Latin, or starts with a digit) falls back' );
+$html = szw_render( [ 'analytics' => '' ], 'sz-service-tabs', szw_tab_children() );
+szw_ok( false !== strpos( $html, 'data-sz-track="0"' ) && false !== strpos( szw_render( [], 'sz-service-tabs', szw_tab_children() ), 'data-sz-track="1"' ), 'analytics on by default, can be turned off' );
+szw_ok( false === strpos( szw_render( [ 'analytics' => '' ], 'sz-service-panel' ), 'data-sz-track' ), 'the panel button stops reporting when its analytics is off' );
 szw_ok( [ 'tab' => 'sz-tab-u1-2', 'panel' => 'sz-panel-u1-2' ] === Service_Tabs::ids( 'u1', 1, '' ), 'default ids are unique per widget and position' );
 
 /* ------------------------------------------------------------------ */
@@ -115,8 +122,8 @@ szw_group( 'Panel — render' );
 $html = szw_render( [], 'sz-service-panel' );
 szw_ok( false !== strpos( $html, 'sz-svc sz-w sz-svc--dark' ) && false !== strpos( $html, 'szs--ai' ), 'default: the AI panel on navy' );
 szw_ok( [ 'Product key visuals', 'Campaign imagery', 'Short AI video' ] === array_map( 'trim', szw_all( '/<\/span>([^<]+)<\/li>/', $html ) ), 'design deliverables' );
-szw_ok( (bool) preg_match( '/<a class="sz-svc__btn" href="#contact" data-sz-prefill="AI visuals">Ask about AI visuals<\/a>/', $html ), 'button links to #contact and names its service for the contact form' );
-szw_ok( false !== strpos( $html, 'aria-hidden="true"' ) && (bool) preg_match( '/sz-svc__art szs szs--ai" data-szs="ai" aria-hidden="true"/', $html ), 'the scene is decoration, hidden from screen readers' );
+szw_ok( (bool) preg_match( '/<a class="sz-svc__btn" href="#contact" data-sz-prefill="AI visuals" data-sz-track="AI visuals">Ask about AI visuals<\/a>/', $html ), 'button links to #contact, names its service for the contact form and for analytics' );
+szw_ok( false !== strpos( $html, 'aria-hidden="true"' ) && (bool) preg_match( '/sz-svc__art szs szs--ai" data-szs="ai" data-szs-motion="once" aria-hidden="true"/', $html ), 'the scene is decoration, hidden from screen readers' );
 
 foreach ( [ 'direction' => [ 'peach', 'szs-swatch' ], 'post' => [ 'cool', 'szs-grade' ], 'content' => [ 'grid', 'szs-week' ] ] as $name => $expect ) {
 	$h = szw_render( Service_Panel::preset( $name ), 'sz-service-panel' );
@@ -157,7 +164,7 @@ szw_ok( [ 'One', 'Two' ] === Service_Panel::ai_prompts( [ 'ai_prompts' => "One\r
 $html = szw_render( [], 'sz-service-panel' );
 preg_match( '/data-szs-ai="([^"]+)"/', $html, $m );
 $cfg = json_decode( html_entity_decode( $m[1] ?? '' ), true );
-szw_ok( is_array( $cfg ) && [ 'Perfume bottle on wet stone, soft rim light, 85mm' ] === $cfg['prompts'] && 2 === $cfg['pick'] && 38.0 === (float) $cfg['speed'] && 4000.0 === (float) $cfg['hold'] && true === $cfg['cycle'], 'the script gets its timing and texts from the settings (design defaults)' );
+szw_ok( is_array( $cfg ) && [ 'Perfume bottle on wet stone, soft rim light, 85mm' ] === $cfg['prompts'] && 2 === $cfg['pick'] && 38.0 === (float) $cfg['speed'] && 4000.0 === (float) $cfg['hold'], 'the script gets its timing and texts from the settings (design defaults)' );
 szw_ok( (bool) preg_match( '/<span class="szs-gen__text">Perfume bottle on wet stone, soft rim light, 85mm<\/span><b class="szs-gen__go">Generate<\/b>/', $html ), 'printed finished: the prompt is already typed' );
 szw_ok( [ '2', '1', '3' ] === szw_all( '/szs-gen__frame szs-mesh szs-mesh--(\d)/', $html ) && 1 === substr_count( $html, 'is-picked' ) && false !== strpos( $html, 'szs-mesh--1 is-picked' ), 'the design\'s frames, the middle one approved' );
 szw_ok( false !== strpos( $html, '<span class="szs-picked__text">Variation 2 approved</span>' ), 'approval label with its number' );
@@ -184,7 +191,7 @@ szw_ok( wp_script_is( 'sz-scene-ai', 'registered' ) && in_array( 'sz-service-pan
 szw_group( 'Panel — Post-production scene' );
 
 $html = szw_render( Service_Panel::preset( 'post' ), 'sz-service-panel' );
-szw_ok( (bool) preg_match( '/class="sz-svc__art szs szs--post" data-szs="post">/', $html ), 'the scene is not hidden from assistive tech (it has controls)…' );
+szw_ok( (bool) preg_match( '/class="sz-svc__art szs szs--post" data-szs="post" data-szs-motion="once">/', $html ), 'the scene is not hidden from assistive tech (it has controls)…' );
 szw_ok( 2 === substr_count( $html, 'class="szs-tl szs-a" aria-hidden="true"' ) + substr_count( $html, 'class="szs-pill szs-a" aria-hidden="true"' ), '…its decoration is, piece by piece' );
 szw_ok( 2 === substr_count( $html, 'type="range"' ), 'two real range inputs' );
 preg_match_all( '/<label for="([^"]+)">([^<]+)<\/label>/', $html, $lb );
@@ -241,7 +248,7 @@ szw_ok( [ '#0D1B2A', '#FF6B2C', '#FFE6DA', '#E7E9EC' ] === szw_all( '/<b style="
 szw_ok( false !== strpos( $html, '<b>Direction note</b><span class="szs-note__text">Quiet, warm light. Honest materials. One hero object per frame.</span>' ), 'the design\'s note' );
 preg_match( '/data-szs-direction="([^"]+)"/', $html, $m );
 $cfg = json_decode( html_entity_decode( $m[1] ?? '' ), true );
-szw_ok( is_array( $cfg ) && 2 === count( $cfg['boards'] ) && 4000.0 === (float) $cfg['hold'] && true === $cfg['cycle'], 'two boards by default for the script, 4s each, cycling' );
+szw_ok( is_array( $cfg ) && 2 === count( $cfg['boards'] ) && 4000.0 === (float) $cfg['hold'], 'two boards by default for the script, 4s each' );
 szw_ok( [ '1', '2', '4' ] === array_column( $cfg['boards'][0]['refs'], 'mesh' ), 'without reference images, the pile uses the gradients the chosen three don\'t' );
 
 $pool   = array_map( static fn( $n ) => [ 'url' => 'https://x.test/r' . $n . '.jpg', 'id' => '' ], range( 1, 7 ) );
@@ -250,5 +257,31 @@ szw_ok( false !== strpos( $boards[0]['picks'][0]['html'], '<video class="szs-moo
 szw_ok( 5 === count( $boards[0]['refs'] ) && [ '#123' ] === $boards[0]['palette'] && 'hi' === $boards[0]['note'], 'at most five other references; unsafe colours dropped; note trimmed' );
 szw_ok( false !== strpos( $boards[1]['refs'][0]['html'], 'r6.jpg' ) && false !== strpos( $boards[1]['refs'][2]['html'], 'r1.jpg' ), 'the shared reference pool: board 2 takes the next five, wrapping round' );
 szw_ok( [ 'sz-service-panel', 'sz-scene-direction' ] === $make( [ 'scene' => 'direction' ] )->get_script_depends(), 'a Direction panel loads only its own scene script' );
+
+/* ------------------------------------------------------------------ */
+
+szw_group( 'Panel — motion policy' );
+
+$html = szw_render( [], 'sz-service-panel' );
+szw_ok( false !== strpos( $html, 'data-szs="ai" data-szs-motion="once"' ), 'default: play once, then settle' );
+szw_ok( (bool) preg_match( '/<button type="button" class="sz-svc__motion" aria-pressed="false" hidden data-label-pause="Pause animation" data-label-play="Play animation" aria-label="Pause animation">/', $html ), 'a pause button, hidden until something moves (the script shows it)' );
+szw_ok( false === strpos( szw_render( [ 'motion' => 'static' ], 'sz-service-panel' ), 'sz-svc__motion' ), '"Still": no button' );
+szw_ok( false !== strpos( szw_render( [ 'motion' => 'loop' ], 'sz-service-panel' ), 'data-szs-motion="loop"' ), '"Keep playing" reaches the script' );
+szw_ok( false === strpos( szw_render( [ 'motion_button' => '' ], 'sz-service-panel' ), 'sz-svc__motion' ), 'the button can be turned off' );
+szw_ok( false !== strpos( szw_render( [ 'scene' => 'media', 'media' => [ 'url' => 'https://x.test/v.mp4', 'id' => '' ] ], 'sz-service-panel' ), 'sz-svc__motion' ), 'a panel video gets the pause button too' );
+szw_ok( false === strpos( szw_render( [ 'scene' => 'media', 'media' => [ 'url' => 'https://x.test/p.jpg', 'id' => '' ] ], 'sz-service-panel' ), 'sz-svc__motion' ), 'a still image does not' );
+szw_ok( false !== strpos( szw_render( [ 'motion' => 'static', 'ai_frames' => [ [ 'mesh' => '1', 'media' => [ 'url' => 'https://x.test/v.webm', 'id' => '' ] ] ] ], 'sz-service-panel' ), 'sz-svc__motion' ), '"Still" scene with a video frame: the video still gets a pause button' );
+
+/* ------------------------------------------------------------------ */
+
+szw_group( 'Panel — notes for the editor' );
+
+szw_ok( [] === Service_Panel::editor_notes( 'content', Service_Panel::preset( 'content' ) ) && [] === Service_Panel::editor_notes( 'ai', [] ) && [] === Service_Panel::editor_notes( 'direction', [] ), 'the defaults raise nothing' );
+$n = Service_Panel::editor_notes( 'content', [ 'content_weeks' => [ [ 'mon' => 'Podcast + reel', 'tue' => 'Podcast' ] ] ] );
+szw_ok( 1 === count( $n ) && false !== strpos( $n[0], 'Not a post type: Podcast.' ), 'a mistyped post type is named once (and "reel" still matches Reel)' );
+$n = Service_Panel::editor_notes( 'post', [ 'post_adjustments' => [ [ 'label' => 'Glow', 'min' => 5, 'max' => 5, 'value' => 9 ] ] ] );
+szw_ok( 1 === count( $n ) && false !== strpos( $n[0], 'Slider "Glow"' ), 'an impossible slider range is reported' );
+szw_ok( 1 === count( Service_Panel::editor_notes( 'ai', [ 'ai_frames' => array_fill( 0, 4, [ 'mesh' => '1' ] ) ] ) ) && [] === Service_Panel::editor_notes( 'ai', [ 'ai_frames' => array_fill( 0, 6, [ 'mesh' => '1' ] ) ] ), 'frames not in threes are pointed out' );
+szw_ok( false === strpos( szw_render( [ 'scene' => 'content', 'content_weeks' => [ [ 'mon' => 'Podcast' ] ] ], 'sz-service-panel' ), 'sz-svc__editor-note' ), 'visitors never see these notes' );
 
 szw_finish();

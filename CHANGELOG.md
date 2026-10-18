@@ -4,6 +4,45 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.9.0 — product review of "What I do"
+Reviewed as the site owner, the visitor and the business, measured on a real
+page. Changes:
+
+Visitors
+- **Animation setting** per panel: *Play once, then settle* (default) / *Keep
+  playing* / *Still*. "Once" tells each scene's story the first time it is seen
+  and rests on the finished picture; revisiting a tab does not replay it.
+  Replaces the per-scene "keep cycling" switches.
+- **Pause / play button** whenever something moves (scenes or videos), per
+  WCAG 2.2.2. The visitor's choice applies to every panel and is remembered.
+- Fix: with reduced motion the twinkles and the light sweep kept running (a
+  CSS specificity bug since 0.4.0). Fix: decorative loops on pseudo-elements
+  kept running in closed tabs.
+- Sliders show they can be dragged (grab cursor, two pulses the first time).
+- Phones: the tab row fades at the edge that has more tabs; the calendar shows
+  colour chips and a legend instead of 9.5px names that overflowed their day
+  (the design's own phone calendar had stretched columns).
+
+Speed / SEO (Core Web Vitals)
+- Layout shift (CLS) from the panels: 0.12 → 0.001. Moving pictures, knobs,
+  playhead and the sweep now use transforms only; text no longer reflows when
+  Inter loads (a metric-matched fallback: Arial / Arimo / Liberation Sans).
+- After a scene settles: 0 layouts, 0 style recalculations, 0 ms script.
+
+Business
+- Analytics: `sz_services_view`, `sz_service_tab` (service_name, tab_id,
+  position) and `sz_service_cta` (service_name, link_url) — to GTM's dataLayer,
+  or to GA4's gtag() when installed without GTM; never both. Switchable.
+- Tabs get link IDs from their titles (#ai-visual-production), unique on the
+  page, so deep links work without setup.
+
+Site owner
+- In the editor scenes wait, finished; the same button previews them.
+- Editor-only notes for input the widget would otherwise work around silently
+  (unknown post type, impossible slider range, frames not in threes, a board
+  without palette).
+- Size guidance on every image/video control (dimensions, format, weight).
+
 ## 0.8.0
 - Service Panel — **Creative direction scene, "from chaos to direction"**:
   references land on the board in a loose pile, a pointer chooses three

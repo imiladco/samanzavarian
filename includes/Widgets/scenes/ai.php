@@ -31,7 +31,6 @@ $szs_config = [
 	'label'   => $szs_label,
 	'speed'   => max( 0, $szs_speed ),
 	'hold'    => max( 1, $szs_hold ) * 1000,
-	'cycle'   => 'yes' === ( $s['ai_cycle'] ?? 'yes' ),
 ];
 ?>
 <div class="szs-gen szs-a" data-szs-ai="<?php echo esc_attr( (string) wp_json_encode( $szs_config ) ); ?>">

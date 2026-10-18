@@ -7,7 +7,8 @@
  *
  * With more than one round (more than three frames) the round is held, its
  * frames are tossed off the sheet while the prompt is erased, and the next
- * round is generated. One round plays each time the panel becomes live.
+ * round is generated. "Play once" goes through the rounds once and rests on
+ * the last; "Keep playing" cycles (a single round regenerates).
  *
  * The server prints the finished first round; that is what shows without
  * JavaScript, with reduced motion, and whenever this scene is paused. Play
@@ -45,7 +46,6 @@
 		let token = 0; // bumps on pause: every running step checks it and stops
 		let running = false;
 		let round = 0;
-		let done = false; // played through without cycling
 
 		const prompt = ( r ) => cfg.prompts[ r % cfg.prompts.length ] || '';
 		const frames = ( r ) => Array.from( rounds[ r ].children );
@@ -185,9 +185,10 @@
 				return;
 			}
 
-			while ( rounds.length > 1 ) {
-				if ( ! cfg.cycle && round === rounds.length - 1 ) {
-					done = true;
+			for ( ;; ) {
+				// "Play once": every round once, then rest on the last.
+				if ( 'loop' !== api.mode && round === rounds.length - 1 ) {
+					api.done();
 					return;
 				}
 				await sleep( cfg.hold );
@@ -203,7 +204,7 @@
 
 		return {
 			play() {
-				if ( running || done ) {
+				if ( running ) {
 					return;
 				}
 				running = true;

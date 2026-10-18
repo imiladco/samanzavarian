@@ -153,7 +153,7 @@ class Service_Panel extends Widget_Base {
 				'label'       => esc_html__( 'Image or video', 'samanzavarian-widgets' ),
 				'type'        => Controls_Manager::MEDIA,
 				'media_types' => [ 'image', 'video' ],
-				'description' => esc_html__( 'Videos play muted and looped, and only while visible.', 'samanzavarian-widgets' ),
+				'description' => esc_html__( 'Images: about 1200px on the long side, WebP or JPG, under 200 KB. Videos: MP4 or WebM, 720p at most, a few seconds, under 2 MB — they play muted and looped, only while visible.', 'samanzavarian-widgets' ),
 				'condition'   => [ 'scene' => 'media' ],
 			]
 		);
@@ -187,6 +187,37 @@ class Service_Panel extends Widget_Base {
 					'none'  => esc_html__( 'None (set your own in Style)', 'samanzavarian-widgets' ),
 				],
 				'separator' => 'before',
+			]
+		);
+
+		$animated = [ 'scene' => self::ANIMATED_SCENES ];
+
+		$this->add_control(
+			'motion',
+			[
+				'label'       => esc_html__( 'Animation', 'samanzavarian-widgets' ),
+				'type'        => Controls_Manager::SELECT,
+				'default'     => 'once',
+				'options'     => [
+					'once'   => esc_html__( 'Play once, then settle', 'samanzavarian-widgets' ),
+					'loop'   => esc_html__( 'Keep playing', 'samanzavarian-widgets' ),
+					'static' => esc_html__( 'Still (no animation)', 'samanzavarian-widgets' ),
+				],
+				'description' => esc_html__( 'Once: the scene tells its story the first time it is seen, then rests on the finished picture, so attention goes to your text and button. Visitors who prefer reduced motion always get the still picture.', 'samanzavarian-widgets' ),
+				'separator'   => 'before',
+				'condition'   => $animated,
+			]
+		);
+
+		$this->add_control(
+			'motion_button',
+			[
+				'label'        => esc_html__( 'Pause button', 'samanzavarian-widgets' ),
+				'type'         => Controls_Manager::SWITCHER,
+				'default'      => 'yes',
+				'return_value' => 'yes',
+				'description'  => esc_html__( 'Shown only while something moves. Accessibility rules (WCAG 2.2.2) require a way to stop motion that runs longer than five seconds — keep it on unless the animation is always shorter.', 'samanzavarian-widgets' ),
+				'condition'    => [ 'scene' => array_merge( self::ANIMATED_SCENES, [ 'media' ] ) ],
 			]
 		);
 
@@ -278,6 +309,18 @@ class Service_Panel extends Widget_Base {
 		);
 
 		$this->add_control(
+			'analytics',
+			[
+				'label'        => esc_html__( 'Report button clicks', 'samanzavarian-widgets' ),
+				'type'         => Controls_Manager::SWITCHER,
+				'default'      => 'yes',
+				'return_value' => 'yes',
+				'description'  => esc_html__( 'Sends sz_service_cta (with the service name) to Google Tag Manager\'s dataLayer, or to GA4 directly. Does nothing if neither is on the site.', 'samanzavarian-widgets' ),
+				'condition'    => $on,
+			]
+		);
+
+		$this->add_control(
 			'button_prefill',
 			[
 				'label'       => esc_html__( 'Pre-select in contact form', 'samanzavarian-widgets' ),
@@ -335,7 +378,7 @@ class Service_Panel extends Widget_Base {
 				'label'       => esc_html__( 'Image or video', 'samanzavarian-widgets' ),
 				'type'        => Controls_Manager::MEDIA,
 				'media_types' => [ 'image', 'video' ],
-				'description' => esc_html__( 'Videos play muted and looped, all frames of a round together.', 'samanzavarian-widgets' ),
+				'description' => esc_html__( 'Frames are small: images about 600×800px, WebP or JPG, under 120 KB. Videos: MP4 or WebM, 480p is plenty, a few seconds, under 1.5 MB — the frames of a round play together.', 'samanzavarian-widgets' ),
 			]
 		);
 
@@ -452,17 +495,6 @@ class Service_Panel extends Widget_Base {
 				'size_units'  => [ 's' ],
 				'range'       => [ 's' => [ 'min' => 1, 'max' => 20, 'step' => 0.5 ] ],
 				'description' => esc_html__( 'How long an approved round stays before the next one.', 'samanzavarian-widgets' ),
-			]
-		);
-
-		$this->add_control(
-			'ai_cycle',
-			[
-				'label'        => esc_html__( 'Keep cycling rounds', 'samanzavarian-widgets' ),
-				'type'         => Controls_Manager::SWITCHER,
-				'default'      => 'yes',
-				'return_value' => 'yes',
-				'description'  => esc_html__( 'Off: play through the rounds once and stay on the last. With a single round it plays each time the panel comes into view.', 'samanzavarian-widgets' ),
 			]
 		);
 
@@ -638,7 +670,7 @@ class Service_Panel extends Widget_Base {
 			[
 				'label'       => esc_html__( 'Preview image', 'samanzavarian-widgets' ),
 				'type'        => Controls_Manager::MEDIA,
-				'description' => esc_html__( 'Optional: a photo the sliders grade live. Empty keeps the design as it is.', 'samanzavarian-widgets' ),
+				'description' => esc_html__( 'Optional: a photo the sliders grade live (about 600×400px, under 120 KB). Empty keeps the design as it is.', 'samanzavarian-widgets' ),
 				'separator'   => 'before',
 			]
 		);
@@ -1119,6 +1151,7 @@ class Service_Panel extends Widget_Base {
 					'type'        => Controls_Manager::MEDIA,
 					'media_types' => [ 'image', 'video' ],
 					'separator'   => 'a' === $k ? 'none' : 'before',
+					'description' => 'a' === $k ? esc_html__( 'Images about 800px wide, WebP or JPG, under 150 KB; videos MP4/WebM, 480p, under 1.5 MB. Empty → the gradient below.', 'samanzavarian-widgets' ) : '',
 				]
 			);
 			$board->add_control(
@@ -1190,17 +1223,6 @@ class Service_Panel extends Widget_Base {
 				'size_units'  => [ 's' ],
 				'range'       => [ 's' => [ 'min' => 1, 'max' => 20, 'step' => 0.5 ] ],
 				'description' => esc_html__( 'How long a finished board stays before the next.', 'samanzavarian-widgets' ),
-			]
-		);
-
-		$this->add_control(
-			'dir_cycle',
-			[
-				'label'        => esc_html__( 'Keep cycling boards', 'samanzavarian-widgets' ),
-				'type'         => Controls_Manager::SWITCHER,
-				'default'      => 'yes',
-				'return_value' => 'yes',
-				'description'  => esc_html__( 'With a single board it plays each time the panel comes into view.', 'samanzavarian-widgets' ),
 			]
 		);
 
@@ -1328,6 +1350,25 @@ class Service_Panel extends Widget_Base {
 				'range'       => [ 'px' => [ 'min' => 0, 'max' => 60 ] ],
 				'description' => esc_html__( 'Inside Service Tabs the panel takes the tab\'s frame instead.', 'samanzavarian-widgets' ),
 				'selectors'   => [ '{{WRAPPER}} .sz-svc' => 'border-radius: {{SIZE}}{{UNIT}};' ],
+			]
+		);
+
+		$this->add_control(
+			'motion_btn_bg',
+			[
+				'label'     => esc_html__( 'Pause button background', 'samanzavarian-widgets' ),
+				'type'      => Controls_Manager::COLOR,
+				'separator' => 'before',
+				'selectors' => [ '{{WRAPPER}} .sz-svc__motion' => 'background-color: {{VALUE}};' ],
+			]
+		);
+
+		$this->add_control(
+			'motion_btn_fg',
+			[
+				'label'     => esc_html__( 'Pause button icon', 'samanzavarian-widgets' ),
+				'type'      => Controls_Manager::COLOR,
+				'selectors' => [ '{{WRAPPER}} .sz-svc__motion' => 'color: {{VALUE}};' ],
 			]
 		);
 
@@ -1599,6 +1640,63 @@ class Service_Panel extends Widget_Base {
 	 * Render
 	 * ================================================================= */
 
+	/**
+	 * Things worth telling the person editing — input that would otherwise be
+	 * quietly worked around (a mistyped post type, an impossible range…).
+	 * Shown only in the Elementor editor.
+	 *
+	 * @param array<string,mixed> $s
+	 * @return string[]
+	 */
+	public static function editor_notes( string $scene, array $s ): array {
+		$notes = [];
+
+		if ( 'content' === $scene ) {
+			$unknown = [];
+			foreach ( self::content_plan( $s )['weeks'] as $week ) {
+				foreach ( $week as $day ) {
+					foreach ( $day as $post ) {
+						if ( is_array( $post ) ) {
+							$unknown[ $post['name'] ] = true;
+						}
+					}
+				}
+			}
+			if ( $unknown ) {
+				/* translators: %s: post type names */
+				$notes[] = sprintf( __( 'Not a post type: %s. These show in plain style — add them under Post types, or check the spelling.', 'samanzavarian-widgets' ), implode( ', ', array_keys( $unknown ) ) );
+			}
+		}
+
+		if ( 'post' === $scene && isset( $s['post_adjustments'] ) && is_array( $s['post_adjustments'] ) ) {
+			foreach ( $s['post_adjustments'] as $row ) {
+				$min = (float) ( $row['min'] ?? 0 );
+				$max = (float) ( $row['max'] ?? 0 );
+				$val = (float) ( $row['value'] ?? 0 );
+				if ( $max <= $min || $val < $min || $val > $max ) {
+					/* translators: %s: slider label */
+					$notes[] = sprintf( __( 'Slider "%s": the starting value must sit between a minimum and a larger maximum. It has been adjusted to fit.', 'samanzavarian-widgets' ), (string) ( $row['label'] ?? '' ) );
+				}
+			}
+		}
+
+		if ( 'ai' === $scene && isset( $s['ai_frames'] ) && is_array( $s['ai_frames'] ) && count( $s['ai_frames'] ) > 3 && 0 !== count( $s['ai_frames'] ) % 3 ) {
+			/* translators: %d: number of frames */
+			$notes[] = sprintf( __( '%d frames: rounds take three, so the last round repeats frames from the start. Add frames in threes to avoid that.', 'samanzavarian-widgets' ), count( $s['ai_frames'] ) );
+		}
+
+		if ( 'direction' === $scene ) {
+			foreach ( self::dir_boards( $s ) as $i => $board ) {
+				if ( ! $board['palette'] ) {
+					/* translators: %d: board number */
+					$notes[] = sprintf( __( 'Board %d has no palette colours, so nothing flies into the palette.', 'samanzavarian-widgets' ), $i + 1 );
+				}
+			}
+		}
+
+		return $notes;
+	}
+
 	protected function render(): void {
 		$s     = $this->get_settings_for_display();
 		$scene = (string) ( $s['scene'] ?? 'ai' );
@@ -1607,11 +1705,77 @@ class Service_Panel extends Widget_Base {
 		<div class="sz-svc sz-w sz-svc--<?php echo esc_attr( $tone ); ?>">
 			<?php $this->render_visual( $scene, $s ); ?>
 			<?php
+			if ( self::may_move( $scene, $s ) && 'yes' === ( $s['motion_button'] ?? 'yes' ) ) {
+				self::render_motion_button();
+			}
+			?>
+			<?php
 			if ( 'yes' === ( $s['show_info'] ?? 'yes' ) ) {
 				$this->render_card( $s );
 			}
+
+			$notes = Elementor::$instance->editor->is_edit_mode() ? self::editor_notes( $scene, $s ) : [];
+			if ( $notes ) {
+				echo '<div class="sz-svc__editor-note" role="note"><b>' . esc_html__( 'Only you see this, in the editor:', 'samanzavarian-widgets' ) . '</b>';
+				foreach ( $notes as $note ) {
+					echo '<span>' . esc_html( $note ) . '</span>';
+				}
+				echo '</div>';
+			}
 			?>
 		</div>
+		<?php
+	}
+
+	/**
+	 * Whether anything in this panel can move: an animated scene that is not
+	 * set to "Still", or a video (the scene's frames, or the panel's own).
+	 *
+	 * @param array<string,mixed> $s
+	 */
+	public static function may_move( string $scene, array $s ): bool {
+		if ( in_array( $scene, self::ANIMATED_SCENES, true ) && 'static' !== self::motion( $s ) ) {
+			return true;
+		}
+
+		$media = 'media' === $scene ? [ $s['media'] ?? [] ] : [];
+		if ( 'ai' === $scene ) {
+			$media = array_column( isset( $s['ai_frames'] ) && is_array( $s['ai_frames'] ) ? $s['ai_frames'] : [], 'media' );
+		}
+
+		foreach ( $media as $m ) {
+			if ( false !== strpos( self::media_html( $m, '' ), '<video' ) ) {
+				return true;
+			}
+		}
+
+		if ( 'direction' === $scene ) {
+			foreach ( self::dir_boards( $s ) as $board ) {
+				if ( false !== strpos( implode( '', array_column( $board['picks'], 'html' ) ), '<video' ) ) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+	/** @param array<string,mixed> $s */
+	public static function motion( array $s ): string {
+		$m = (string) ( $s['motion'] ?? 'once' );
+
+		return in_array( $m, [ 'once', 'loop', 'static' ], true ) ? $m : 'once';
+	}
+
+	/**
+	 * Pause / play for the scene. Hidden until the script shows it, and only
+	 * while something moves; outside the scene's aria-hidden art on purpose.
+	 */
+	private static function render_motion_button(): void {
+		?>
+		<button type="button" class="sz-svc__motion" aria-pressed="false" hidden data-label-pause="<?php echo esc_attr__( 'Pause animation', 'samanzavarian-widgets' ); ?>" data-label-play="<?php echo esc_attr__( 'Play animation', 'samanzavarian-widgets' ); ?>" aria-label="<?php echo esc_attr__( 'Pause animation', 'samanzavarian-widgets' ); ?>">
+			<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="sz-svc__motion-pause" d="M8 6v12M16 6v12"/><path class="sz-svc__motion-play" d="M8 5.5v13l11-6.5z"/></svg>
+		</button>
 		<?php
 	}
 
@@ -1628,7 +1792,9 @@ class Service_Panel extends Widget_Base {
 		}
 
 		$scene = in_array( $scene, self::SCENES, true ) ? $scene : 'ai';
-		$data  = in_array( $scene, self::ANIMATED_SCENES, true ) ? ' data-szs="' . esc_attr( $scene ) . '"' : '';
+		$data  = in_array( $scene, self::ANIMATED_SCENES, true )
+			? ' data-szs="' . esc_attr( $scene ) . '" data-szs-motion="' . esc_attr( self::motion( $s ) ) . '"'
+			: '';
 
 		// Scenes are decoration and hidden from assistive tech — except where
 		// the visitor can use something (the grading sliders): that scene
@@ -1678,6 +1844,9 @@ class Service_Panel extends Widget_Base {
 				$prefill = trim( (string) ( $s['button_prefill'] ?? '' ) );
 				if ( '' !== $prefill ) {
 					$this->add_render_attribute( 'btn', 'data-sz-prefill', $prefill );
+				}
+				if ( 'yes' === ( $s['analytics'] ?? 'yes' ) ) {
+					$this->add_render_attribute( 'btn', 'data-sz-track', '' !== $prefill ? $prefill : $btn );
 				}
 
 				$tag = empty( $s['button_link']['url'] ) ? 'span' : 'a';

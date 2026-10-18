@@ -59,6 +59,12 @@
   scrollbar-width:none;
 }
 .sz-tabs .sz-tabs__list::-webkit-scrollbar{display:none}
+/* more tabs behind the edge: the row fades there (the script sets these) */
+.sz-tabs{--szt-fade-dir:90deg}
+.rtl .sz-tabs,[dir="rtl"] .sz-tabs{--szt-fade-dir:270deg}
+.sz-tabs .sz-tabs__list.can-scroll-end{-webkit-mask-image:linear-gradient(var(--szt-fade-dir),#000 calc(100% - 40px),transparent);mask-image:linear-gradient(var(--szt-fade-dir),#000 calc(100% - 40px),transparent)}
+.sz-tabs .sz-tabs__list.can-scroll-start{-webkit-mask-image:linear-gradient(var(--szt-fade-dir),transparent,#000 40px);mask-image:linear-gradient(var(--szt-fade-dir),transparent,#000 40px)}
+.sz-tabs .sz-tabs__list.can-scroll-start.can-scroll-end{-webkit-mask-image:linear-gradient(var(--szt-fade-dir),transparent,#000 40px,#000 calc(100% - 40px),transparent);mask-image:linear-gradient(var(--szt-fade-dir),transparent,#000 40px,#000 calc(100% - 40px),transparent)}
 
 /* Placed by the script (x, y, width, height of the active tab). Before the
    script runs it has no size, and the active tab shows its own fill below. */

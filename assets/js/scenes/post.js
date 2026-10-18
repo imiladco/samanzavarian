@@ -5,7 +5,8 @@
  * inputs. Drag anywhere on a track, or use the keyboard; the number and the
  * grade on the clips (and the preview image) follow.
  *
- * On its own (only while the panel is live):
+ * On its own (only while the panel is live; "Play once" does one export
+ * pass, lets the sliders drift home and rests, "Keep playing" repeats):
  *   • sliders drift slowly around their starting value, as if someone were
  *     grading — never the one a visitor is holding or just let go of;
  *   • the playhead runs across the timeline as the export's progress
@@ -33,7 +34,7 @@
 
 	const signed = ( n ) => ( n > 0 ? '+' + n : n < 0 ? '−' + Math.abs( n ) : '0' );
 
-	function create( scene ) {
+	function create( scene, api ) {
 		const grade = scene.querySelector( '[data-szs-post]' );
 		const noop = { play() {}, pause() {} };
 
@@ -53,6 +54,8 @@
 		const sliders = Array.from( grade.querySelectorAll( '.szs-grade__input' ) ).map( ( input, i ) => ( {
 			input,
 			track: input.parentElement,
+			knob: input.parentElement.querySelector( '.szs-grade__knob' ),
+			width: input.parentElement.clientWidth,
 			out: grade.querySelectorAll( '.szs-grade__val' )[ i ],
 			min: +input.min,
 			max: +input.max,
@@ -77,15 +80,25 @@
 			scene.style.setProperty( '--szs-grade', parts.length ? parts.join( ' ' ) : 'none' );
 		}
 
+		/*
+		 * The knob keeps its printed place (the start value) in the layout and
+		 * moves by `translate` — no layout per frame, no layout shift.
+		 */
+		function knob( s ) {
+			const span = s.max - s.min;
+			const dx = ( ( +s.input.value - s.start ) / span ) * s.width;
+			s.knob.style.translate = Math.abs( dx ) < 0.01 ? '' : dx.toFixed( 2 ) + 'px 0';
+		}
+
 		function set( s, value, fromDrift ) {
 			if ( ! fromDrift ) {
 				s.cur = clamp( value, s.min, s.max );
 			}
 			const v = Math.round( clamp( value, s.min, s.max ) );
-			if ( String( v ) !== s.input.value || ! s.track.style.getPropertyValue( '--p' ) ) {
+			if ( String( v ) !== s.input.value ) {
 				s.input.value = v;
 			}
-			s.track.style.setProperty( '--p', ( ( v - s.min ) / ( s.max - s.min ) ).toFixed( 4 ) );
+			knob( s );
 			s.input.setAttribute( 'aria-valuetext', signed( v ) );
 			if ( s.out ) {
 				s.out.textContent = signed( v );
@@ -134,6 +147,34 @@
 		const lengths = rows.map( ( clips ) => clips.map( ( c ) => parseFloat( c.style.flexGrow ) || 1 ) );
 		const pill = scene.querySelector( '.szs-pill' );
 		const pillText = pill && pill.querySelector( '.szs-pill__text' );
+		let tlWidth = tl ? tl.clientWidth : 0;
+
+		// sizes, read once and on resize — never in the animation loop
+		if ( 'ResizeObserver' in window ) {
+			const ro = new ResizeObserver( () => {
+				sliders.forEach( ( s ) => {
+					s.width = s.track.clientWidth;
+					knob( s );
+				} );
+				tlWidth = tl ? tl.clientWidth : 0;
+			} );
+			sliders.forEach( ( s ) => ro.observe( s.track ) );
+			if ( tl ) {
+				ro.observe( tl );
+			}
+		}
+
+		/**
+		 * Playhead at h (0–1) of the clip area you can see: inside the 16px
+		 * padding and short of the 30px the card hangs past the panel. It rests
+		 * at the design's 46%, and moves from there with `translate`.
+		 */
+		function headAt( h ) {
+			if ( head ) {
+				const x = 16 + h * ( tlWidth - 62 ) - 0.46 * tlWidth;
+				head.style.translate = x.toFixed( 1 ) + 'px 0';
+			}
+		}
 
 		function lengthsBack() {
 			rows.forEach( ( clips, r ) => clips.forEach( ( c, k ) => {
@@ -178,6 +219,8 @@
 		let phase = 'run';
 		let phaseAt = 0;
 		let cuts = [];
+		let settling = false; // "play once": drift home, then rest
+		let hinted = false;
 
 		function startRun( now ) {
 			phase = 'run';
@@ -196,7 +239,7 @@
 
 			if ( cfg.drift ) {
 				sliders.forEach( ( s ) => {
-					if ( s.held || now - s.touched < 3500 ) {
+					if ( s.held || ( s.touched && now - s.touched < 3500 ) ) {
 						return;
 					}
 					// Two slow waves make an unhurried, never-repeating hand; the
@@ -204,7 +247,7 @@
 					// the design's start, or where a visitor left it.
 					const half = ( s.max - s.min ) / 2;
 					const wave = ( Math.sin( now * 0.00042 + s.seed ) + 0.55 * Math.sin( now * 0.00113 + s.seed * 2.1 ) ) / 1.55;
-					const target = s.start + wave * half * 0.32;
+					const target = settling ? s.start : s.start + wave * half * 0.32;
 					s.cur += ( target - s.cur ) * Math.min( 1, dt * 0.0016 );
 					if ( Math.round( s.cur ) !== +s.input.value ) {
 						set( s, s.cur, true );
@@ -216,7 +259,7 @@
 				const t = now - phaseAt;
 				if ( 'run' === phase ) {
 					const h = clamp( t / cfg.run, 0, 1 );
-					tl.style.setProperty( '--h', h.toFixed( 4 ) );
+					headAt( h );
 					pillState( true, Math.round( h * 100 ) );
 					while ( cuts.length && h >= cuts[ 0 ] ) {
 						cuts.shift();
@@ -232,12 +275,28 @@
 							pill.classList.add( 'is-pop' );
 						}
 					}
+				} else if ( 'done' === phase && 'loop' !== api.mode ) {
+					// One pass told the story: sliders drift home, the playhead
+					// glides back to the design's spot, and the scene rests.
+					if ( ! settling ) {
+						settling = true;
+						tl.classList.add( 'is-rewinding' );
+						head.style.translate = '0px 0'; // the design's spot
+						lengthsBack();
+					}
+					const home = sliders.every( ( s ) => s.touched || Math.round( s.cur ) === s.start );
+					if ( t > 1800 && home ) {
+						running = false;
+						rest();
+						api.done();
+						return;
+					}
 				} else if ( 'done' === phase && t > 2400 ) {
 					// rewind: the head glides back, the cuts go back to the edit
 					phase = 'rewind';
 					phaseAt = now;
 					tl.classList.add( 'is-rewinding' );
-					tl.style.setProperty( '--h', '0' );
+					headAt( 0 );
 					lengthsBack();
 				} else if ( 'rewind' === phase && t > 700 ) {
 					startRun( now );
@@ -250,7 +309,9 @@
 		function rest() {
 			if ( tl ) {
 				tl.classList.remove( 'is-playing', 'is-rewinding' );
-				tl.style.removeProperty( '--h' );
+				if ( head ) {
+					head.style.translate = '';
+				}
 				lengthsBack();
 			}
 			pillState( false );
@@ -266,6 +327,13 @@
 				}
 				running = true;
 				last = 0;
+				settling = false;
+				// The first time, show that the knobs can be dragged: two pulses.
+				if ( ! hinted ) {
+					hinted = true;
+					grade.classList.add( 'is-hint' );
+					setTimeout( () => grade.classList.remove( 'is-hint' ), 2600 );
+				}
 				if ( tl ) {
 					tl.classList.add( 'is-playing' );
 					startRun( performance.now() );
