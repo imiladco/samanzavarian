@@ -248,10 +248,20 @@
 .szs .szs-week__days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
 .szs .szs-day{display:grid;gap:6px;align-content:start;min-height:120px;padding:8px 5px;border-radius:12px;background:var(--sz-fill);font-size:11px;font-weight:600;line-height:1.6;color:var(--sz-t3);text-align:center}
 .szs .szs-day.is-today{background:var(--sz-peach);color:#B8460F}
-.szs .szs-post{display:block;padding:6px 2px;border-radius:7px;font-style:normal;font-size:10.5px;font-weight:600;line-height:1.2}
-.szs .szs-post--reel{background:var(--sz-navy);color:#fff}
-.szs .szs-post--carousel{background:var(--sz-orange);color:var(--sz-navy)}
-.szs .szs-post--story{background:#fff;color:var(--sz-ink);box-shadow:0 0 0 1px var(--sz-line)}
+.szs .szs-day{transition:background-color .45s var(--sz-ease),color .45s var(--sz-ease)}
+/* a post; its type's colours come inline (Post types control). A name that
+   is not a type shows plainly, like the design's outlined Story. */
+.szs .szs-post{display:block;padding:6px 2px;border-radius:7px;background:#fff;color:var(--sz-ink);box-shadow:0 0 0 1px var(--sz-line);font-style:normal;font-size:10.5px;font-weight:600;line-height:1.2}
+
+/* ---------- Content: planning and turning the page (assets/js/scenes/content.js) ---------- */
+.szs .szs-post.is-drop{animation:szs-drop .6s var(--sz-spring) both}
+@keyframes szs-drop{from{opacity:0;transform:translateY(-18px) rotate(-6deg) scale(.82)}}
+.szs .szs-day.is-hit{animation:szs-hit .5s var(--sz-ease)}
+@keyframes szs-hit{40%{box-shadow:inset 0 0 0 1.5px rgba(255,107,44,.4)}}
+.szs .szs-notif.is-away{opacity:0;transform:translateY(-14px) scale(.96)}
+/* the page that turns: a copy of the week, lifted off the top edge */
+.szs .szs-week__leaf{position:absolute;inset:0;z-index:3;margin:0;padding:inherit;border-radius:inherit;background:#fff;transform-origin:50% 0;backface-visibility:hidden;pointer-events:none;box-shadow:0 18px 30px -18px rgba(13,27,42,.35);animation:szs-leaf .85s cubic-bezier(.5,0,.75,0) forwards}
+@keyframes szs-leaf{0%{transform:perspective(1100px) rotateX(0)}100%{transform:perspective(1100px) rotateX(-112deg) translateY(-4px);opacity:0}}
 .szs .szs-notif{position:absolute;left:50%;top:22px;z-index:4;width:min(320px,70%);margin-left:max(-160px,-35%);display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:18px;background:rgba(255,255,255,.82);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:var(--sz-s2);font-size:13px;line-height:1.3;color:var(--sz-t2)}
 .szs .szs-notif .sz-app{width:30px;height:30px;border-radius:8px;font-size:15px}
 .szs .szs-notif b{display:block;color:var(--sz-ink);font-weight:600}

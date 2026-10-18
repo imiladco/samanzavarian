@@ -4,6 +4,20 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.7.0
+- Service Panel — **Content calendar scene that plans itself**:
+  - Real week (default): the visitor's own ISO week number and today, from
+    their device (the server prints the site's current week as a first guess).
+    Fixed week: any number and highlighted day — Week 42 / Wednesday is the design.
+  - Posts land day by day, the notification comes in with the week's count
+    ("4 posts scheduled"), then the page lifts and turns like a desk calendar
+    to the next week, filled from the next plan. Weeks roll over correctly
+    (53 → 1); only the current week has a "today".
+  - Controls: post types (name and colours), weekly plans (per day, "Reel" or
+    "Reel + Story"), day names, title, week label {n}, notification icon and
+    texts {count}, timing; Style: every colour.
+  - Reduced motion: dated to the visitor, finished week, nothing moves.
+
 ## 0.6.0
 - Service Panel — **Post-production scene, live and usable**:
   - The grading sliders are real range inputs under the design's knobs:

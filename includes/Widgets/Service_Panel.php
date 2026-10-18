@@ -29,7 +29,7 @@ class Service_Panel extends Widget_Base {
 	public const SCENES = [ 'ai', 'direction', 'post', 'content' ];
 
 	/** Scenes that have a script (assets/js/scenes/<name>.js). */
-	public const ANIMATED_SCENES = [ 'ai', 'post' ];
+	public const ANIMATED_SCENES = [ 'ai', 'post', 'content' ];
 
 	/** Scenes with controls a visitor can use. */
 	public const INTERACTIVE_SCENES = [ 'post' ];
@@ -194,6 +194,7 @@ class Service_Panel extends Widget_Base {
 
 		$this->controls_ai();
 		$this->controls_post();
+		$this->controls_content();
 
 		$this->start_controls_section( 'section_info', [ 'label' => esc_html__( 'Card', 'samanzavarian-widgets' ) ] );
 
@@ -292,6 +293,7 @@ class Service_Panel extends Widget_Base {
 		$this->style_panel();
 		$this->style_ai();
 		$this->style_post();
+		$this->style_content();
 		$this->style_card();
 		$this->style_chips();
 		$this->style_button();
@@ -827,6 +829,250 @@ class Service_Panel extends Widget_Base {
 		}
 
 		return 1 === count( $stops ) ? $stops[0] : 'linear-gradient(90deg,' . implode( ',', $stops ) . ')';
+	}
+
+	/* -----------------------------------------------------------------
+	 * Scene: Content calendar
+	 * ----------------------------------------------------------------- */
+
+	private const CONTENT_DAYS = [ 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun' ];
+
+	/** The design's post types: name, background, text, outline. */
+	private const CONTENT_TYPES = [
+		[ 'Reel', '#0D1B2A', '#FFFFFF', '' ],
+		[ 'Carousel', '#FF6B2C', '#0D1B2A', '' ],
+		[ 'Story', '#FFFFFF', '#111318', '#E8EAED' ],
+	];
+
+	/** Three weeks of plans; the first is the design's. */
+	private const CONTENT_WEEKS = [
+		[ 'mon' => 'Reel', 'wed' => 'Carousel', 'thu' => 'Story', 'sat' => 'Reel' ],
+		[ 'tue' => 'Carousel', 'thu' => 'Reel', 'fri' => 'Story', 'sun' => 'Carousel' ],
+		[ 'mon' => 'Story', 'wed' => 'Reel', 'fri' => 'Carousel + Story', 'sat' => 'Reel' ],
+	];
+
+	private function controls_content(): void {
+		$this->start_controls_section(
+			'section_content',
+			[
+				'label'     => esc_html__( 'Content calendar scene', 'samanzavarian-widgets' ),
+				'condition' => [ 'scene' => 'content' ],
+			]
+		);
+
+		$this->add_control(
+			'content_mode',
+			[
+				'label'       => esc_html__( 'Which week', 'samanzavarian-widgets' ),
+				'type'        => Controls_Manager::SELECT,
+				'default'     => 'live',
+				'options'     => [
+					'live'  => esc_html__( 'The visitor\'s real week', 'samanzavarian-widgets' ),
+					'fixed' => esc_html__( 'A fixed week', 'samanzavarian-widgets' ),
+				],
+				'description' => esc_html__( 'Real week: the week number and today are the visitor\'s own (ISO weeks, Monday first).', 'samanzavarian-widgets' ),
+			]
+		);
+
+		$fixed = [ 'content_mode' => 'fixed' ];
+
+		$this->add_control( 'content_week', [ 'label' => esc_html__( 'Week number', 'samanzavarian-widgets' ), 'type' => Controls_Manager::NUMBER, 'default' => 42, 'min' => 1, 'max' => 53, 'condition' => $fixed ] );
+
+		$this->add_control(
+			'content_today',
+			[
+				'label'     => esc_html__( 'Highlighted day', 'samanzavarian-widgets' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => '3',
+				'options'   => [ '0' => esc_html__( 'None', 'samanzavarian-widgets' ), '1' => 'Mon', '2' => 'Tue', '3' => 'Wed', '4' => 'Thu', '5' => 'Fri', '6' => 'Sat', '7' => 'Sun' ],
+				'condition' => $fixed,
+			]
+		);
+
+		$types = new Repeater();
+		$types->add_control( 'name', [ 'label' => esc_html__( 'Name', 'samanzavarian-widgets' ), 'type' => Controls_Manager::TEXT, 'default' => 'Post' ] );
+		$types->add_control( 'bg', [ 'label' => esc_html__( 'Background', 'samanzavarian-widgets' ), 'type' => Controls_Manager::COLOR, 'default' => '#2A4560' ] );
+		$types->add_control( 'fg', [ 'label' => esc_html__( 'Text', 'samanzavarian-widgets' ), 'type' => Controls_Manager::COLOR, 'default' => '#FFFFFF' ] );
+		$types->add_control( 'line', [ 'label' => esc_html__( 'Outline', 'samanzavarian-widgets' ), 'type' => Controls_Manager::COLOR, 'default' => '' ] );
+
+		$this->add_control(
+			'content_types',
+			[
+				'label'       => esc_html__( 'Post types', 'samanzavarian-widgets' ),
+				'type'        => Controls_Manager::REPEATER,
+				'fields'      => $types->get_controls(),
+				'default'     => array_map( static fn( $t ) => [ 'name' => $t[0], 'bg' => $t[1], 'fg' => $t[2], 'line' => $t[3] ], self::CONTENT_TYPES ),
+				'title_field' => '{{{ name }}}',
+				'separator'   => 'before',
+			]
+		);
+
+		$weeks = new Repeater();
+		foreach ( self::CONTENT_DAYS as $day ) {
+			$weeks->add_control(
+				$day,
+				[
+					'label'       => ucfirst( $day ),
+					'type'        => Controls_Manager::TEXT,
+					'placeholder' => '—',
+					'ai'          => [ 'active' => false ],
+				]
+			);
+		}
+
+		$this->add_control(
+			'content_weeks',
+			[
+				'label'       => esc_html__( 'Weekly plans', 'samanzavarian-widgets' ),
+				'type'        => Controls_Manager::REPEATER,
+				'fields'      => $weeks->get_controls(),
+				'default'     => self::CONTENT_WEEKS,
+				'title_field' => '<# print( [ mon, tue, wed, thu, fri, sat, sun ].filter( Boolean ).join( " · " ) || "Empty week" ); #>',
+				'description' => esc_html__( 'Per day, a post type by name ("Reel"), several joined with + ("Reel + Story"). The calendar turns through these weeks in order.', 'samanzavarian-widgets' ),
+			]
+		);
+
+		$this->add_control( 'content_days', [ 'label' => esc_html__( 'Day names', 'samanzavarian-widgets' ), 'type' => Controls_Manager::TEXT, 'default' => 'Mon, Tue, Wed, Thu, Fri, Sat, Sun', 'description' => esc_html__( 'Seven, comma separated, Monday first.', 'samanzavarian-widgets' ), 'separator' => 'before' ] );
+		$this->add_control( 'content_title', [ 'label' => esc_html__( 'Calendar title', 'samanzavarian-widgets' ), 'type' => Controls_Manager::TEXT, 'default' => 'Content plan' ] );
+		$this->add_control( 'content_week_label', [ 'label' => esc_html__( 'Week label', 'samanzavarian-widgets' ), 'type' => Controls_Manager::TEXT, 'default' => 'Week {n}', 'description' => esc_html__( '{n} becomes the week number.', 'samanzavarian-widgets' ) ] );
+		$this->add_control( 'content_icon', [ 'label' => esc_html__( 'Notification icon', 'samanzavarian-widgets' ), 'type' => Controls_Manager::ICONS, 'default' => Icon_Library::value( 'cal' ), 'separator' => 'before' ] );
+		$this->add_control( 'content_done_title', [ 'label' => esc_html__( 'Notification title', 'samanzavarian-widgets' ), 'type' => Controls_Manager::TEXT, 'default' => 'This week is planned' ] );
+		$this->add_control( 'content_done_text', [ 'label' => esc_html__( 'Notification text', 'samanzavarian-widgets' ), 'type' => Controls_Manager::TEXT, 'default' => '{count} posts scheduled', 'description' => esc_html__( '{count} becomes the number of posts that week.', 'samanzavarian-widgets' ) ] );
+
+		$this->add_control(
+			'content_drop',
+			[
+				'label'       => esc_html__( 'Time between posts', 'samanzavarian-widgets' ),
+				'placeholder' => Control_Helpers::ph( 420, 'ms' ),
+				'type'        => Controls_Manager::SLIDER,
+				'size_units'  => [ 'ms' ],
+				'range'       => [ 'ms' => [ 'min' => 100, 'max' => 2000, 'step' => 20 ] ],
+				'separator'   => 'before',
+			]
+		);
+
+		$this->add_control(
+			'content_hold',
+			[
+				'label'       => esc_html__( 'Time before the page turns', 'samanzavarian-widgets' ),
+				'placeholder' => Control_Helpers::ph( 3.5, 's' ),
+				'type'        => Controls_Manager::SLIDER,
+				'size_units'  => [ 's' ],
+				'range'       => [ 's' => [ 'min' => 1, 'max' => 20, 'step' => 0.5 ] ],
+			]
+		);
+
+		$this->end_controls_section();
+	}
+
+	private function style_content(): void {
+		$this->start_controls_section(
+			'style_content',
+			[
+				'label'     => esc_html__( 'Content calendar scene', 'samanzavarian-widgets' ),
+				'tab'       => Controls_Manager::TAB_STYLE,
+				'condition' => [ 'scene' => 'content' ],
+			]
+		);
+
+		foreach ( [
+			'content_card_bg'   => [ esc_html__( 'Calendar', 'samanzavarian-widgets' ), '.szs-week, {{WRAPPER}} .szs-week__leaf', 'background-color' ],
+			'content_title_fg'  => [ esc_html__( 'Title', 'samanzavarian-widgets' ), '.szs-week__head', 'color' ],
+			'content_day_bg'    => [ esc_html__( 'Days', 'samanzavarian-widgets' ), '.szs-day', 'background-color' ],
+			'content_day_fg'    => [ esc_html__( 'Day names', 'samanzavarian-widgets' ), '.szs-day', 'color' ],
+			'content_today_bg'  => [ esc_html__( 'Today', 'samanzavarian-widgets' ), '.szs-day.is-today', 'background-color' ],
+			'content_today_fg'  => [ esc_html__( 'Today\'s name', 'samanzavarian-widgets' ), '.szs-day.is-today', 'color' ],
+			'content_notif_bg'  => [ esc_html__( 'Notification', 'samanzavarian-widgets' ), '.szs-notif', 'background-color' ],
+			'content_notif_fg'  => [ esc_html__( 'Notification text', 'samanzavarian-widgets' ), '.szs-notif', 'color' ],
+		] as $id => $def ) {
+			$this->add_control(
+				$id,
+				[
+					'label'     => $def[0],
+					'type'      => Controls_Manager::COLOR,
+					'selectors' => [ '{{WRAPPER}} ' . $def[1] => $def[2] . ': {{VALUE}};' ],
+				]
+			);
+		}
+
+		$this->end_controls_section();
+	}
+
+	/**
+	 * Everything the calendar needs, cleaned: post types (with safe colours),
+	 * the plans as type indexes per day, day names, and the week on show.
+	 *
+	 * @param array<string,mixed> $s
+	 * @return array<string,mixed>
+	 */
+	public static function content_plan( array $s ): array {
+		$raw   = isset( $s['content_types'] ) && is_array( $s['content_types'] ) ? $s['content_types'] : array_map( static fn( $t ) => [ 'name' => $t[0], 'bg' => $t[1], 'fg' => $t[2], 'line' => $t[3] ], self::CONTENT_TYPES );
+		$types = [];
+		$index = [];
+
+		foreach ( $raw as $t ) {
+			$name = trim( (string) ( $t['name'] ?? '' ) );
+			if ( '' === $name ) {
+				continue;
+			}
+			$index[ strtolower( $name ) ] = count( $types );
+			$types[]                      = [
+				'name' => $name,
+				'bg'   => self::css_color( (string) ( $t['bg'] ?? '' ) ),
+				'fg'   => self::css_color( (string) ( $t['fg'] ?? '' ) ),
+				'line' => self::css_color( (string) ( $t['line'] ?? '' ) ),
+			];
+		}
+
+		$weeks = [];
+		foreach ( isset( $s['content_weeks'] ) && is_array( $s['content_weeks'] ) ? $s['content_weeks'] : self::CONTENT_WEEKS as $w ) {
+			$days = [];
+			foreach ( self::CONTENT_DAYS as $day ) {
+				$posts = [];
+				foreach ( preg_split( '/\s*\+\s*/', trim( (string) ( $w[ $day ] ?? '' ) ) ) as $name ) {
+					if ( '' === $name ) {
+						continue;
+					}
+					// a known type by its index; any other name still shows, plainly
+					$key     = strtolower( $name );
+					$posts[] = isset( $index[ $key ] ) ? $index[ $key ] : [ 'name' => $name ];
+				}
+				$days[] = $posts;
+			}
+			$weeks[] = $days;
+		}
+
+		if ( ! $weeks ) {
+			$weeks[] = array_fill( 0, 7, [] );
+		}
+
+		$names = array_map( 'trim', explode( ',', (string) ( $s['content_days'] ?? '' ) ) );
+		if ( 7 !== count( $names ) ) {
+			$names = [ 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun' ];
+		}
+
+		$live = 'fixed' !== ( $s['content_mode'] ?? 'live' );
+
+		return [
+			'types' => $types,
+			'weeks' => $weeks,
+			'days'  => $names,
+			'live'  => $live,
+			// The server's best guess for a live calendar (site time zone);
+			// the script corrects it to the visitor's own date.
+			'week'  => $live ? (int) wp_date( 'W' ) : max( 1, min( 53, (int) ( $s['content_week'] ?? 42 ) ) ),
+			'today' => $live ? (int) wp_date( 'N' ) : max( 0, min( 7, (int) ( $s['content_today'] ?? 3 ) ) ),
+		];
+	}
+
+	/** Inline style for a post of a given type. */
+	public static function content_post_style( array $type ): string {
+		$css = '';
+		$css .= $type['bg'] ? 'background:' . $type['bg'] . ';' : '';
+		$css .= $type['fg'] ? 'color:' . $type['fg'] . ';' : '';
+		$css .= 'box-shadow:' . ( $type['line'] ? '0 0 0 1px ' . $type['line'] : 'none' ) . ';';
+
+		return $css;
 	}
 
 	private function style_panel(): void {

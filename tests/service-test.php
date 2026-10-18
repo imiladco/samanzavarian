@@ -207,4 +207,28 @@ $html = szw_render( array_merge( Service_Panel::preset( 'post' ), [ 'post_previe
 szw_ok( (bool) preg_match( '/<figure class="szs-shot szs-a" aria-hidden="true"><img class="szs-shot__media" src="https:\/\/x\.test\/p\.jpg"/', $html ), 'a preview image joins the scene' );
 szw_ok( [ 'sz-service-panel', 'sz-scene-post' ] === $make( [ 'scene' => 'post' ] )->get_script_depends(), 'a Post panel loads only its own scene script' );
 
+/* ------------------------------------------------------------------ */
+
+szw_group( 'Panel — Content calendar scene' );
+
+$fixed = array_merge( Service_Panel::preset( 'content' ), [ 'content_mode' => 'fixed' ] );
+$html  = szw_render( $fixed, 'sz-service-panel' );
+szw_ok( false !== strpos( $html, '<span class="szs-week__no">Week 42</span>' ) && 1 === preg_match_all( '/class="szs-day is-today"><span class="szs-day__name">Wed</', $html ), 'fixed week: Week 42, Wednesday highlighted (the design)' );
+szw_ok( [ 'Reel', 'Carousel', 'Story', 'Reel' ] === szw_all( '/<em class="szs-post"[^>]*>([^<]+)</', $html ), 'the design\'s four posts, in day order' );
+szw_ok( (bool) preg_match( '/style="background:#0D1B2A;color:#FFFFFF;box-shadow:none;">Reel/', $html ) && (bool) preg_match( '/style="background:#FFFFFF;color:#111318;box-shadow:0 0 0 1px #E8EAED;">Story/', $html ), 'post types carry the design\'s colours (Story outlined)' );
+szw_ok( false !== strpos( $html, '<span class="szs-notif__text">4 posts scheduled</span>' ), 'the notification counts the week\'s posts' );
+
+$plan = Service_Panel::content_plan( [] );
+szw_ok( (int) wp_date( 'W' ) === $plan['week'] && (int) wp_date( 'N' ) === $plan['today'] && true === $plan['live'], 'real-week mode (default): the server prints the site\'s current week and day; the script then uses the visitor\'s' );
+szw_ok( [ [ 0 ], [], [ 1 ], [ 2 ], [], [ 0 ], [] ] === $plan['weeks'][0] && [ 1, 2 ] === $plan['weeks'][2][4], 'plans: type indexes per day, "Carousel + Story" is two posts' );
+
+$plan = Service_Panel::content_plan( [ 'content_types' => [ [ 'name' => 'Live', 'bg' => 'red;x:y', 'fg' => '#000', 'line' => '' ], [ 'name' => '  ' ] ], 'content_weeks' => [ [ 'mon' => 'live + Podcast', 'tue' => '' ] ], 'content_days' => 'a,b' ] );
+szw_ok( 1 === count( $plan['types'] ) && '' === $plan['types'][0]['bg'], 'nameless types are dropped, unsafe colours emptied' );
+szw_ok( [ 0, [ 'name' => 'Podcast' ] ] === $plan['weeks'][0][0], 'type names match case-insensitively; an unknown name still shows as itself' );
+szw_ok( 'Mon' === $plan['days'][0], 'day names: anything but seven falls back to Mon…Sun' );
+
+$html = szw_render( array_merge( $fixed, [ 'content_week_label' => '<i>W{n}</i>', 'content_done_text' => '{count} <b>x</b>' ] ), 'sz-service-panel' );
+szw_ok( false !== strpos( $html, '&lt;i&gt;W42&lt;/i&gt;' ) && false !== strpos( $html, '4 &lt;b&gt;x&lt;/b&gt;' ), 'labels are escaped' );
+szw_ok( [ 'sz-service-panel', 'sz-scene-content' ] === $make( [ 'scene' => 'content' ] )->get_script_depends(), 'a Content panel loads only its own scene script' );
+
 szw_finish();
