@@ -4,6 +4,25 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.5.0
+- Service Panel — **AI scene, editable and animated**: the prompt types itself,
+  Generate is pressed, frames wait on sweeping plates, resolve from noise to
+  sharp, and the approval ring and label land on the picked frame.
+  - Frames repeater: each an image or a video (videos of a round play together)
+    or one of the design's gradients. More than three → rounds: the old frames
+    are tossed off the sheet, the next prompt (one per line) is typed.
+  - Controls: prompts, approved frame, label with {n}, button label, badge icon,
+    frame shape, typing speed, time per round, cycling; Style: sheet width and
+    every colour.
+  - Plays only while visible in an open tab; finished state without JS, with
+    reduced motion, and whenever paused. Design match unchanged (0px).
+- Panel runtime: a scene registry (window.szwScenes) — each scene script loads
+  only on pages that use that scene.
+- Fix: updating this plugin now clears Elementor's generated CSS and element
+  cache once, so new stylesheets never meet old cached widget HTML.
+- Fix (would have shipped in 0.4.0 if scenes had scripts): the editor preview
+  no longer fails when Elementor asks the bare widget type for its scripts.
+
 ## 0.4.0
 - New: **Service Tabs** ("What I do") — a nested widget like Elementor's own Tabs:
   every tab owns a real container, so any content can be built inside it. A new

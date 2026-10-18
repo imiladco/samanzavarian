@@ -136,10 +136,19 @@
 .szs .szs-gen__sheet{border-radius:24px;background:#fff;padding:14px;box-shadow:0 40px 80px -30px rgba(0,0,0,.6)}
 .szs .szs-gen__prompt{display:flex;align-items:center;gap:8px;height:42px;padding:0 6px 0 14px;border-radius:13px;background:var(--sz-fill);font-size:13px;line-height:1.6;color:var(--sz-t2)}
 .szs .szs-gen__prompt span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.szs .szs-gen__prompt b{height:30px;padding:0 12px;display:grid;place-items:center;border-radius:10px;background:var(--sz-orange);color:var(--sz-navy);font-size:12px;font-weight:700}
-.szs .szs-gen__grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
-.szs .szs-gen__grid i{position:relative;aspect-ratio:3/4;border-radius:13px}
-.szs .szs-gen__grid i.is-picked{box-shadow:0 0 0 2.5px #fff,0 0 0 4.5px var(--sz-orange)}
+.szs .szs-gen__prompt b{height:30px;padding:0 12px;display:grid;place-items:center;border-radius:10px;background:var(--sz-orange);color:var(--sz-navy);font-size:12px;font-weight:700;transition:transform .2s var(--sz-spring),filter .2s}
+.szs .szs-gen{--szs-ring:var(--sz-orange)}
+/* rounds of three share one cell; the current one shows */
+.szs .szs-gen__rounds{display:grid;grid-template-columns:minmax(0,1fr);margin-top:10px}
+.szs .szs-gen__grid{grid-area:1/1;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.szs .szs-gen__grid.szs-off{visibility:hidden}
+.szs .szs-gen__frame{
+  position:relative;display:block;aspect-ratio:3/4;border-radius:13px;
+  box-shadow:0 0 0 0 #fff,0 0 0 0 var(--szs-ring);
+  transition:transform .75s var(--sz-spring),opacity .45s var(--sz-ease),box-shadow .45s var(--sz-spring),filter .9s var(--sz-ease);
+}
+.szs .szs-gen__frame.is-picked{box-shadow:0 0 0 2.5px #fff,0 0 0 4.5px var(--szs-ring)}
+.szs .szs-gen__media{position:absolute;inset:0;display:block;width:100%;height:100%;max-width:none;object-fit:cover;border-radius:inherit}
 .szs .szs-gen__badge{position:absolute;left:-24px;top:-24px;z-index:1;width:60px;height:60px;border-radius:18px;font-size:28px;transform:rotate(-12deg)}
 .szs .szs-picked{position:absolute;right:7%;bottom:34px;--ar:6deg;display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px 0 8px;border-radius:99px;background:rgba(255,255,255,.14);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);font-size:13px;font-weight:600;line-height:1.6;color:#fff}
 .szs .szs-picked i{width:22px;height:22px;border-radius:50%;background:var(--sz-orange);display:grid;place-items:center;color:var(--sz-navy);font-size:12px}
@@ -152,9 +161,33 @@
 .sz-svc .szs .szs-twk{animation:szs-twinkle 2.8s ease-in-out infinite}
 .sz-svc .szs .szs-twk--2{animation-delay:1.3s}
 @keyframes szs-twinkle{0%,100%{opacity:0;transform:scale(.4) rotate(0)}45%,55%{opacity:1;transform:scale(1) rotate(20deg)}}
-.szs .szs-gen__grid i.is-picked{overflow:hidden}
-.szs .szs-gen__grid i.is-picked::before{content:"";position:absolute;inset:-20% auto -20% -60%;width:45%;z-index:2;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-12deg);pointer-events:none}
-.sz-svc .szs .szs-gen__grid i.is-picked::before{animation:szs-sweep 3.6s ease-in-out 1s infinite}
+.szs .szs-gen__frame.is-picked{overflow:hidden}
+.szs .szs-gen__frame.is-picked::before{content:"";position:absolute;inset:-20% auto -20% -60%;width:45%;z-index:2;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-12deg);pointer-events:none}
+.sz-svc .szs .szs-gen__frame.is-picked::before{animation:szs-sweep 3.6s ease-in-out 1s infinite}
+
+/* ---------- AI: the generation states (driven by assets/js/scenes/ai.js) ---------- */
+/* the prompt being typed */
+.szs .szs-gen__text.is-typing::after{content:"";display:inline-block;width:1.5px;height:1.05em;margin-left:1px;vertical-align:-.15em;background:currentColor;animation:szs-caret .9s steps(1) infinite}
+@keyframes szs-caret{50%{opacity:0}}
+/* Generate pressed */
+.szs .szs-gen__go.is-press{transform:scale(.9);filter:brightness(1.12)}
+/* a frame waiting for its image: a light sweeping over an empty plate */
+.szs .szs-gen__frame.is-loading{
+  background:linear-gradient(110deg,#E9ECF0 30%,#F6F7F9 50%,#E9ECF0 70%) 0 0/250% 100%;
+  animation:szs-shimmer 1.1s linear infinite;
+}
+.szs .szs-gen__frame.is-loading::after,
+.szs .szs-gen__frame.is-loading > *{opacity:0}
+@keyframes szs-shimmer{from{background-position:120% 0}to{background-position:-130% 0}}
+/* arriving: from noise to sharp, the way a diffusion model resolves */
+.szs .szs-gen__frame.is-noisy{filter:blur(14px) saturate(.35) contrast(1.2);transform:scale(.96);transition:none}
+/* leaving: tossed off the sheet */
+.szs .szs-gen__frame.is-out{opacity:0;transform:translate(-38%,10%) rotate(-9deg) scale(.86)}
+/* the approval label: away while generating, pops in on approval */
+.szs .szs-picked.is-waiting{opacity:0;transform:translateY(10px) rotate(var(--ar)) scale(.9)}
+
+.szs .szs-picked.is-pop{animation:szs-pop .55s var(--sz-spring)}
+@keyframes szs-pop{0%{transform:rotate(var(--ar)) scale(.82);opacity:.2}60%{transform:rotate(var(--ar)) scale(1.05);opacity:1}100%{transform:rotate(var(--ar)) scale(1)}}
 @keyframes szs-sweep{0%{left:-60%}35%,100%{left:130%}}
 /* nothing loops inside a closed tab */
 .sz-tabs__panel:not(.is-active) .szs *{animation-play-state:paused}
@@ -220,6 +253,6 @@
 }
 
 @media (prefers-reduced-motion:reduce){
-  .szs .szs-a{transition:none}
+  .szs .szs-a,.szs .szs-gen__frame{transition:none}
   .sz-svc .szs *{animation:none}
 }

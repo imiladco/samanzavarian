@@ -41,8 +41,32 @@ final class Plugin {
 		Assets::boot();
 		Icon_Library::boot();
 
+		add_action( 'init', [ $this, 'flush_after_update' ], 20 );
 		add_action( 'elementor/elements/categories_registered', [ $this, 'register_category' ] );
 		add_action( 'elementor/widgets/register', [ $this, 'register_widgets' ] );
+	}
+
+	/** Option holding the version whose output Elementor has cached. */
+	public const VERSION_OPTION = 'szw_version';
+
+	/**
+	 * After this plugin is updated, drop what Elementor generated from the
+	 * previous version: per-page CSS files and the element cache (rendered
+	 * widget HTML kept for up to a day). Otherwise new stylesheets meet old
+	 * markup — a broken layout that no cache purge on the server fixes.
+	 * Same as Elementor → Tools → "Regenerate CSS & Data", once per update.
+	 */
+	public function flush_after_update(): void {
+		if ( get_option( self::VERSION_OPTION ) === SZW_VERSION ) {
+			return;
+		}
+
+		// Record first: a failure below must not turn into a flush on every request.
+		update_option( self::VERSION_OPTION, SZW_VERSION, true );
+
+		if ( isset( \Elementor\Plugin::$instance->files_manager ) ) {
+			\Elementor\Plugin::$instance->files_manager->clear_cache();
+		}
 	}
 
 	private function meets_requirements(): bool {

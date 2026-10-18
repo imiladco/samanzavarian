@@ -28,6 +28,9 @@ class Service_Panel extends Widget_Base {
 
 	public const SCENES = [ 'ai', 'direction', 'post', 'content' ];
 
+	/** Scenes that have a script (assets/js/scenes/<name>.js). */
+	public const ANIMATED_SCENES = [ 'ai' ];
+
 	public function get_name(): string {
 		return 'sz-service-panel';
 	}
@@ -52,8 +55,22 @@ class Service_Panel extends Widget_Base {
 		return [ 'sz-service-panel' ];
 	}
 
+	/**
+	 * Only the script of the scene this instance shows (Elementor asks each
+	 * rendered instance). The editor gets every scene: settings change there.
+	 */
 	public function get_script_depends(): array {
-		return [ 'sz-service-panel' ];
+		$all = array_merge( [ 'sz-service-panel' ], array_map( static fn( $s ) => 'sz-scene-' . $s, self::ANIMATED_SCENES ) );
+
+		// The editor (and Elementor itself, on the bare widget type, which has
+		// no settings to read) gets every scene.
+		if ( ! $this->get_id() || Elementor::$instance->editor->is_edit_mode() || Elementor::$instance->preview->is_preview_mode() ) {
+			return $all;
+		}
+
+		$scene = (string) $this->get_settings( 'scene' );
+
+		return in_array( $scene, self::ANIMATED_SCENES, true ) ? [ 'sz-service-panel', 'sz-scene-' . $scene ] : [ 'sz-service-panel' ];
 	}
 
 	protected function is_dynamic_content(): bool {
@@ -172,6 +189,8 @@ class Service_Panel extends Widget_Base {
 
 		$this->end_controls_section();
 
+		$this->controls_ai();
+
 		$this->start_controls_section( 'section_info', [ 'label' => esc_html__( 'Card', 'samanzavarian-widgets' ) ] );
 
 		$this->add_control(
@@ -267,9 +286,272 @@ class Service_Panel extends Widget_Base {
 		$this->end_controls_section();
 
 		$this->style_panel();
+		$this->style_ai();
 		$this->style_card();
 		$this->style_chips();
 		$this->style_button();
+	}
+
+	/* -----------------------------------------------------------------
+	 * Scene: AI production
+	 * ----------------------------------------------------------------- */
+
+	private function controls_ai(): void {
+		$on = [ 'scene' => 'ai' ];
+
+		$this->start_controls_section(
+			'section_ai',
+			[
+				'label'     => esc_html__( 'AI scene', 'samanzavarian-widgets' ),
+				'condition' => $on,
+			]
+		);
+
+		$this->add_control(
+			'ai_prompts',
+			[
+				'label'       => esc_html__( 'Prompts', 'samanzavarian-widgets' ),
+				'type'        => Controls_Manager::TEXTAREA,
+				'rows'        => 3,
+				'default'     => 'Perfume bottle on wet stone, soft rim light, 85mm',
+				'description' => esc_html__( 'One per line, one per round of three frames. Fewer lines than rounds repeat from the top.', 'samanzavarian-widgets' ),
+			]
+		);
+
+		$frames = new Repeater();
+
+		$frames->add_control(
+			'media',
+			[
+				'label'       => esc_html__( 'Image or video', 'samanzavarian-widgets' ),
+				'type'        => Controls_Manager::MEDIA,
+				'media_types' => [ 'image', 'video' ],
+				'description' => esc_html__( 'Videos play muted and looped, all frames of a round together.', 'samanzavarian-widgets' ),
+			]
+		);
+
+		$frames->add_control(
+			'mesh',
+			[
+				'label'       => esc_html__( 'Placeholder', 'samanzavarian-widgets' ),
+				'type'        => Controls_Manager::SELECT,
+				'default'     => '1',
+				'options'     => [
+					'1' => esc_html__( 'Peach glow', 'samanzavarian-widgets' ),
+					'2' => esc_html__( 'Night orange', 'samanzavarian-widgets' ),
+					'3' => esc_html__( 'Pearl', 'samanzavarian-widgets' ),
+					'4' => esc_html__( 'Ember', 'samanzavarian-widgets' ),
+					'5' => esc_html__( 'Apricot', 'samanzavarian-widgets' ),
+					'6' => esc_html__( 'Slate', 'samanzavarian-widgets' ),
+				],
+				'description' => esc_html__( 'The gradient shown while no image or video is set (the design uses these).', 'samanzavarian-widgets' ),
+			]
+		);
+
+		$this->add_control(
+			'ai_frames',
+			[
+				'label'       => esc_html__( 'Generated frames', 'samanzavarian-widgets' ),
+				'type'        => Controls_Manager::REPEATER,
+				'fields'      => $frames->get_controls(),
+				'default'     => [ [ 'mesh' => '2' ], [ 'mesh' => '1' ], [ 'mesh' => '3' ] ],
+				'title_field' => '<# print( media && media.url ? media.url.split( "/" ).pop() : "Frame" ); #>',
+				'description' => esc_html__( 'Three per round. With more than three, rounds take turns: a new prompt is typed and the next three are generated.', 'samanzavarian-widgets' ),
+			]
+		);
+
+		$this->add_control(
+			'ai_pick',
+			[
+				'label'   => esc_html__( 'Approved frame', 'samanzavarian-widgets' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => '2',
+				'options' => [
+					'1' => esc_html__( 'First', 'samanzavarian-widgets' ),
+					'2' => esc_html__( 'Middle', 'samanzavarian-widgets' ),
+					'3' => esc_html__( 'Last', 'samanzavarian-widgets' ),
+				],
+				'separator' => 'before',
+			]
+		);
+
+		$this->add_control(
+			'ai_approved',
+			[
+				'label'       => esc_html__( 'Approval label', 'samanzavarian-widgets' ),
+				'type'        => Controls_Manager::TEXT,
+				'default'     => 'Variation {n} approved',
+				'description' => esc_html__( '{n} becomes the approved frame\'s number.', 'samanzavarian-widgets' ),
+			]
+		);
+
+		$this->add_control(
+			'ai_button',
+			[
+				'label'   => esc_html__( 'Button label', 'samanzavarian-widgets' ),
+				'type'    => Controls_Manager::TEXT,
+				'default' => 'Generate',
+			]
+		);
+
+		$this->add_control(
+			'ai_badge',
+			[
+				'label'   => esc_html__( 'Badge icon', 'samanzavarian-widgets' ),
+				'type'    => Controls_Manager::ICONS,
+				'default' => Icon_Library::value( 'spark' ),
+			]
+		);
+
+		$this->add_control(
+			'ai_ratio',
+			[
+				'label'     => esc_html__( 'Frame shape', 'samanzavarian-widgets' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => '3/4',
+				'options'   => [
+					'3/4'  => esc_html__( 'Portrait 3:4 (design)', 'samanzavarian-widgets' ),
+					'4/5'  => esc_html__( 'Portrait 4:5', 'samanzavarian-widgets' ),
+					'9/16' => esc_html__( 'Story 9:16', 'samanzavarian-widgets' ),
+					'1/1'  => esc_html__( 'Square', 'samanzavarian-widgets' ),
+					'16/9' => esc_html__( 'Landscape 16:9', 'samanzavarian-widgets' ),
+				],
+				'selectors' => [ '{{WRAPPER}} .szs-gen__frame' => 'aspect-ratio: {{VALUE}};' ],
+			]
+		);
+
+		$this->add_control(
+			'ai_motion_heading',
+			[
+				'label'     => esc_html__( 'Motion', 'samanzavarian-widgets' ),
+				'type'      => Controls_Manager::HEADING,
+				'separator' => 'before',
+			]
+		);
+
+		$this->add_control(
+			'ai_type_speed',
+			[
+				'label'       => esc_html__( 'Typing speed', 'samanzavarian-widgets' ),
+				'placeholder' => Control_Helpers::ph( 38, 'ms' ),
+				'type'        => Controls_Manager::SLIDER,
+				'size_units'  => [ 'ms' ],
+				'range'       => [ 'ms' => [ 'min' => 0, 'max' => 150 ] ],
+				'description' => esc_html__( 'Per letter. 0 shows the prompt at once.', 'samanzavarian-widgets' ),
+			]
+		);
+
+		$this->add_control(
+			'ai_hold',
+			[
+				'label'       => esc_html__( 'Time per round', 'samanzavarian-widgets' ),
+				'placeholder' => Control_Helpers::ph( 4, 's' ),
+				'type'        => Controls_Manager::SLIDER,
+				'size_units'  => [ 's' ],
+				'range'       => [ 's' => [ 'min' => 1, 'max' => 20, 'step' => 0.5 ] ],
+				'description' => esc_html__( 'How long an approved round stays before the next one.', 'samanzavarian-widgets' ),
+			]
+		);
+
+		$this->add_control(
+			'ai_cycle',
+			[
+				'label'        => esc_html__( 'Keep cycling rounds', 'samanzavarian-widgets' ),
+				'type'         => Controls_Manager::SWITCHER,
+				'default'      => 'yes',
+				'return_value' => 'yes',
+				'description'  => esc_html__( 'Off: play through the rounds once and stay on the last. With a single round it plays each time the panel comes into view.', 'samanzavarian-widgets' ),
+			]
+		);
+
+		$this->end_controls_section();
+	}
+
+	private function style_ai(): void {
+		$this->start_controls_section(
+			'style_ai',
+			[
+				'label'     => esc_html__( 'AI scene', 'samanzavarian-widgets' ),
+				'tab'       => Controls_Manager::TAB_STYLE,
+				'condition' => [ 'scene' => 'ai' ],
+			]
+		);
+
+		$this->add_responsive_control(
+			'ai_width',
+			[
+				'label'       => esc_html__( 'Sheet width', 'samanzavarian-widgets' ),
+				'type'        => Controls_Manager::SLIDER,
+				'size_units'  => [ 'px', '%' ],
+				'range'       => [
+					'px' => [ 'min' => 200, 'max' => 700 ],
+					'%'  => [ 'min' => 40, 'max' => 100 ],
+				],
+				'description' => esc_html__( 'Design: 440px, at most 78% of the panel (86% when narrow). Stays centred.', 'samanzavarian-widgets' ),
+				'selectors'   => [ '{{WRAPPER}} .szs-gen' => 'width: {{SIZE}}{{UNIT}}; margin-left: calc({{SIZE}}{{UNIT}} / -2);' ],
+			]
+		);
+
+		foreach ( [
+			'ai_sheet_bg'   => [ esc_html__( 'Sheet', 'samanzavarian-widgets' ), '.szs-gen__sheet', 'background-color' ],
+			'ai_prompt_bg'  => [ esc_html__( 'Prompt field', 'samanzavarian-widgets' ), '.szs-gen__prompt', 'background-color' ],
+			'ai_prompt_fg'  => [ esc_html__( 'Prompt text', 'samanzavarian-widgets' ), '.szs-gen__prompt', 'color' ],
+			'ai_go_bg'      => [ esc_html__( 'Button', 'samanzavarian-widgets' ), '.szs-gen__go', 'background-color' ],
+			'ai_go_fg'      => [ esc_html__( 'Button text', 'samanzavarian-widgets' ), '.szs-gen__go', 'color' ],
+			'ai_ring'       => [ esc_html__( 'Approval ring', 'samanzavarian-widgets' ), '.szs-gen', '--szs-ring' ],
+			'ai_pill_bg'    => [ esc_html__( 'Approval label background', 'samanzavarian-widgets' ), '.szs-picked', 'background-color' ],
+			'ai_pill_fg'    => [ esc_html__( 'Approval label text', 'samanzavarian-widgets' ), '.szs-picked', 'color' ],
+		] as $id => $def ) {
+			$this->add_control(
+				$id,
+				[
+					'label'     => $def[0],
+					'type'      => Controls_Manager::COLOR,
+					'selectors' => [ '{{WRAPPER}} ' . $def[1] => $def[2] . ': {{VALUE}};' ],
+				]
+			);
+		}
+
+		$this->end_controls_section();
+	}
+
+	/**
+	 * Frames grouped into rounds of three. A short last round is completed
+	 * from the start, so every round fills the sheet.
+	 *
+	 * @param array<string,mixed> $s
+	 * @return array<int,array<int,array<string,mixed>>>
+	 */
+	public static function ai_rounds( array $s ): array {
+		$frames = isset( $s['ai_frames'] ) && is_array( $s['ai_frames'] ) ? array_values( $s['ai_frames'] ) : [];
+
+		if ( ! $frames ) {
+			$frames = [ [ 'mesh' => '2' ], [ 'mesh' => '1' ], [ 'mesh' => '3' ] ];
+		}
+
+		$count  = count( $frames );
+		$rounds = [];
+
+		for ( $start = 0; $start < $count; $start += 3 ) {
+			$round = [];
+			for ( $k = 0; $k < 3; $k++ ) {
+				$round[] = $frames[ ( $start + $k ) % $count ];
+			}
+			$rounds[] = $round;
+		}
+
+		return $rounds;
+	}
+
+	/**
+	 * @param array<string,mixed> $s
+	 * @return string[] one prompt per line, empty lines dropped
+	 */
+	public static function ai_prompts( array $s ): array {
+		$lines = preg_split( '/\R/', (string) ( $s['ai_prompts'] ?? '' ) );
+		$lines = array_values( array_filter( array_map( 'trim', $lines ), 'strlen' ) );
+
+		return $lines ? $lines : [ '' ];
 	}
 
 	private function style_panel(): void {
@@ -609,10 +891,11 @@ class Service_Panel extends Widget_Base {
 			return;
 		}
 
-		$file = SZW_PATH . 'includes/Widgets/scenes/' . ( in_array( $scene, self::SCENES, true ) ? $scene : 'ai' ) . '.php';
+		$scene = in_array( $scene, self::SCENES, true ) ? $scene : 'ai';
+		$data  = in_array( $scene, self::ANIMATED_SCENES, true ) ? ' data-szs="' . esc_attr( $scene ) . '"' : '';
 
-		echo '<div class="sz-svc__art szs szs--' . esc_attr( $scene ) . '" aria-hidden="true">';
-		include $file;
+		echo '<div class="sz-svc__art szs szs--' . esc_attr( $scene ) . '"' . $data . ' aria-hidden="true">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above
+		include SZW_PATH . 'includes/Widgets/scenes/' . $scene . '.php';
 		echo '</div>';
 	}
 

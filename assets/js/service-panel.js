@@ -1,18 +1,28 @@
 /**
- * Service Panel — plays a panel's videos only while someone can see them:
- * on screen, in an open tab, page in the foreground. Everything else stays
- * paused, so four tabs of video cost what one visible tab costs.
+ * Service Panel runtime — decides when things move.
  *
- * Videos are marked data-sz-autoplay (never autoplay): the browser does not
- * start them on its own, and with prefers-reduced-motion they stay paused on
- * their first frame.
+ * A panel is "live" while it is on screen, in an open tab (or not in tabs at
+ * all), the page is in the foreground and the visitor has not asked for
+ * reduced motion. Only then:
+ *   • its videos play (data-sz-autoplay; never the autoplay attribute), and
+ *   • its scene plays (each scene script registers a controller here).
+ * Everything else is paused, so four tabs of scenes and video cost what one
+ * visible tab costs.
+ *
+ * Scene contract:
+ *   window.szwScenes.register( 'ai', ( root ) => ( { play(), pause() } ) )
+ * root is the scene's .szs element. play() and pause() may be called any
+ * number of times; with reduced motion neither is ever called, and the
+ * server markup — the design's finished state — is what shows.
  */
 ( function () {
 	'use strict';
 
 	const reduce = window.matchMedia( '(prefers-reduced-motion: reduce)' );
-	const seen = new WeakSet();
 	const onScreen = new WeakMap();
+	const controllers = new WeakMap();
+	const factories = {};
+	const tracked = new Set();
 
 	const io = 'IntersectionObserver' in window
 		? new IntersectionObserver( ( entries ) => entries.forEach( ( e ) => {
@@ -21,48 +31,105 @@
 		} ), { threshold: 0.15 } )
 		: null;
 
-	function visible( video ) {
-		const panel = video.closest( '.sz-tabs__panel' );
+	/** On screen, in an open tab, not in a hidden round, page visible. */
+	function live( el ) {
+		const panel = el.closest( '.sz-tabs__panel' );
 		return ( ! panel || panel.classList.contains( 'is-active' ) )
-			&& ( io ? onScreen.get( video ) === true : true )
-			&& document.visibilityState === 'visible';
+			&& ! el.closest( '.szs-off' )
+			&& ( io ? onScreen.get( el ) === true : true )
+			&& document.visibilityState === 'visible'
+			&& ! reduce.matches;
 	}
 
-	function update( video ) {
-		if ( ! reduce.matches && visible( video ) ) {
-			const p = video.play();
-			if ( p && p.catch ) {
-				p.catch( () => {} );
+	function update( el ) {
+		if ( el.tagName === 'VIDEO' ) {
+			if ( live( el ) ) {
+				const p = el.play();
+				if ( p && p.catch ) {
+					p.catch( () => {} );
+				}
+			} else if ( ! el.paused ) {
+				el.pause();
 			}
-		} else if ( ! video.paused ) {
-			video.pause();
+			return;
+		}
+
+		const ctrl = controllers.get( el );
+		if ( ctrl ) {
+			if ( live( el ) ) {
+				ctrl.play();
+			} else {
+				ctrl.pause();
+			}
 		}
 	}
 
+	function track( el ) {
+		if ( tracked.has( el ) ) {
+			return;
+		}
+		tracked.add( el );
+		if ( io ) {
+			io.observe( el );
+		}
+		update( el );
+	}
+
 	function scan( scope ) {
-		( scope || document ).querySelectorAll( '.sz-svc video[data-sz-autoplay]' ).forEach( ( v ) => {
-			if ( seen.has( v ) ) {
+		const root = scope || document;
+
+		root.querySelectorAll( '.sz-svc video[data-sz-autoplay]' ).forEach( ( v ) => {
+			v.muted = true; // required for autoplay everywhere; set as a property too
+			track( v );
+		} );
+
+		root.querySelectorAll( '.sz-svc .szs[data-szs]' ).forEach( ( el ) => {
+			const factory = factories[ el.dataset.szs ];
+			// With reduced motion a scene is never started: the markup is final.
+			if ( ! factory || controllers.has( el ) || reduce.matches ) {
 				return;
 			}
-			seen.add( v );
-			v.muted = true; // required for autoplay on every browser, set as a property too
-			if ( io ) {
-				io.observe( v );
-			}
-			update( v );
+			controllers.set( el, factory( el, { refresh } ) );
+			track( el );
 		} );
 	}
 
-	const all = () => document.querySelectorAll( '.sz-svc video[data-sz-autoplay]' ).forEach( update );
+	/** Re-evaluate everything (tab switched, round changed, page shown…). */
+	function refresh() {
+		tracked.forEach( ( el ) => {
+			if ( ! el.isConnected ) {
+				tracked.delete( el );
+				if ( io ) {
+					io.unobserve( el );
+				}
+				const ctrl = controllers.get( el );
+				if ( ctrl ) {
+					ctrl.pause();
+				}
+				return;
+			}
+			update( el );
+		} );
+	}
 
-	document.addEventListener( 'sz:change', all );
-	document.addEventListener( 'visibilitychange', all );
+	window.szwScenes = {
+		register( name, factory ) {
+			factories[ name ] = factory;
+			scan();
+		},
+	};
+
+	document.addEventListener( 'sz:change', refresh );
+	document.addEventListener( 'visibilitychange', refresh );
 	if ( reduce.addEventListener ) {
-		reduce.addEventListener( 'change', all );
+		reduce.addEventListener( 'change', refresh );
 	}
 
 	window.addEventListener( 'elementor/frontend/init', () => {
-		window.elementorFrontend.hooks.addAction( 'frontend/element_ready/sz-service-panel.default', ( $el ) => scan( $el[ 0 ] ) );
+		window.elementorFrontend.hooks.addAction( 'frontend/element_ready/sz-service-panel.default', ( $el ) => {
+			refresh(); // drop the instance the editor just replaced
+			scan( $el[ 0 ] );
+		} );
 	} );
 
 	if ( document.readyState === 'loading' ) {
@@ -71,5 +138,5 @@
 		scan();
 	}
 
-	window.szwPanels = { scan };
+	window.szwPanels = { scan, refresh };
 }() );

@@ -57,6 +57,12 @@ final class Assets {
 		foreach ( self::WIDGET_SCRIPTS as $handle => $file ) {
 			wp_register_script( $handle, SZW_URL . 'assets/js/' . $file, [], self::version( 'js/' . $file ), [ 'in_footer' => true, 'strategy' => 'defer' ] );
 		}
+
+		// One script per animated scene, on top of the panel runtime.
+		foreach ( Widgets\Service_Panel::ANIMATED_SCENES as $scene ) {
+			$file = 'scenes/' . $scene . '.js';
+			wp_register_script( 'sz-scene-' . $scene, SZW_URL . 'assets/js/' . $file, [ 'sz-service-panel' ], self::version( 'js/' . $file ), [ 'in_footer' => true, 'strategy' => 'defer' ] );
+		}
 	}
 
 	private static function url( string $file ): string {

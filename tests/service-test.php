@@ -116,7 +116,7 @@ $html = szw_render( [], 'sz-service-panel' );
 szw_ok( false !== strpos( $html, 'sz-svc sz-w sz-svc--dark' ) && false !== strpos( $html, 'szs--ai' ), 'default: the AI panel on navy' );
 szw_ok( [ 'Product key visuals', 'Campaign imagery', 'Short AI video' ] === array_map( 'trim', szw_all( '/<\/span>([^<]+)<\/li>/', $html ) ), 'design deliverables' );
 szw_ok( (bool) preg_match( '/<a class="sz-svc__btn" href="#contact" data-sz-prefill="AI visuals">Ask about AI visuals<\/a>/', $html ), 'button links to #contact and names its service for the contact form' );
-szw_ok( false !== strpos( $html, 'aria-hidden="true"' ) && (bool) preg_match( '/sz-svc__art szs szs--ai" aria-hidden="true"/', $html ), 'the scene is decoration, hidden from screen readers' );
+szw_ok( false !== strpos( $html, 'aria-hidden="true"' ) && (bool) preg_match( '/sz-svc__art szs szs--ai" data-szs="ai" aria-hidden="true"/', $html ), 'the scene is decoration, hidden from screen readers' );
 
 foreach ( [ 'direction' => [ 'peach', 'szs-swatch' ], 'post' => [ 'cool', 'szs-grade' ], 'content' => [ 'grid', 'szs-week' ] ] as $name => $expect ) {
 	$h = szw_render( Service_Panel::preset( $name ), 'sz-service-panel' );
@@ -144,5 +144,39 @@ szw_ok( false === strpos( $html, 'sz-svc__card' ) && false !== strpos( $html, 's
 $css = szw_css( [ [ 'id' => 'c0ffee1', 'elType' => 'container', 'settings' => [], 'elements' => [ [ 'id' => 'pan1234', 'elType' => 'widget', 'widgetType' => 'sz-service-panel', 'settings' => [ 'panel_bg_background' => 'classic', 'panel_bg_image' => [ 'url' => 'https://x.test/bg.jpg', 'id' => '' ] ], 'elements' => [] ] ] ] ] );
 szw_ok( (bool) preg_match( '/pan1234 \.sz-svc\{[^}]*url\("https:\/\/x\.test\/bg\.jpg"\)[^}]*--szs-tone:\s*none/', $css ) || (bool) preg_match( '/pan1234 \.sz-svc\{[^}]*--szs-tone:\s*none[^}]*url\("https:\/\/x\.test\/bg\.jpg"\)/', $css ), 'a background image replaces the tone gradient without being erased by it' );
 szw_ok( false !== strpos( szw_at( $css, $mob ), 'min-height:270px' ) && false !== strpos( szw_at( $css, $tab ), 'min-height:300px' ), 'scene height: 320 / 300 / 270 at Elementor breakpoints (the design)' );
+
+/* ------------------------------------------------------------------ */
+
+szw_group( 'Panel — AI scene' );
+
+$rounds = Service_Panel::ai_rounds( [ 'ai_frames' => [ [ 'mesh' => '1' ], [ 'mesh' => '2' ], [ 'mesh' => '3' ], [ 'mesh' => '4' ], [ 'mesh' => '5' ] ] ] );
+szw_ok( 2 === count( $rounds ) && [ '4', '5', '1' ] === array_column( $rounds[1], 'mesh' ), '5 frames → 2 rounds; the short last round is completed from the start' );
+szw_ok( 1 === count( Service_Panel::ai_rounds( [] ) ) && 3 === count( Service_Panel::ai_rounds( [] )[0] ), 'no frames → the design\'s three placeholders' );
+szw_ok( [ 'One', 'Two' ] === Service_Panel::ai_prompts( [ 'ai_prompts' => "One\r\n\n  Two  \n" ] ), 'prompts: one per line, blank lines dropped, trimmed' );
+
+$html = szw_render( [], 'sz-service-panel' );
+preg_match( '/data-szs-ai="([^"]+)"/', $html, $m );
+$cfg = json_decode( html_entity_decode( $m[1] ?? '' ), true );
+szw_ok( is_array( $cfg ) && [ 'Perfume bottle on wet stone, soft rim light, 85mm' ] === $cfg['prompts'] && 2 === $cfg['pick'] && 38.0 === (float) $cfg['speed'] && 4000.0 === (float) $cfg['hold'] && true === $cfg['cycle'], 'the script gets its timing and texts from the settings (design defaults)' );
+szw_ok( (bool) preg_match( '/<span class="szs-gen__text">Perfume bottle on wet stone, soft rim light, 85mm<\/span><b class="szs-gen__go">Generate<\/b>/', $html ), 'printed finished: the prompt is already typed' );
+szw_ok( [ '2', '1', '3' ] === szw_all( '/szs-gen__frame szs-mesh szs-mesh--(\d)/', $html ) && 1 === substr_count( $html, 'is-picked' ) && false !== strpos( $html, 'szs-mesh--1 is-picked' ), 'the design\'s frames, the middle one approved' );
+szw_ok( false !== strpos( $html, '<span class="szs-picked__text">Variation 2 approved</span>' ), 'approval label with its number' );
+
+$html = szw_render( [ 'ai_frames' => [ [ 'mesh' => '1' ], [ 'mesh' => '2' ], [ 'mesh' => '3' ], [ 'mesh' => '4', 'media' => [ 'url' => 'https://x.test/v.webm', 'id' => '' ] ] ], 'ai_pick' => '9', 'ai_approved' => '<b>{n}</b>', 'ai_prompts' => '<script>x</script>' ], 'sz-service-panel' );
+szw_ok( 1 === substr_count( $html, 'szs-gen__grid is-current' ) && 1 === substr_count( $html, 'szs-gen__grid szs-off' ), 'later rounds are printed hidden' );
+szw_ok( false !== strpos( $html, 'szs-gen__frame szs-mesh szs-mesh--4"><video class="szs-gen__media"' ), 'a frame can be a video' );
+szw_ok( false !== strpos( $html, '&lt;b&gt;3&lt;/b&gt;' ) && false === strpos( $html, '<script>x' ), 'an out-of-range pick is clamped (9 → 3); labels and prompts are escaped' );
+
+$panel = Elementor::$instance->widgets_manager->get_widget_types( 'sz-service-panel' );
+try {
+	$deps = $panel->get_script_depends();
+	szw_ok( in_array( 'sz-scene-ai', $deps, true ), 'the bare widget type (no settings) asks for every scene script, without failing' );
+} catch ( \Throwable $e ) {
+	szw_ok( false, 'the bare widget type asks for scripts without failing: ' . $e->getMessage() );
+}
+$make = static fn( array $set ) => Elementor::$instance->elements_manager->create_element_instance( [ 'id' => 'dep1234', 'elType' => 'widget', 'widgetType' => 'sz-service-panel', 'settings' => $set ] );
+szw_ok( [ 'sz-service-panel', 'sz-scene-ai' ] === $make( [] )->get_script_depends(), 'an AI panel loads only the AI scene script' );
+szw_ok( [ 'sz-service-panel' ] === $make( [ 'scene' => 'media' ] )->get_script_depends(), 'a media panel loads no scene script' );
+szw_ok( wp_script_is( 'sz-scene-ai', 'registered' ) && in_array( 'sz-service-panel', wp_scripts()->registered['sz-scene-ai']->deps, true ), 'scene scripts load after the panel runtime' );
 
 szw_finish();
