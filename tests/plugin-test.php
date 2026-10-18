@@ -43,4 +43,35 @@ update_post_meta( $post, '_elementor_element_cache', [ 'timeout' => time() + 360
 szw_ok( '' !== get_post_meta( $post, '_elementor_element_cache', true ), 'same version: nothing is cleared (no flush on every request)' );
 wp_delete_post( $post, true );
 
+/* ------------------------------------------------------------------ */
+
+szw_group( 'The editor can load every widget (the path that broke a live site in 0.13.0)' );
+
+$wrong = [];
+$catch = static function ( $fn, $message ) use ( &$wrong ) {
+	$wrong[] = $fn . ': ' . wp_strip_all_tags( (string) $message );
+};
+add_action( 'doing_it_wrong_run', $catch, 10, 2 );
+
+foreach ( Elementor\Plugin::$instance->widgets_manager->get_widget_types() as $name => $type ) {
+	if ( 0 !== strpos( $name, 'sz-' ) ) {
+		continue;
+	}
+	$class = get_class( $type );
+	$fresh = new $class(); // a bare type, as Elementor builds the editor's config from it
+	// drop the cached controls, so they are registered again here, in front of the catcher
+	Elementor\Plugin::$instance->controls_manager->delete_stack( $fresh );
+	try {
+		$fresh->get_controls();
+		$fresh->get_config();
+		szw_ok( true, $name . ': editor config builds' );
+	} catch ( \Throwable $e ) {
+		szw_ok( false, $name . ': editor config builds — ' . $e->getMessage() );
+	}
+}
+
+remove_action( 'doing_it_wrong_run', $catch, 10 );
+$mine = array_filter( $wrong, static fn( $w ) => false !== strpos( $w, 'redeclare' ) || false !== strpos( $w, 'sz' ) );
+szw_ok( ! $mine, 'no control is declared twice' . ( $mine ? ': ' . implode( ' | ', array_unique( $mine ) ) : '' ) );
+
 szw_finish();

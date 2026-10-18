@@ -315,4 +315,9 @@ szw_ok( 1 === count( Service_Panel::editor_notes( 'post', [ 'post_edits' => [ 'x
 szw_ok( 1 === count( Service_Panel::editor_notes( 'ai', [ 'ai_pieces' => [ [ 'client' => 'A', 'brief' => str_repeat( 'x', 120 ) ], [ 'client' => 'B' ] ] ] ) ) && 1 === count( Service_Panel::editor_notes( 'ai', [ 'ai_pieces' => [ [ 'client' => 'A' ] ] ] ) ), 'a brief too long for two lines, or a reel of one, is pointed out' );
 szw_ok( false === strpos( szw_render( [ 'scene' => 'content', 'content_plan_mon' => 'Podcast' ], 'sz-service-panel' ), 'sz-svc__editor-note' ), 'visitors never see these notes' );
 
+szw_group( 'Content scene: the trend and repurpose notifications have their own text' );
+
+$html = szw_render( [ 'scene' => 'content' ], 'sz-service-panel' );
+szw_ok( false !== strpos( $html, 'Trend spotted' ) && false !== strpos( $html, 'your average reach' ), 'their text reaches the script (it read "yes" while a switch shared the name, 0.10.0–0.13.0)' );
+
 szw_finish();

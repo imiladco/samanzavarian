@@ -4,6 +4,30 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.13.1 — fix: the Elementor editor would not open
+Reported from the live site: opening any page in Elementor ended in a fatal
+error.
+
+- **Status (0.13.0).** Elementor also asks the bare widget type, when it
+  builds the editor's config, whether its output is dynamic. Status read
+  its settings to answer, and a bare type has none, which is fatal on PHP 8.
+  It now answers "no" for the bare type.
+- **Content scene (since 0.10.0).** Two of its text controls shared a name
+  with two switches ("Trends get a fast Reel", "Strong Reels get a carousel
+  version"). Elementor kept the switches and dropped the texts: they gave
+  "Cannot redeclare control" notices, could not be edited, and the trend
+  and repurpose notifications showed "yes" instead of their text. The texts
+  have their own names now. Nothing saved is lost; the switches keep their
+  values.
+- Selected Work's slide-out probe no longer throws when an optimiser such
+  as WP Rocket or LiteSpeed delays inline scripts.
+- **New tests.**
+  - Build the editor config of every widget from a bare type, the exact path
+    that failed.
+  - Fail on any control declared twice.
+  - Check the scene's notification texts.
+  - Run against the old code, they fail for both bugs.
+
 ## 0.13.0 — Status and Section Tag
 Two small widgets from the design, and one stylesheet for both.
 

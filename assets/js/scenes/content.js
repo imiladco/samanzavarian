@@ -355,7 +355,7 @@
 			if ( i.el ) {
 				i.el.classList.add( 'is-pop' );
 			}
-			say( fill( L.content_trend, { type: F[ reel ].name, day: DAYS[ wd( D ) ], time: '19:30' } ), L.content_trend2, 'trend' + api.time.t, 'trend', 2600 );
+			say( fill( L.content_say_trend, { type: F[ reel ].name, day: DAYS[ wd( D ) ], time: '19:30' } ), L.content_trend2, 'trend' + api.time.t, 'trend', 2600 );
 		}
 		function repurpose( src ) {
 			if ( carousel < 0 ) {
@@ -371,7 +371,7 @@
 			if ( i.el ) {
 				i.el.classList.add( 'is-pop' );
 			}
-			say( fill( L.content_repurpose, { day: DAYS[ wd( src.D ) ], type: nameOf( src ), x: rnd( 1.8, 3.2 ).toFixed( 1 ) } ), fill( L.content_repurpose2, { day: DAYS[ wd( D ) ] } ), 'rep' + api.time.t, 'trend', 2600 );
+			say( fill( L.content_say_repurpose, { day: DAYS[ wd( src.D ) ], type: nameOf( src ), x: rnd( 1.8, 3.2 ).toFixed( 1 ) } ), fill( L.content_repurpose2, { day: DAYS[ wd( D ) ] } ), 'rep' + api.time.t, 'trend', 2600 );
 		}
 		/* Production: office hours, a few at a time, nearest deadline first; a trend jumps the queue. */
 		function produce( dh ) {

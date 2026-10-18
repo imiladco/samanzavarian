@@ -1013,6 +1013,8 @@ class Work_Rail extends Widget_Base {
 	 * knows. Measured here, while the page is still being read, so the
 	 * first paint already has it: set later by work.js, the rail moved under
 	 * the visitor's eyes (layout shift 0.05). work.js keeps it up to date.
+	 * Run later by a "delay JS" optimiser, currentScript is null: the try
+	 * swallows it and work.js measures instead.
 	 *
 	 * @param array<string,mixed> $s
 	 */
@@ -1021,7 +1023,7 @@ class Work_Rail extends Widget_Base {
 			return;
 		}
 		?>
-		<script>(function(r){try{var b=r.getBoundingClientRect(),w=document.documentElement.clientWidth;r.style.setProperty('--szw-bl',Math.max(0,Math.floor(b.left))+'px');r.style.setProperty('--szw-br',Math.max(0,Math.floor(w-b.right))+'px')}catch(e){}})(document.currentScript.parentNode);</script>
+		<script>(function(s){try{var r=s.parentNode,b=r.getBoundingClientRect(),w=document.documentElement.clientWidth;r.style.setProperty('--szw-bl',Math.max(0,Math.floor(b.left))+'px');r.style.setProperty('--szw-br',Math.max(0,Math.floor(w-b.right))+'px')}catch(e){}})(document.currentScript);</script>
 		<?php
 	}
 

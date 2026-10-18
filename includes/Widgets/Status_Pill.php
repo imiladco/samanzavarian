@@ -64,7 +64,9 @@ class Status_Pill extends Widget_Base {
 
 	/** Output with a date changes the day it passes, and a clock every minute: never cache those. */
 	protected function is_dynamic_content(): bool {
-		return self::needs_script( $this->get_settings() );
+		// Elementor also asks the bare widget type (building the editor's
+		// config), which has no settings to read: reading them there is fatal.
+		return $this->get_id() ? self::needs_script( $this->get_settings() ) : false;
 	}
 
 	public function has_widget_inner_wrapper(): bool {
