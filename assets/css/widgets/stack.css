@@ -1,0 +1,129 @@
+/* =====================================================================
+   Photo Stack — a deck of photos that fans out; any photo can come to the
+   front. Markup: Widgets/Photo_Stack.php. Behaviour: js/stack.js.
+
+   The resting deck is drawn here from data-slot (0 = front, odd = left,
+   even = right, 3/4 = deeper), so the first paint is final and needs no
+   script. Without the script a hover still fans it (the :not(.is-ready)
+   rules). With it, stack.js sets each card's transform itself: the same
+   geometry in pixels, with the fan sized to the room left to the window
+   edge, depth under the mouse, and the swap.
+   ===================================================================== */
+
+.sz-stack{
+  --szk-w:400px; --szk-radius:38px; --szk-dur:800ms;
+  --szk-st:58px; --szk-st-bg:#fff; --szk-st-icon:var(--sz-orange);
+  --szk-mono:#fff; --szk-mono-b:var(--sz-orange);
+  --szk-cap:rgba(255,255,255,.76); --szk-cap-title:var(--sz-ink); --szk-cap-text:var(--sz-t2);
+  --szk-lab:rgba(255,255,255,.78); --szk-lab-text:var(--sz-ink);
+  --szk-hint:var(--sz-card); --szk-hint-text:var(--sz-t2); --szk-hint-dot:var(--sz-orange);
+  display:flex;justify-content:center;
+  /* room for the sticker above, the fanned corners and the hint below */
+  padding:22px 0 40px;
+}
+.sz-stack.has-hint{padding-bottom:76px}
+.sz-stack__sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+
+.sz-stack__deck{position:relative;flex:none;width:var(--szk-w);max-width:100%;aspect-ratio:4/5;container:szk/inline-size;touch-action:pan-y;-webkit-tap-highlight-color:transparent}
+
+/* ---------- a photo ---------- */
+.sz-stack .sz-stack__card,
+.sz-stack .sz-stack__card:hover,
+.sz-stack .sz-stack__card:focus{
+  position:absolute;inset:0;display:block;width:100%;height:100%;min-height:0;margin:0;padding:0;border:0;border-radius:var(--szk-radius);
+  overflow:hidden;background:var(--sz-navy);color:inherit;font:inherit;line-height:inherit;text-align:left;text-transform:none;letter-spacing:normal;
+  -webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent;
+}
+.sz-stack .sz-stack__card{cursor:pointer;box-shadow:var(--sz-s3),inset 0 0 0 1px rgba(255,255,255,.12);transition:transform var(--szk-dur) var(--sz-spring),box-shadow .4s;will-change:transform}
+.sz-stack.is-single .sz-stack__card{cursor:default}
+.sz-stack .sz-stack__card:focus-visible{outline:2.5px solid rgba(255,107,44,.85);outline-offset:4px}
+.sz-stack.is-open .sz-stack__card[data-slot="0"]{box-shadow:0 2px 4px rgba(13,27,42,.06),0 30px 50px -14px rgba(13,27,42,.3),0 70px 110px -40px rgba(13,27,42,.3)}
+
+/* the resting deck */
+.sz-stack__card[data-slot="0"]{z-index:10}
+.sz-stack__card[data-slot="1"]{z-index:9;transform:translate(-7%,3%) rotate(-7deg) scale(.93)}
+.sz-stack__card[data-slot="2"]{z-index:8;transform:translate(7%,4%) rotate(6deg) scale(.93)}
+.sz-stack__card[data-slot="3"]{z-index:7;transform:translate(-11%,5%) rotate(-9deg) scale(.89)}
+.sz-stack__card[data-slot="4"]{z-index:6;transform:translate(11%,6%) rotate(8deg) scale(.89)}
+.sz-stack__card.is-leaving{z-index:9}
+/* without the script, a hover still fans it */
+.sz-stack:not(.is-ready) .sz-stack__deck:hover .sz-stack__card[data-slot="0"]{transform:translateY(-3%) rotate(-1deg)}
+.sz-stack:not(.is-ready) .sz-stack__deck:hover .sz-stack__card[data-slot="1"]{transform:translate(-34%,2%) rotate(-13deg) scale(.86)}
+.sz-stack:not(.is-ready) .sz-stack__deck:hover .sz-stack__card[data-slot="2"]{transform:translate(34%,6%) rotate(12deg) scale(.86)}
+.sz-stack:not(.is-ready) .sz-stack__deck:hover .sz-stack__card[data-slot="3"]{transform:translate(-40%,4%) rotate(-15deg) scale(.82)}
+.sz-stack:not(.is-ready) .sz-stack__deck:hover .sz-stack__card[data-slot="4"]{transform:translate(40%,8%) rotate(14deg) scale(.82)}
+
+.sz-stack__media{position:absolute;inset:0;border-radius:inherit;overflow:hidden}
+.sz-stack__media > *{position:absolute;inset:0;display:block;width:100%;height:100%;max-width:none;margin:0;object-fit:cover}
+.sz-stack__mesh--1{background:radial-gradient(60% 70% at 18% 22%,#FF8A55 0%,transparent 60%),radial-gradient(70% 80% at 85% 85%,#0D1B2A 0%,transparent 65%),radial-gradient(50% 60% at 70% 20%,#FFD3BF 0%,transparent 60%),#F1A27F}
+.sz-stack__mesh--2{background:radial-gradient(60% 60% at 75% 25%,#FF6B2C 0%,transparent 55%),radial-gradient(80% 80% at 20% 90%,#2A4560 0%,transparent 65%),#0D1B2A}
+.sz-stack__mesh--3{background:radial-gradient(60% 70% at 25% 30%,#FFFFFF 0%,transparent 60%),radial-gradient(70% 70% at 80% 80%,#C9D3DF 0%,transparent 60%),radial-gradient(40% 40% at 70% 30%,#FFD9C8 0%,transparent 60%),#E9EDF2}
+.sz-stack__mesh--4{background:radial-gradient(70% 60% at 50% 110%,#FF6B2C 0%,transparent 60%),radial-gradient(60% 60% at 20% 10%,#2C4865 0%,transparent 60%),#0B1622}
+.sz-stack__mesh--5{background:radial-gradient(70% 70% at 80% 20%,#FFF0E8 0%,transparent 60%),radial-gradient(70% 70% at 20% 80%,#FF8A55 0%,transparent 60%),#FFB896}
+.sz-stack__mesh--6{background:radial-gradient(60% 60% at 30% 30%,#8FA3B8 0%,transparent 60%),radial-gradient(70% 70% at 80% 80%,#0D1B2A 0%,transparent 60%),#3E5670}
+.sz-stack__mesh--7{background:radial-gradient(60% 60% at 70% 30%,#FFE1C9 0%,transparent 60%),radial-gradient(70% 70% at 20% 85%,#C25A2C 0%,transparent 60%),#E89A6E}
+.sz-stack__mesh--8{background:radial-gradient(60% 60% at 30% 70%,#4E6A88 0%,transparent 60%),radial-gradient(60% 60% at 80% 20%,#FF8A55 0%,transparent 55%),#14243A}
+
+/* initials in place of a portrait */
+.sz-stack__mono{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--sz-font-mark);font-size:37cqw;font-weight:400;line-height:1;letter-spacing:.02em;color:var(--szk-mono);pointer-events:none}
+.sz-stack__mono b{font-weight:inherit;color:var(--szk-mono-b)}
+
+/* the tag a photo wears beside the front one */
+.sz-stack__lab{position:absolute;top:16px;left:16px;display:inline-flex;align-items:center;gap:7px;height:30px;max-width:calc(100% - 32px);padding:0 12px 0 6px;border-radius:99px;
+  background:var(--szk-lab);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);font-size:12px;font-weight:600;line-height:1;white-space:nowrap;color:var(--szk-lab-text);
+  opacity:0;transform:translateY(-4px);transition:opacity .3s,transform .4s var(--sz-spring)}
+.sz-stack__card[data-side="r"] .sz-stack__lab{left:auto;right:16px}
+.sz-stack__lab .sz-app{width:20px;height:20px;border-radius:6px;font-size:11px}
+.sz-stack.is-open .sz-stack__card:not([data-slot="0"]) .sz-stack__lab,
+.sz-stack:not(.is-ready) .sz-stack__deck:hover .sz-stack__card:not([data-slot="0"]) .sz-stack__lab{opacity:1;transform:none;transition-delay:.12s}
+
+/* the caption: only the photo in front has one */
+.sz-stack__cap{position:absolute;left:14px;right:14px;bottom:14px;display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:24px;
+  background:var(--szk-cap);-webkit-backdrop-filter:blur(20px) saturate(170%);backdrop-filter:blur(20px) saturate(170%);
+  opacity:0;transform:translateY(8px);transition:opacity .25s,transform .45s var(--sz-spring)}
+.sz-stack__card[data-slot="0"] .sz-stack__cap{opacity:1;transform:none;transition-delay:.18s}
+.sz-stack__cap .sz-app{width:38px;height:38px;border-radius:11px;font-size:18px}
+.sz-stack__cap-t{min-width:0}
+.sz-stack__cap b{display:block;overflow:hidden;font-size:15px;font-weight:600;line-height:1.25;white-space:nowrap;text-overflow:ellipsis;color:var(--szk-cap-title)}
+.sz-stack__cap small{display:block;overflow:hidden;font-size:13px;line-height:1.35;white-space:nowrap;text-overflow:ellipsis;color:var(--szk-cap-text)}
+@container szk (max-width:300px){
+  .sz-stack__cap{left:10px;right:10px;bottom:10px;padding:8px 10px;border-radius:18px;gap:10px}
+  .sz-stack__cap .sz-app{width:32px;height:32px;font-size:15px}
+  .sz-stack__cap b{font-size:14px}
+  .sz-stack__cap small{font-size:12px}
+  .sz-stack__lab{top:12px;left:12px}
+  .sz-stack__card[data-side="r"] .sz-stack__lab{right:12px}
+}
+
+/* the sticker */
+.sz-stack__sticker{position:absolute;right:calc(var(--szk-st) * -.28);top:calc(var(--szk-st) * -.31);z-index:20;display:grid;place-items:center;width:var(--szk-st);height:var(--szk-st);border-radius:50%;
+  background:var(--szk-st-bg);box-shadow:var(--sz-s2);font-size:calc(var(--szk-st) * .48);line-height:1;color:var(--szk-st-icon);
+  transform:rotate(12deg);transition:transform .6s var(--sz-spring);pointer-events:none}
+.sz-stack__sticker.is-icon svg,.sz-stack__sticker.is-icon i{width:.85em;height:.85em;font-size:inherit}
+.sz-stack.is-open .sz-stack__sticker,.sz-stack:not(.is-ready) .sz-stack__deck:hover .sz-stack__sticker{transform:rotate(-8deg) scale(1.08) translate(10px,-6px)}
+.sz-stack__sticker.is-hop{animation:szk-hop .55s var(--sz-spring)}
+@keyframes szk-hop{40%{transform:rotate(-14deg) scale(1.2) translate(10px,-14px)}}
+
+/* the hint: what to do on this device; gone once learnt */
+.sz-stack__hint{position:absolute;left:50%;top:calc(100% + 24px);display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 12px 0 10px;border-radius:99px;
+  background:var(--szk-hint);box-shadow:var(--sz-s1);font-size:12px;font-weight:500;line-height:1;white-space:nowrap;color:var(--szk-hint-text);
+  transform:translateX(-50%);transition:opacity .35s;pointer-events:none}
+.sz-stack__hint i{flex:none;width:7px;height:7px;border-radius:50%;background:var(--szk-hint-dot);animation:szk-ping 2.2s ease-out infinite}
+@keyframes szk-ping{0%{box-shadow:0 0 0 0 rgba(255,107,44,.5)}70%,100%{box-shadow:0 0 0 7px rgba(255,107,44,0)}}
+.sz-stack__hint > span{display:none}
+.sz-stack__hint > .is-hover{display:inline}
+.sz-stack.is-open .sz-stack__hint > .is-hover{display:none}
+.sz-stack.is-open .sz-stack__hint > .is-click{display:inline}
+.sz-stack[data-bring="0"].is-open .sz-stack__hint{opacity:0}
+@media (hover:none){
+  .sz-stack__hint > .is-hover,.sz-stack.is-open .sz-stack__hint > .is-click{display:none}
+  .sz-stack__hint > .is-tap{display:inline}
+  .sz-stack.is-open .sz-stack__hint > .is-tap{display:none}
+  .sz-stack.is-open .sz-stack__hint > .is-swipe{display:inline}
+}
+.sz-stack.is-taught .sz-stack__hint{opacity:0}
+
+@media (prefers-reduced-motion:reduce){
+  .sz-stack .sz-stack__card,.sz-stack__sticker,.sz-stack__lab,.sz-stack__cap{transition-duration:.01ms!important}
+  .sz-stack__sticker.is-hop,.sz-stack__hint i{animation:none}
+}

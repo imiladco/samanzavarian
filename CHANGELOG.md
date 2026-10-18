@@ -4,6 +4,44 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.12.0 — Photo Stack: the About photos, fanned and shuffled
+A new widget, **Photo Stack**, from the prototype approved by the site owner,
+with more on top.
+
+- **Fans out** on hover (mouse) or tap (touch). The front photo is a button
+  with aria-expanded: Enter opens it, Esc closes it. On a touch screen it
+  closes with a tap outside, or when the deck scrolls out of view.
+- **Any photo comes to the front** while fanned: click or tap it, swipe
+  sideways on a phone, or press ← → on a keyboard. It arcs up over the deck
+  while the old front dips under, like shuffling a real deck (Web
+  Animations, on the compositor). Its caption then says what it shows
+  ("On set · Behind the scenes, product shoot"), and screen readers hear
+  "On set in front". The photo under the mouse rises a little, so it is
+  clear it can be picked.
+- **Never past the window's edge.** The fan is sized to the room that is
+  left. On a phone, where there is little room, the front photo steps back a
+  little so the side photos show more than a sliver.
+- **Teaches itself.**
+  - The first time the deck is seen, the photos part for a moment (once,
+    and never with reduced motion).
+  - The hint says what to do on that device (hover or tap, then click, or
+    tap and swipe) and fades away once a photo has been brought forward.
+- Depth under the mouse: the front photo follows the pointer slightly, and
+  the others move against it.
+- The resting deck is drawn by the stylesheet, so the first paint is final
+  (layout shift 0.000–0.002), and without the script a hover still fans it.
+- **In Elementor:**
+  - 1–5 photos, each with a caption, a label while fanned, an icon, and a
+    gradient or the monogram when there is no photo.
+  - Monogram letters, with the accent letters set separately.
+  - Sticker: emoji, icon, or none.
+  - Each behaviour can be switched off, and every hint and label is
+    editable.
+  - Width, radius and sticker follow the site's breakpoints.
+  - "Keep fanned in the editor" shows the photos behind while editing.
+- Analytics: sz_stack_open, and sz_stack_photo with the photo's title and
+  how it was chosen (click, tap, swipe, key).
+
 ## 0.11.1 — Selected work: filter switch without the hitch
 The site owner felt a slight lag when the new list came in as the old one
 left. Measured on a CPU slowed 4× (a mid-range laptop or phone): each click
