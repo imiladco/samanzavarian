@@ -70,8 +70,7 @@
   .sz-work__rail.is-dragging .sz-work__card{pointer-events:none}
 }
 .sz-work__rail:focus-visible{outline:none}
-.sz-work__rail:focus-visible .sz-work__card:not([hidden]){outline:2.5px solid rgba(255,107,44,.85);outline-offset:4px}
-.sz-work__rail:focus-visible .sz-work__card:not([hidden]) ~ .sz-work__card{outline:0}
+.sz-work__rail:focus-visible .sz-work__card.is-first{outline:2.5px solid rgba(255,107,44,.85);outline-offset:4px}
 
 /* ---------- a card ---------- */
 .sz-work .sz-work__card{position:relative;display:block;min-width:0;scroll-snap-align:start;aspect-ratio:var(--szw-ratio);border-radius:var(--szw-radius);box-shadow:var(--sz-s2);color:var(--szw-on-dark);isolation:isolate;transform-style:preserve-3d;transition:transform .5s var(--sz-spring),box-shadow .4s,opacity .35s;-webkit-tap-highlight-color:transparent}
@@ -137,9 +136,11 @@
 }
 
 /* filter motion: leaving cards are ghosts fading where they were; new ones rise */
-.sz-work__ghost{position:absolute;z-index:4;margin:0;pointer-events:none;transition:opacity .28s ease,transform .32s var(--sz-ease)}
-.sz-work__ghost.is-out{opacity:0;transform:scale(.9)}
-.sz-work__card.is-enter{opacity:0;transform:translateY(18px) scale(.97)}
+/* (the motion itself is in work.js, on the compositor) */
+.sz-work .sz-work__ghost{position:absolute;z-index:4;margin:0;pointer-events:none;transition:none;will-change:opacity,transform}
+/* a ghost lives a quarter of a second: no live blur behind its glass */
+.sz-work__ghost *{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}
+.sz-work__ghost .sz-work__cbar{background:rgba(255,255,255,.86)}
 
 /* ---------- under the rail: position, scrubber, page buttons ---------- */
 .sz-work__bar{display:flex;align-items:center;gap:18px}

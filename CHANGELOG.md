@@ -4,6 +4,29 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.11.1 — Selected work: filter switch without the hitch
+The site owner felt a slight lag when the new list came in as the old one
+left. Measured on a CPU slowed 4× (a mid-range laptop or phone): each click
+held the page for 45 ms and the worst frame took 83 ms.
+
+- The switch now animates with the Web Animations API, transform and opacity
+  only, so it runs on the compositor and a busy page cannot make it stutter.
+  It also starts in the same frame as the click; it used to wait two frames
+  with the cards standing still.
+- All measuring happens before any change, so one layout per switch. Before,
+  a marker written on each card between measurements forced a style
+  recalculation per card.
+- Scrolling no longer rewrites every card's screen-reader name on every
+  frame (now only when the filter changes), and position updates are
+  coalesced to one per frame.
+- The focus ring of the rail no longer uses a sibling selector that made
+  every card restyle whenever one was shown or hidden.
+- Leaving cards' glass blur is dropped for their quarter-second fade.
+
+Result on the same slowed CPU: click 45 → 24 ms, worst frame 83 → 50 ms,
+nothing recalculated at rest; rapid clicking ends clean (no leftover ghosts
+or animations).
+
 ## 0.11.0 — Selected work: a filterable project slider
 A new widget, **Selected Work**, built from the prototype approved by the site
 owner: the filters and the slider only (heading and stats stay outside it).

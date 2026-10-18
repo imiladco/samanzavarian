@@ -59,6 +59,8 @@
 			this.current = ( this.buttons.find( ( b ) => b.getAttribute( 'aria-pressed' ) === 'true' ) || { dataset: { f: 'all' } } ).dataset.f;
 			this.timers = [];
 			this.off = [];
+			this.anims = [];
+			this.flipping = new Set();
 
 			this.sync = this.sync.bind( this );
 			this.layoutAll = this.layoutAll.bind( this );
@@ -76,6 +78,7 @@
 			}
 			this.on( window, 'resize', this.layoutAll );
 
+			this.layout( this.current );
 			this.layoutAll();
 			( document.fonts ? document.fonts.ready : Promise.resolve() ).then( () => {
 				this.layoutAll();
@@ -95,6 +98,8 @@
 		destroy() {
 			this.off.forEach( ( f ) => f() );
 			this.timers.forEach( clearTimeout );
+			this.anims.forEach( ( a ) => a.cancel() );
+			cancelAnimationFrame( this.syncing );
 			clearTimeout( this.snapBack );
 			if ( this.ro ) {
 				this.ro.disconnect();
@@ -116,6 +121,7 @@
 
 		layoutAll() {
 			this.bleed();
+			this.pads();
 			this.moveThumb( true );
 			this.edges();
 			this.sync();
@@ -129,8 +135,18 @@
 			return this.visible().filter( ( c ) => c.dataset.g !== '*' );
 		}
 
+		/** The rail's side paddings (the slide-out), read once per layout, not per scroll frame. */
+		pads() {
+			const cs = getComputedStyle( this.rail );
+			this.padL = parseFloat( cs.paddingLeft ) || 0;
+			this.padR = parseFloat( cs.paddingRight ) || 0;
+		}
+
 		start() {
-			return parseFloat( getComputedStyle( this.rail ).paddingLeft ) || 0;
+			if ( this.padL === undefined ) {
+				this.pads();
+			}
+			return this.padL;
 		}
 
 		/** Snap points: where each visible card starts. */
@@ -141,7 +157,7 @@
 
 		/** First and last card at least half in view. */
 		range() {
-			const vis = this.visible(), L = this.rail.scrollLeft, s = this.start(), W = this.rail.clientWidth - s - ( parseFloat( getComputedStyle( this.rail ).paddingRight ) || 0 );
+			const vis = this.visible(), L = this.rail.scrollLeft, s = this.start(), W = this.rail.clientWidth - s - this.padR;
 			let a = -1, b = -1;
 			vis.forEach( ( c, i ) => {
 				const x0 = c.offsetLeft - s - L, x1 = x0 + c.offsetWidth;
@@ -180,14 +196,29 @@
 			return this.starts().reduce( ( best, s ) => ( Math.abs( s - x ) < Math.abs( best - x ) ? s : best ), 0 );
 		}
 
-		/** Position, progress, buttons, and each card's "i of n" name. */
+		/** Coalesce scroll events: one sync per frame at most. */
+		onScroll() {
+			if ( ! this.syncing ) {
+				this.syncing = requestAnimationFrame( () => {
+					this.syncing = 0;
+					this.sync();
+				} );
+			}
+		}
+
+		/** Position, progress and buttons. Reads, then only writes what changed. */
 		sync() {
 			const rail = this.rail, max = rail.scrollWidth - rail.clientWidth;
 			this.root.classList.toggle( 'is-static', max < 4 );
 
 			if ( this.prev ) {
-				this.prev.disabled = rail.scrollLeft < 8;
-				this.next.disabled = rail.scrollLeft > max - 8;
+				const p = rail.scrollLeft < 8, n = rail.scrollLeft > max - 8;
+				if ( this.prev.disabled !== p ) {
+					this.prev.disabled = p;
+				}
+				if ( this.next.disabled !== n ) {
+					this.next.disabled = n;
+				}
 			}
 
 			if ( this.bar ) {
@@ -197,13 +228,17 @@
 			}
 
 			// position among the projects (the closing card is not one)
-			const [ a0, b0 ] = this.range(), list = this.projects(), n = list.length, a = Math.min( a0, n - 1 ), b = Math.min( b0, n - 1 );
-			if ( this.pos ) {
-				const text = '<b>' + ( a + 1 ) + ( b > a ? '–' + ( b + 1 ) : '' ) + '</b> ' + this.esc( this.labels.of ) + ' ' + n;
-				if ( this.pos.innerHTML !== text ) {
-					this.pos.innerHTML = text;
-				}
+			const [ a0, b0 ] = this.range(), n = this.projects().length, a = Math.min( a0, n - 1 ), b = Math.min( b0, n - 1 );
+			const key = a + '-' + b + '-' + n;
+			if ( this.pos && this.posKey !== key ) {
+				this.posKey = key;
+				this.pos.innerHTML = '<b>' + ( a + 1 ) + ( b > a ? '–' + ( b + 1 ) : '' ) + '</b> ' + this.esc( this.labels.of ) + ' ' + n;
 			}
+		}
+
+		/** Each shown project's name, "2 of 3: title" — once per filter change. */
+		name() {
+			const list = this.projects(), n = list.length;
 			list.forEach( ( c, i ) => {
 				const t = c.querySelector( '.sz-work__title' );
 				c.setAttribute( 'aria-label', ( i + 1 ) + ' ' + this.labels.of + ' ' + n + ': ' + ( t ? t.textContent : '' ) );
@@ -286,23 +321,23 @@
 
 		/** Which cards a filter shows; its first project is the wide one. */
 		layout( f ) {
-			let lead = null;
+			let lead = null, first = null;
 			this.cards.forEach( ( c ) => {
 				const show = this.inFilter( c, f );
-				c.hidden = ! show;
-				c.classList.remove( 'is-wide' );
+				if ( c.hidden === show ) {
+					c.hidden = ! show;
+				}
+				if ( show && ! first ) {
+					first = c;
+				}
 				if ( show && ! lead && c.dataset.g !== '*' ) {
 					lead = c;
 				}
 			} );
-			if ( ! this.wide ) {
-				return;
-			}
+			this.cards.forEach( ( c ) => c.classList.toggle( 'is-first', c === first ) );
 			// under "All", the hand-picked featured project; elsewhere the filter's first
-			const pick = f === 'all' ? ( this.cards.find( ( c ) => c.querySelector( '.sz-work__flag' ) ) || lead ) : lead;
-			if ( pick ) {
-				pick.classList.add( 'is-wide' );
-			}
+			const pick = ! this.wide ? null : ( f === 'all' ? ( this.cards.find( ( c ) => c.querySelector( '.sz-work__flag' ) ) || lead ) : lead );
+			this.cards.forEach( ( c ) => c.classList.toggle( 'is-wide', c === pick ) );
 		}
 
 		filter( f, opts = {} ) {
@@ -310,9 +345,13 @@
 			if ( ! b || ( f === this.current && ! opts.force ) ) {
 				return;
 			}
+			// every read before any write: one layout for the whole switch
+			const animate = ! opts.quiet && ! this.reduce && typeof this.box.animate === 'function';
+			const before = animate ? this.measure() : null;
+
 			this.current = f;
-			this.buttons.forEach( ( x ) => x.setAttribute( 'aria-pressed', String( x === b ) ) );
 			this.moveThumb( !! opts.quiet );
+			this.buttons.forEach( ( x ) => x.setAttribute( 'aria-pressed', String( x === b ) ) );
 
 			const n = this.cards.filter( ( c ) => c.dataset.g !== '*' && this.inFilter( c, f ) ).length;
 			const label = b.dataset.label || b.textContent;
@@ -329,77 +368,86 @@
 
 			this.stopPreviews();
 
-			if ( opts.quiet || this.reduce ) {
+			if ( ! animate ) {
 				this.layout( f );
 				this.rail.scrollLeft = 0;
+				this.name();
 				this.sync();
 				return;
 			}
-			this.flip( f );
+			this.flip( f, before );
 		}
 
-		/** FLIP: where every card is, then where it will be. */
-		flip( f ) {
+		/** Where the shown cards are now, relative to the rail's box. */
+		measure() {
 			const box = this.box.getBoundingClientRect();
-			const before = new Map( this.visible().map( ( c ) => [ c, c.getBoundingClientRect() ] ) );
+			return { box, rects: new Map( this.visible().map( ( c ) => [ c, c.getBoundingClientRect() ] ) ) };
+		}
 
-			this.cards.forEach( ( c ) => {
-				c.classList.remove( 'is-tilt' );
-				c.style.transform = '';
-			} );
+		/**
+		 * FLIP with the Web Animations API: transform and opacity only, so the
+		 * whole switch runs on the compositor and a busy page cannot make it
+		 * stutter. One layout to read the new places; no per-card attribute
+		 * writes between reads (each one used to force a style recalculation).
+		 */
+		flip( f, { box, rects: before } ) {
+			this.anims.forEach( ( a ) => a.cancel() );
+			this.anims = [];
+			this.untilt();
 			this.layout( f );
-
-			// leaving cards: ghosts fade out where they were
-			this.cards.forEach( ( c ) => {
-				if ( ! before.has( c ) || ! c.hidden ) {
-					return;
-				}
-				const r = before.get( c ), g = c.cloneNode( true );
-				g.classList.add( 'sz-work__ghost' );
-				g.removeAttribute( 'href' );
-				g.removeAttribute( 'id' );
-				g.setAttribute( 'aria-hidden', 'true' );
-				g.hidden = false;
-				Object.assign( g.style, { left: r.left - box.left + 'px', top: r.top - box.top + 'px', width: r.width + 'px', height: r.height + 'px', transform: '' } );
-				this.box.appendChild( g );
-				requestAnimationFrame( () => g.classList.add( 'is-out' ) );
-				this.later( () => g.remove(), 380 );
-			} );
-
 			this.rail.style.scrollSnapType = 'none';
 			this.rail.scrollLeft = 0;
-			let k = 0;
-			this.visible().forEach( ( c ) => {
-				const a = before.get( c ), b = c.getBoundingClientRect();
-				if ( a ) {
-					// stayed: slide from the old place. A card that changed size
-					// fades in on the way instead of being stretched.
-					c.style.transition = 'none';
-					c.style.transform = 'translate(' + ( a.left - b.left ) + 'px,' + ( a.top - b.top ) + 'px)';
-					if ( Math.abs( a.width - b.width ) > 2 ) {
-						c.style.opacity = '0.25';
-					}
-					c.dataset.flip = '1';
-					requestAnimationFrame( () => requestAnimationFrame( () => {
-						c.style.transition = 'transform .55s cubic-bezier(.22,.8,.24,1),opacity .45s ease';
-						c.style.transform = '';
-						c.style.opacity = '';
-						this.later( () => {
-							c.style.transition = '';
-							delete c.dataset.flip;
-						}, 600 );
-					} ) );
-				} else {
-					// new: rises in, one after another
-					c.classList.add( 'is-enter' );
-					this.later( () => c.classList.remove( 'is-enter' ), 60 + 45 * k++ );
+
+			// read: where the shown cards land
+			const shown = this.visible(), after = shown.map( ( c ) => c.getBoundingClientRect() );
+
+			// write: leaving cards become ghosts fading out where they were
+			const ghosts = document.createDocumentFragment(), leaving = [];
+			before.forEach( ( r, c ) => {
+				if ( ! c.hidden ) {
+					return;
 				}
+				const g = c.cloneNode( true );
+				g.className += ' sz-work__ghost';
+				g.removeAttribute( 'href' );
+				g.removeAttribute( 'hidden' );
+				g.setAttribute( 'aria-hidden', 'true' );
+				g.querySelectorAll( 'video' ).forEach( ( v ) => v.remove() );
+				g.style.cssText = 'left:' + ( r.left - box.left ) + 'px;top:' + ( r.top - box.top ) + 'px;width:' + r.width + 'px;height:' + r.height + 'px';
+				ghosts.appendChild( g );
+				leaving.push( g );
 			} );
+			this.box.appendChild( ghosts );
+			leaving.forEach( ( g ) => {
+				const a = g.animate( [ { opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(.92)' } ], { duration: 260, easing: 'cubic-bezier(.4,0,1,1)', fill: 'forwards' } );
+				a.finished.then( () => g.remove(), () => g.remove() );
+			} );
+
+			// stayed: slide from the old place; a card that changed size fades
+			// in on the way instead of being stretched. New: rise in, in turn.
+			let k = 0;
+			shown.forEach( ( c, i ) => {
+				const a = before.get( c ), b = after[ i ];
+				let anim;
+				if ( a ) {
+					const dx = a.left - b.left, dy = a.top - b.top, resized = Math.abs( a.width - b.width ) > 2;
+					if ( Math.abs( dx ) < 1 && Math.abs( dy ) < 1 && ! resized ) {
+						return;
+					}
+					anim = c.animate( [ { transform: 'translate(' + dx + 'px,' + dy + 'px)', opacity: resized ? 0.25 : 1 }, { transform: 'none', opacity: 1 } ], { duration: 520, easing: 'cubic-bezier(.22,.8,.24,1)' } );
+				} else {
+					anim = c.animate( [ { transform: 'translateY(18px) scale(.97)', opacity: 0 }, { transform: 'none', opacity: 1 } ], { duration: 480, delay: 70 + 45 * k++, easing: 'cubic-bezier(.22,.8,.24,1)', fill: 'backwards' } );
+				}
+				this.flipping.add( c );
+				this.anims.push( anim );
+				anim.finished.then( () => this.flipping.delete( c ), () => this.flipping.delete( c ) );
+			} );
+
+			this.name();
 			this.later( () => {
 				this.rail.style.scrollSnapType = '';
-				this.sync();
-			}, 620 );
-			this.sync();
+			}, 600 );
+			this.onScroll();
 		}
 
 		/* ---------------- the address ---------------- */
@@ -444,7 +492,7 @@
 		/* ---------------- the rail ---------------- */
 
 		bindRail() {
-			this.on( this.rail, 'scroll', this.sync, { passive: true } );
+			this.on( this.rail, 'scroll', () => this.onScroll(), { passive: true } );
 
 			const page = ( dir ) => {
 				const [ a, b ] = this.range(), ss = this.starts(), per = Math.max( 1, b - a + 1 );
@@ -583,9 +631,7 @@
 		untilt() {
 			this.cards.forEach( ( c ) => {
 				c.classList.remove( 'is-tilt' );
-				if ( ! c.classList.contains( 'is-enter' ) && ! c.dataset.flip ) {
-					c.style.transform = '';
-				}
+				c.style.transform = '';
 			} );
 		}
 
@@ -594,7 +640,7 @@
 			if ( this.fine && ! this.reduce && this.root.dataset.szTilt === '1' ) {
 				this.on( this.rail, 'pointermove', ( e ) => {
 					const c = e.target.closest( '.sz-work__card' );
-					if ( ! c || c.dataset.flip || this.rail.classList.contains( 'is-dragging' ) ) {
+					if ( ! c || this.flipping.has( c ) || this.rail.classList.contains( 'is-dragging' ) ) {
 						return;
 					}
 					const r = c.getBoundingClientRect(), x = ( e.clientX - r.left ) / r.width, y = ( e.clientY - r.top ) / r.height;
@@ -605,7 +651,7 @@
 				} );
 				this.on( this.rail, 'pointerout', ( e ) => {
 					const c = e.target.closest( '.sz-work__card' );
-					if ( c && ! c.contains( e.relatedTarget ) && ! c.dataset.flip ) {
+					if ( c && ! c.contains( e.relatedTarget ) ) {
 						c.classList.remove( 'is-tilt' );
 						c.style.transform = '';
 					}
