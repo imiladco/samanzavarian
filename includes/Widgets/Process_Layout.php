@@ -15,8 +15,9 @@ defined( 'ABSPATH' ) || exit;
  * position k's values through :nth-child(12n+k).
  *
  * The per-column numbers are measured from the design file, not invented:
- * 4 and 2 columns are the design's desktop and ≤900px layouts exactly; 3 and
- * 1 extend the same rhythm.
+ * 4 and 2 columns are the design's desktop and narrow layouts exactly; 3
+ * extends the same rhythm. One column stacks the cards and turns the arrows
+ * to point down, into the next card.
  *
  * This class is the single source for both the stylesheet's built-in default
  * (written by tools/build-process-css.php) and the Columns control's per-
@@ -45,23 +46,27 @@ final class Process_Layout {
 	/**
 	 * Values for one position (1-based) at a given column count.
 	 *
-	 * @return array{r:float,y:float,a:int,s:int,o:float}
+	 * @return array{r:float,y:float,a:int,s:int,o:float,v:int}
 	 *   r tilt (deg), y stagger factor, a 1 if an arrow leaves this card,
-	 *   s arrow side (0 above the cards, 1 below — alternating along a row,
-	 *   as in the design), o how far the tilt pushes the card's corner out (px
-	 *   per unit of intensity), so the arrow clears a tilted edge exactly.
+	 *   s which of the two drawn arrows (0 above the cards, 1 below —
+	 *   alternating, as in the design), o how far the tilt pushes the card's
+	 *   corner out (px per unit of intensity), so the arrow clears a tilted
+	 *   edge exactly, v 1 when the arrow points down to the card below.
 	 */
 	public static function position( int $cols, int $k ): array {
 		$pattern = self::PATTERNS[ $cols ] ?? self::PATTERNS[4];
 		$col     = ( $k - 1 ) % $cols;
 		$rot     = (float) $pattern['rot'][ ( $k - 1 ) % count( $pattern['rot'] ) ];
+		$stacked = 1 === $cols;
 
 		return [
 			'r' => $rot,
 			'y' => (float) $pattern['y'][ $col ],
-			'a' => $col < $cols - 1 ? 1 : 0,
-			's' => $col % 2,
+			// Stacked, every card has a next one straight below it.
+			'a' => $stacked || $col < $cols - 1 ? 1 : 0,
+			's' => ( $stacked ? $k - 1 : $col ) % 2,
 			'o' => abs( $rot ) * 2,
+			'v' => $stacked ? 1 : 0,
 		];
 	}
 
@@ -70,7 +75,8 @@ final class Process_Layout {
 	 * the exact string the Columns control writes for its breakpoint.
 	 */
 	public static function vars( int $cols ): string {
-		$out = '--szp-cols:' . $cols . ';';
+		// --szp-pad: room under the board for the staggered cards (none stacked).
+		$out = '--szp-cols:' . $cols . ';--szp-pad:' . ( 1 === $cols ? 0 : 1 ) . ';';
 
 		for ( $k = 1; $k <= self::CYCLE; $k++ ) {
 			foreach ( self::position( $cols, $k ) as $key => $value ) {
@@ -88,7 +94,7 @@ final class Process_Layout {
 		for ( $k = 1; $k <= self::CYCLE; $k++ ) {
 			$css .= '.sz-process__item:nth-child(12n+' . $k . '){'
 				. '--r:var(--szp-r' . $k . ');--y:var(--szp-y' . $k . ');--a:var(--szp-a' . $k . ');'
-				. '--s:var(--szp-s' . $k . ');--o:var(--szp-o' . $k . ')}' . "\n";
+				. '--s:var(--szp-s' . $k . ');--o:var(--szp-o' . $k . ');--v:var(--szp-v' . $k . ')}' . "\n";
 		}
 
 		return $css;

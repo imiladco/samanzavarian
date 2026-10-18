@@ -123,7 +123,11 @@ $two = $p( 2 );
 szw_ok( [ -2.0, 2.0, -2.0, 2.0 ] === array_column( $two, 'r' ) && [ 0.0, 0.65, 0.0, 0.65 ] === array_column( $two, 'y' ), '2 columns: odd -2°, even 2° and 26px down (the design below 900px)' );
 szw_ok( [ 1, 0, 1, 0 ] === array_column( $two, 'a' ), '2 columns: arrows never cross a row break' );
 
-szw_ok( [ 0, 0, 0, 0 ] === array_column( $p( 1 ), 'a' ), '1 column: no sideways arrows' );
+$one = $p( 1 );
+szw_ok( [ 1, 1, 1, 1 ] === array_column( $one, 'a' ) && [ 1, 1, 1, 1 ] === array_column( $one, 'v' ), '1 column: every card points down to the next' );
+szw_ok( [ 0, 1, 0, 1 ] === array_column( $one, 's' ), '1 column: the two drawn arrows alternate' );
+szw_ok( [ 0, 0, 0, 0 ] === array_column( $four, 'v' ), 'side by side: no downward arrows' );
+szw_ok( false !== strpos( Process_Layout::vars( 1 ), '--szp-pad:0;' ) && false !== strpos( Process_Layout::vars( 4 ), '--szp-pad:1;' ), 'no stagger room under a single column' );
 szw_ok( 0 === Process_Layout::CYCLE % 3 && 0 === Process_Layout::CYCLE % 4, 'the 12-position cycle fits 3 and 4 columns exactly' );
 szw_ok( false === strpos( Process_Layout::vars( 3 ), 'E' ) && false === strpos( Process_Layout::vars( 3 ), ',' ), 'numbers are written as plain CSS (no exponent, no locale comma)' );
 
@@ -182,6 +186,48 @@ szw_ok( false === strpos( $html, '<script' ) && false !== strpos( $html, '<div c
 $html = szw_render( [ 'show_number' => '' ] );
 szw_ok( false === strpos( $html, 'sz-process__num' ), 'numbers can be turned off' );
 
+$html = szw_render(
+	[
+		'steps' => [
+			szw_step( 'l1', 'Linked', '', 'chat', [ 'link' => [ 'url' => 'https://example.test/brief', 'is_external' => 'on', 'nofollow' => '' ] ] ),
+			szw_step( 'l2', 'Bad link', '', 'chat', [ 'link' => [ 'url' => 'javascript:alert(1)' ] ] ),
+			szw_step( 'l3', 'Plain' ),
+		],
+	]
+);
+szw_ok( (bool) preg_match( '/<a class="sz-process__card" href="https:\/\/example\.test\/brief" target="_blank"/', $html ), 'a step link turns the whole card into <a>, new tab honoured' );
+szw_ok( false === stripos( $html, 'javascript:' ), 'a javascript: link is not printed' );
+szw_ok( 1 <= substr_count( $html, '<div class="sz-process__card"' ), 'steps without a link stay a <div>' );
+
+/* ------------------------------------------------------------------ */
+
+szw_group( 'Render — arrows' );
+
+$html = szw_render();
+szw_ok( 3 === substr_count( $html, '<svg class="sz-process__arrow"' ) && false === strpos( $html, 'sz-process__arrow--icon' ), 'default: the hand-drawn arrow from the design' );
+
+$html = szw_render( [ 'arrow_type' => 'icon', 'arrow_icon' => Icon_Library::value( 'send' ) ] );
+szw_ok( 3 === substr_count( $html, '<span class="sz-process__arrow sz-process__arrow--icon" aria-hidden="true"><svg class="szi szi-send"' ), 'an icon can replace the arrow, hidden from screen readers' );
+
+$html = szw_render( [ 'arrow_type' => 'icon' ] );
+szw_ok( 3 === substr_count( $html, 'sz-process__arrow--icon' ) && false !== strpos( $html, 'arrow-right' ), 'icon style without a pick uses the default arrow icon' );
+
+$html = szw_render(
+	[
+		'steps' => [
+			szw_step( 'a1', 'One', '', 'chat', [ 'arrow' => 'none' ] ),
+			szw_step( 'a2', 'Two', '', 'chat', [ 'arrow' => 'icon', 'arrow_icon' => Icon_Library::value( 'up' ) ] ),
+			szw_step( 'a3', 'Three' ),
+			szw_step( 'a4', 'Four', '', 'chat', [ 'arrow' => 'icon', 'arrow_icon' => Icon_Library::value( 'send' ) ] ),
+		],
+	]
+);
+$arrows = szw_all( '/<li class="sz-process__item[^"]*elementor-repeater-item-(a\d)">.*?<\/(?:a|div)>\s*(<svg class="sz-process__arrow"|<span class="sz-process__arrow sz-process__arrow--icon" aria-hidden="true"><svg class="szi szi-[a-z]+")?/s', $html, 2 );
+szw_ok( [ '', '<span class="sz-process__arrow sz-process__arrow--icon" aria-hidden="true"><svg class="szi szi-up"', '<svg class="sz-process__arrow"', '' ] === $arrows, 'per step: none, own icon, default — and never after the last step' );
+
+$html = szw_render( [ 'arrow_type' => 'icon', 'arrow_icon' => [ 'value' => '', 'library' => '' ] ] );
+szw_ok( 3 === substr_count( $html, '<svg class="sz-process__arrow"' ), 'an empty icon falls back to the drawn arrow instead of leaving gaps' );
+
 $html = szw_render( [ 'steps' => [] ] );
 szw_ok( false === strpos( $html, '<ol' ), 'no steps → no empty list' );
 
@@ -231,6 +277,7 @@ $css->update();
 $out = (string) $css->get_content();
 
 szw_ok( (bool) preg_match( '/\.elementor-element-abc1234 \.sz-process\{[^}]*--szp-cols:3;/', $out ), 'Columns → the 3-column pattern on the widget' );
+szw_ok( (bool) preg_match( '/@media\(max-width:\d+px\)\{[^@]*\.elementor-element-abc1234 \.sz-process\{[^}]*--szp-cols:1;/', $out ), 'mobile keeps its own default (1 column) when only desktop and tablet are set' );
 szw_ok( (bool) preg_match( '/@media\(max-width:\d+px\)\{[^@]*\.elementor-element-abc1234 \.sz-process\{[^}]*--szp-cols:2;/', $out ), 'tablet value lands in a tablet media query' );
 szw_ok( false !== strpos( $out, '--szp-arrows:0' ), 'arrows can be hidden per breakpoint' );
 szw_ok( (bool) preg_match( '/sz-process__item--dark \.sz-process__card\{[^}]*background-color:#7A1FA2;[^}]*--szp-card-bg:\s*none;/', $out ), 'a plain colour on the dark card switches the design gradient off' );
@@ -269,8 +316,9 @@ szw_ok( false !== strpos( $rule, 'linear-gradient(180deg, #FF0000 0%, #0000FF 10
 $rule = $bg_case( [ 'dark_icon_bg_background' => 'classic', 'dark_icon_bg_color' => '#00AA55' ], 'icon' );
 szw_ok( false !== strpos( $rule, 'background-color:#00AA55' ) && false !== strpos( $rule, '--sz-app-bg' ), 'a plain colour on the icon tile switches its gradient off' );
 
-// An untouched widget must write nothing: the design lives in process.css,
-// and controls without defaults keep per-page CSS at zero bytes.
+// An untouched widget: desktop is the stylesheet; tablet and mobile come from
+// the controls' defaults and so sit in Elementor's media queries, at the
+// site's own breakpoint widths — nothing about screen size is hard-coded.
 update_post_meta(
 	$post_id,
 	'_elementor_data',
@@ -279,7 +327,19 @@ update_post_meta(
 
 $css = Post_CSS::create( $post_id );
 $css->update();
-szw_ok( false === strpos( (string) $css->get_content(), 'elementor-element-def5678' ), 'an untouched widget adds no per-page CSS at all' );
+$out = (string) $css->get_content();
+
+$tablet_max = Elementor::$instance->breakpoints->get_breakpoints( 'tablet' )->get_value();
+$mobile_max = Elementor::$instance->breakpoints->get_breakpoints( 'mobile' )->get_value();
+$at = static function ( int $max ) use ( $out ): string {
+	preg_match_all( '/@media\(max-width:' . $max . 'px\)\{(.*?\})\}/s', $out, $m );
+	return implode( '', $m[1] );
+};
+
+szw_ok( (bool) preg_match( '/def5678 \.sz-process\{[^}]*--szp-cols:2;/', $at( $tablet_max ) ), "tablet: 2 columns at Elementor's tablet breakpoint ({$tablet_max}px)" );
+szw_ok( (bool) preg_match( '/def5678 \.sz-process\{[^}]*--szp-cols:1;/', $at( $mobile_max ) ), "mobile: 1 column at Elementor's mobile breakpoint ({$mobile_max}px)" );
+szw_ok( false !== strpos( $at( $mobile_max ), '--szp-grid-x:0px' ), 'mobile: the grid does not reach past the edges (no sideways scroll)' );
+szw_ok( false === strpos( (string) file_get_contents( dirname( __DIR__ ) . '/assets/css/widgets/process.css' ), '@media (max-width' ), 'the stylesheet itself has no width breakpoints' );
 
 wp_delete_post( $post_id, true );
 

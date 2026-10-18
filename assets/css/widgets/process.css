@@ -8,8 +8,14 @@
    Structure:
      ol.sz-process                 the board: grid + faded graph-paper lines
        li.sz-process__item         grid cell — never transformed (see below)
-         div.sz-process__card      tilt + stagger + hover live here
-         svg.sz-process__arrow     hand-drawn arrow to the next card
+         div|a.sz-process__card    tilt + stagger + hover live here
+         .sz-process__arrow        arrow to the next card: the design's
+                                   hand-drawn <svg>, or a chosen icon
+
+   Breakpoints: none in this file. The stylesheet holds the desktop design;
+   every responsive difference is a responsive control default, so it lands
+   in Elementor's own media queries and follows the site's breakpoint
+   settings (including custom ones).
 
    Why the transform is on the card and not on the <li>: a transform creates
    a stacking context. On the <li>, each arrow would be trapped inside its own
@@ -37,6 +43,10 @@
   --szp-keep-tilt:0;
   --szp-dur:.5s;
   --szp-arrow-w:54px;
+  --szp-arrow-dx:0px;
+  --szp-arrow-dy:0px;
+  --szp-arrow-rot:0deg;
+  --szp-rtl:0;
   --szp-grid-color:rgba(13,27,42,.05);
   --szp-grid-size:96px;
   --szp-grid-line:1px;
@@ -53,7 +63,7 @@
   row-gap:var(--szp-gap-y);
   margin:0;
   /* room below for the staggered cards, which move by transform and so take no layout space */
-  padding:0 0 var(--szp-stagger);
+  padding:0 0 calc(var(--szp-stagger) * var(--szp-pad,1));
   list-style:none;
   counter-reset:none;
 }
@@ -75,20 +85,19 @@
 
 /* ---------- generated: per-position layout (php tools/build-process-css.php) ---------- */
 /* BEGIN GENERATED */
-.sz-process{--szp-cols:4;--szp-r1:-2;--szp-y1:0;--szp-a1:1;--szp-s1:0;--szp-o1:4;--szp-r2:1.5;--szp-y2:1;--szp-a2:1;--szp-s2:1;--szp-o2:3;--szp-r3:-1;--szp-y3:0.15;--szp-a3:1;--szp-s3:0;--szp-o3:2;--szp-r4:2;--szp-y4:1.15;--szp-a4:0;--szp-s4:1;--szp-o4:4;--szp-r5:-2;--szp-y5:0;--szp-a5:1;--szp-s5:0;--szp-o5:4;--szp-r6:1.5;--szp-y6:1;--szp-a6:1;--szp-s6:1;--szp-o6:3;--szp-r7:-1;--szp-y7:0.15;--szp-a7:1;--szp-s7:0;--szp-o7:2;--szp-r8:2;--szp-y8:1.15;--szp-a8:0;--szp-s8:1;--szp-o8:4;--szp-r9:-2;--szp-y9:0;--szp-a9:1;--szp-s9:0;--szp-o9:4;--szp-r10:1.5;--szp-y10:1;--szp-a10:1;--szp-s10:1;--szp-o10:3;--szp-r11:-1;--szp-y11:0.15;--szp-a11:1;--szp-s11:0;--szp-o11:2;--szp-r12:2;--szp-y12:1.15;--szp-a12:0;--szp-s12:1;--szp-o12:4;}
-@media (max-width:900px){.sz-process{--szp-cols:2;--szp-r1:-2;--szp-y1:0;--szp-a1:1;--szp-s1:0;--szp-o1:4;--szp-r2:2;--szp-y2:0.65;--szp-a2:0;--szp-s2:1;--szp-o2:4;--szp-r3:-2;--szp-y3:0;--szp-a3:1;--szp-s3:0;--szp-o3:4;--szp-r4:2;--szp-y4:0.65;--szp-a4:0;--szp-s4:1;--szp-o4:4;--szp-r5:-2;--szp-y5:0;--szp-a5:1;--szp-s5:0;--szp-o5:4;--szp-r6:2;--szp-y6:0.65;--szp-a6:0;--szp-s6:1;--szp-o6:4;--szp-r7:-2;--szp-y7:0;--szp-a7:1;--szp-s7:0;--szp-o7:4;--szp-r8:2;--szp-y8:0.65;--szp-a8:0;--szp-s8:1;--szp-o8:4;--szp-r9:-2;--szp-y9:0;--szp-a9:1;--szp-s9:0;--szp-o9:4;--szp-r10:2;--szp-y10:0.65;--szp-a10:0;--szp-s10:1;--szp-o10:4;--szp-r11:-2;--szp-y11:0;--szp-a11:1;--szp-s11:0;--szp-o11:4;--szp-r12:2;--szp-y12:0.65;--szp-a12:0;--szp-s12:1;--szp-o12:4;}}
-.sz-process__item:nth-child(12n+1){--r:var(--szp-r1);--y:var(--szp-y1);--a:var(--szp-a1);--s:var(--szp-s1);--o:var(--szp-o1)}
-.sz-process__item:nth-child(12n+2){--r:var(--szp-r2);--y:var(--szp-y2);--a:var(--szp-a2);--s:var(--szp-s2);--o:var(--szp-o2)}
-.sz-process__item:nth-child(12n+3){--r:var(--szp-r3);--y:var(--szp-y3);--a:var(--szp-a3);--s:var(--szp-s3);--o:var(--szp-o3)}
-.sz-process__item:nth-child(12n+4){--r:var(--szp-r4);--y:var(--szp-y4);--a:var(--szp-a4);--s:var(--szp-s4);--o:var(--szp-o4)}
-.sz-process__item:nth-child(12n+5){--r:var(--szp-r5);--y:var(--szp-y5);--a:var(--szp-a5);--s:var(--szp-s5);--o:var(--szp-o5)}
-.sz-process__item:nth-child(12n+6){--r:var(--szp-r6);--y:var(--szp-y6);--a:var(--szp-a6);--s:var(--szp-s6);--o:var(--szp-o6)}
-.sz-process__item:nth-child(12n+7){--r:var(--szp-r7);--y:var(--szp-y7);--a:var(--szp-a7);--s:var(--szp-s7);--o:var(--szp-o7)}
-.sz-process__item:nth-child(12n+8){--r:var(--szp-r8);--y:var(--szp-y8);--a:var(--szp-a8);--s:var(--szp-s8);--o:var(--szp-o8)}
-.sz-process__item:nth-child(12n+9){--r:var(--szp-r9);--y:var(--szp-y9);--a:var(--szp-a9);--s:var(--szp-s9);--o:var(--szp-o9)}
-.sz-process__item:nth-child(12n+10){--r:var(--szp-r10);--y:var(--szp-y10);--a:var(--szp-a10);--s:var(--szp-s10);--o:var(--szp-o10)}
-.sz-process__item:nth-child(12n+11){--r:var(--szp-r11);--y:var(--szp-y11);--a:var(--szp-a11);--s:var(--szp-s11);--o:var(--szp-o11)}
-.sz-process__item:nth-child(12n+12){--r:var(--szp-r12);--y:var(--szp-y12);--a:var(--szp-a12);--s:var(--szp-s12);--o:var(--szp-o12)}
+.sz-process{--szp-cols:4;--szp-pad:1;--szp-r1:-2;--szp-y1:0;--szp-a1:1;--szp-s1:0;--szp-o1:4;--szp-v1:0;--szp-r2:1.5;--szp-y2:1;--szp-a2:1;--szp-s2:1;--szp-o2:3;--szp-v2:0;--szp-r3:-1;--szp-y3:0.15;--szp-a3:1;--szp-s3:0;--szp-o3:2;--szp-v3:0;--szp-r4:2;--szp-y4:1.15;--szp-a4:0;--szp-s4:1;--szp-o4:4;--szp-v4:0;--szp-r5:-2;--szp-y5:0;--szp-a5:1;--szp-s5:0;--szp-o5:4;--szp-v5:0;--szp-r6:1.5;--szp-y6:1;--szp-a6:1;--szp-s6:1;--szp-o6:3;--szp-v6:0;--szp-r7:-1;--szp-y7:0.15;--szp-a7:1;--szp-s7:0;--szp-o7:2;--szp-v7:0;--szp-r8:2;--szp-y8:1.15;--szp-a8:0;--szp-s8:1;--szp-o8:4;--szp-v8:0;--szp-r9:-2;--szp-y9:0;--szp-a9:1;--szp-s9:0;--szp-o9:4;--szp-v9:0;--szp-r10:1.5;--szp-y10:1;--szp-a10:1;--szp-s10:1;--szp-o10:3;--szp-v10:0;--szp-r11:-1;--szp-y11:0.15;--szp-a11:1;--szp-s11:0;--szp-o11:2;--szp-v11:0;--szp-r12:2;--szp-y12:1.15;--szp-a12:0;--szp-s12:1;--szp-o12:4;--szp-v12:0;}
+.sz-process__item:nth-child(12n+1){--r:var(--szp-r1);--y:var(--szp-y1);--a:var(--szp-a1);--s:var(--szp-s1);--o:var(--szp-o1);--v:var(--szp-v1)}
+.sz-process__item:nth-child(12n+2){--r:var(--szp-r2);--y:var(--szp-y2);--a:var(--szp-a2);--s:var(--szp-s2);--o:var(--szp-o2);--v:var(--szp-v2)}
+.sz-process__item:nth-child(12n+3){--r:var(--szp-r3);--y:var(--szp-y3);--a:var(--szp-a3);--s:var(--szp-s3);--o:var(--szp-o3);--v:var(--szp-v3)}
+.sz-process__item:nth-child(12n+4){--r:var(--szp-r4);--y:var(--szp-y4);--a:var(--szp-a4);--s:var(--szp-s4);--o:var(--szp-o4);--v:var(--szp-v4)}
+.sz-process__item:nth-child(12n+5){--r:var(--szp-r5);--y:var(--szp-y5);--a:var(--szp-a5);--s:var(--szp-s5);--o:var(--szp-o5);--v:var(--szp-v5)}
+.sz-process__item:nth-child(12n+6){--r:var(--szp-r6);--y:var(--szp-y6);--a:var(--szp-a6);--s:var(--szp-s6);--o:var(--szp-o6);--v:var(--szp-v6)}
+.sz-process__item:nth-child(12n+7){--r:var(--szp-r7);--y:var(--szp-y7);--a:var(--szp-a7);--s:var(--szp-s7);--o:var(--szp-o7);--v:var(--szp-v7)}
+.sz-process__item:nth-child(12n+8){--r:var(--szp-r8);--y:var(--szp-y8);--a:var(--szp-a8);--s:var(--szp-s8);--o:var(--szp-o8);--v:var(--szp-v8)}
+.sz-process__item:nth-child(12n+9){--r:var(--szp-r9);--y:var(--szp-y9);--a:var(--szp-a9);--s:var(--szp-s9);--o:var(--szp-o9);--v:var(--szp-v9)}
+.sz-process__item:nth-child(12n+10){--r:var(--szp-r10);--y:var(--szp-y10);--a:var(--szp-a10);--s:var(--szp-s10);--o:var(--szp-o10);--v:var(--szp-v10)}
+.sz-process__item:nth-child(12n+11){--r:var(--szp-r11);--y:var(--szp-y11);--a:var(--szp-a11);--s:var(--szp-s11);--o:var(--szp-o11);--v:var(--szp-v11)}
+.sz-process__item:nth-child(12n+12){--r:var(--szp-r12);--y:var(--szp-y12);--a:var(--szp-a12);--s:var(--szp-s12);--o:var(--szp-o12);--v:var(--szp-v12)}
 /* END GENERATED */
 
 /* ---------- grid cell ----------
@@ -107,6 +116,7 @@
 /* ---------- the card ---------- */
 .sz-process .sz-process__card{
   position:relative;
+  display:block;
   height:100%;
   overflow:hidden;
   border-radius:26px;
@@ -131,6 +141,16 @@
     transform:translateY(calc(var(--szp-stagger) * var(--y) - var(--szp-lift))) rotate(calc(var(--r) * var(--szp-tilt) * var(--szp-keep-tilt) * 1deg));
     box-shadow:var(--sz-s3);
   }
+}
+
+/* A step with a link: the whole card is the link. Keyboard focus lifts it
+   like a hover and shows a ring; theme link colours and underlines stay out. */
+.sz-process a.sz-process__card{color:inherit;text-decoration:none;cursor:pointer}
+.sz-process a.sz-process__card:focus{outline:none}
+.sz-process a.sz-process__card:focus-visible{
+  outline:2px solid var(--sz-orange);outline-offset:4px;
+  box-shadow:var(--sz-s3);
+  transform:translateY(calc(var(--szp-stagger) * var(--y) - var(--szp-lift))) rotate(calc(var(--r) * var(--szp-tilt) * var(--szp-keep-tilt) * 1deg));
 }
 
 /* Gradient behind a variable, so a background picked in the Style tab can
@@ -194,39 +214,70 @@
 .sz-process .sz-process__item--dark .sz-process__num{color:rgba(255,255,255,.05)}
 
 /* ---------- arrow to the next card ----------
-   Centred in the gap. Above the cards for odd columns, below for even ones
-   (--s), offset by how far the tilt pushes the card's corner out (--o).
-   Hidden on the last card of every row (--a) and where arrows are off. */
+   Side by side: centred in the column gap, above the cards for odd columns
+   and below for even ones (--s), offset by how far the tilt pushes the
+   card's corner out (--o). Stacked (--v): turned to point down, centred in
+   the row gap.
+
+   Off on the last card of a row (--a), where arrows are hidden, and per step.
+   An arrow that is off collapses to zero size at the cell's corner, not just
+   transparent: an invisible arrow past the last column still counted as page
+   width and made phones scroll sideways by ~16px.
+
+   Positions are worked out from the arrow's centre (9px into the card's top
+   edge, 5px under its bottom edge — the design's spots), so changing its size
+   or using an icon keeps it in the same place. */
 .sz-process .sz-process__arrow{
+  --w:var(--szp-arrow-w);
+  --h:calc(var(--w) * 30 / 54);
+  --on:calc(var(--a) * var(--szp-arrows));
   position:absolute;z-index:3;
   display:block;
-  width:var(--szp-arrow-w);height:auto;max-width:none;aspect-ratio:54/30;
-  inset-inline-start:calc(100% + var(--szp-gap-x) / 2 - var(--szp-arrow-w) / 2);
-  top:calc(
+  box-sizing:content-box;
+  width:calc(var(--w) * var(--on));height:calc(var(--h) * var(--on));
+  max-width:none;
+  inset-inline-start:calc(var(--on) * (
+    (1 - var(--v)) * (100% + var(--szp-gap-x) / 2)
+    + var(--v) * 50%
+    - var(--w) / 2 + var(--szp-arrow-dx)
+  ));
+  top:calc(var(--on) * (
     var(--szp-stagger) * var(--y)
-    + (1 - var(--s)) * (-6px - var(--o) * var(--szp-tilt) * 1px)
-    + var(--s) * (100% + var(--o) * var(--szp-tilt) * 1px - 10px)
-  );
-  margin:0;
+    + (1 - var(--v)) * (
+        (1 - var(--s)) * (9px - var(--o) * var(--szp-tilt) * 1px)
+        + var(--s) * (100% + var(--o) * var(--szp-tilt) * 1px + 5px)
+      )
+    + var(--v) * (100% + var(--szp-gap-y) / 2)
+    - var(--h) / 2 + var(--szp-arrow-dy)
+  ));
+  margin:0;padding:0;
   overflow:visible;
-  fill:none;stroke:#A9B0B9;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;
-  opacity:calc(var(--a) * var(--szp-arrows));
+  color:#A9B0B9;
+  opacity:var(--on);
   pointer-events:none;
+  /* mirrored for right-to-left (sideways arrows flip, downward ones swap curl) */
+  --sx:calc(1 - 2 * var(--szp-rtl) * (1 - var(--v)));
+  --sy:calc(1 - 2 * var(--szp-rtl) * var(--v));
+  transform:rotate(calc(var(--v) * 90deg + var(--szp-arrow-rot) * var(--sx))) scale(var(--sx),var(--sy));
+}
+.sz-process svg.sz-process__arrow{
+  fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;
 }
 .sz-process .sz-process__arrow-over{opacity:calc(1 - var(--s))}
 .sz-process .sz-process__arrow-under{opacity:var(--s)}
 
-.rtl .sz-process .sz-process__arrow,
-[dir="rtl"] .sz-process .sz-process__arrow{transform:scaleX(-1)}
-
-/* ---------- design default below 900px: two columns, no arrows ---------- */
-@media (max-width:900px){
-  .sz-process{
-    --szp-arrows:0;
-    --szp-gap-x:14px;
-    --szp-gap-y:18px;
-  }
+/* an icon instead of the drawing: square, sized by the same Size setting */
+.sz-process .sz-process__arrow--icon{
+  --h:var(--w);
+  display:grid;place-items:center;
+  font-size:calc(var(--w) * var(--on));line-height:1;
 }
+.sz-process .sz-process__arrow--icon svg,
+.sz-process .sz-process__arrow--icon i{width:1em;height:1em;font-size:inherit}
+.sz-process .sz-process__arrow--icon svg:not(.szi){fill:currentColor}
+
+.rtl .sz-process,
+[dir="rtl"] .sz-process{--szp-rtl:1}
 
 @media (prefers-reduced-motion:reduce){
   .sz-process .sz-process__card{transition:none}

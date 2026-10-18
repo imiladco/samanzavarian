@@ -19,11 +19,12 @@ defined( 'ABSPATH' ) || exit;
  * "How we work" — numbered process cards pinned to a board, each pointing to
  * the next with a hand-drawn arrow.
  *
- * Defaults reproduce the design exactly. Style-tab controls are left empty by
- * default on purpose: the design lives in process.css, and a control only
- * writes CSS once someone changes it. That keeps an untouched widget's
- * per-page CSS at zero bytes and lets the stylesheet stay the single place
- * the design is defined.
+ * Defaults reproduce the design exactly. The desktop design lives in
+ * process.css and Style-tab controls start empty, so a control writes CSS
+ * only once someone changes it. The one exception is what differs between
+ * screen sizes: those are tablet/mobile defaults on responsive controls,
+ * because only then do they follow the site's Elementor breakpoints instead
+ * of a width fixed in the stylesheet.
  */
 class Process extends Widget_Base {
 
@@ -32,6 +33,12 @@ class Process extends Widget_Base {
 	private const ARROW_UNDER = 'M2 14c6 8 12 8 14 1 2-6-6-5-3 0 4 6 14 4 32-8M45 3l3 3-3 4';
 
 	/** Inline tags a description may keep; everything else is stripped. */
+	/** Icon used when "Icon" is picked as the arrow style. */
+	private const ARROW_ICON_DEFAULT = [
+		'value'   => 'fas fa-arrow-right',
+		'library' => 'fa-solid',
+	];
+
 	private const DESC_TAGS = [
 		'a'      => [ 'href' => true, 'target' => true, 'rel' => true ],
 		'b'      => [],
@@ -91,6 +98,7 @@ class Process extends Widget_Base {
 	protected function register_controls(): void {
 		$this->content_steps();
 		$this->content_settings();
+		$this->content_arrows();
 
 		$this->style_layout();
 		$this->style_card();
@@ -153,6 +161,42 @@ class Process extends Widget_Base {
 			]
 		);
 
+		$repeater->add_control(
+			'link',
+			[
+				'label'       => esc_html__( 'Link', 'samanzavarian-widgets' ),
+				'type'        => Controls_Manager::URL,
+				'dynamic'     => [ 'active' => true ],
+				'description' => esc_html__( 'Optional. Makes the whole card a link.', 'samanzavarian-widgets' ),
+			]
+		);
+
+		$repeater->add_control(
+			'arrow',
+			[
+				'label'   => esc_html__( 'Arrow to the next step', 'samanzavarian-widgets' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => '',
+				'options' => [
+					''     => esc_html__( 'Default', 'samanzavarian-widgets' ),
+					'icon' => esc_html__( 'Own icon', 'samanzavarian-widgets' ),
+					'none' => esc_html__( 'None', 'samanzavarian-widgets' ),
+				],
+				'separator'   => 'before',
+				'description' => esc_html__( 'Default uses the Arrows section. Ignored on the last step.', 'samanzavarian-widgets' ),
+			]
+		);
+
+		$repeater->add_control(
+			'arrow_icon',
+			[
+				'label'     => esc_html__( 'Arrow icon', 'samanzavarian-widgets' ),
+				'type'      => Controls_Manager::ICONS,
+				'default'   => self::ARROW_ICON_DEFAULT,
+				'condition' => [ 'arrow' => 'icon' ],
+			]
+		);
+
 		$this->add_control(
 			'steps',
 			[
@@ -191,7 +235,7 @@ class Process extends Widget_Base {
 	private function content_settings(): void {
 		$this->start_controls_section( 'section_settings', [ 'label' => esc_html__( 'Settings', 'samanzavarian-widgets' ) ] );
 
-		$columns = [ '' => esc_html__( 'Default', 'samanzavarian-widgets' ) ];
+		$columns = [];
 		$layouts = [];
 
 		foreach ( Process_Layout::supported_columns() as $cols ) {
@@ -205,30 +249,12 @@ class Process extends Widget_Base {
 				'label'                => esc_html__( 'Columns', 'samanzavarian-widgets' ),
 				'type'                 => Controls_Manager::SELECT,
 				'options'              => $columns,
-				'default'              => '',
-				'description'          => esc_html__( 'Default follows the design: 4 columns, then 2 below 900px. Tilt, stagger and arrows adapt to any column count.', 'samanzavarian-widgets' ),
+				'default'              => '4',
+				'tablet_default'       => '2',
+				'mobile_default'       => '1',
+				'description'          => esc_html__( 'Follows your Elementor breakpoints. Tilt, stagger and arrows adapt to any column count; in one column the arrows point down.', 'samanzavarian-widgets' ),
 				'selectors_dictionary' => $layouts,
 				'selectors'            => [ '{{WRAPPER}} .sz-process' => '{{VALUE}}' ],
-			]
-		);
-
-		$this->add_responsive_control(
-			'arrows',
-			[
-				'label'   => esc_html__( 'Arrows', 'samanzavarian-widgets' ),
-				'type'    => Controls_Manager::SELECT,
-				'options' => [
-					''     => esc_html__( 'Default', 'samanzavarian-widgets' ),
-					'show' => esc_html__( 'Show', 'samanzavarian-widgets' ),
-					'hide' => esc_html__( 'Hide', 'samanzavarian-widgets' ),
-				],
-				'default'              => '',
-				'description'          => esc_html__( 'Default shows them on desktop and hides them below 900px. Arrows never point past the end of a row.', 'samanzavarian-widgets' ),
-				'selectors_dictionary' => [
-					'show' => '--szp-arrows:1',
-					'hide' => '--szp-arrows:0',
-				],
-				'selectors' => [ '{{WRAPPER}} .sz-process' => '{{VALUE}}' ],
 			]
 		);
 
@@ -302,6 +328,55 @@ class Process extends Widget_Base {
 		$this->end_controls_section();
 	}
 
+	private function content_arrows(): void {
+		$this->start_controls_section( 'section_arrows', [ 'label' => esc_html__( 'Arrows', 'samanzavarian-widgets' ) ] );
+
+		$this->add_responsive_control(
+			'arrows',
+			[
+				'label'   => esc_html__( 'Show arrows', 'samanzavarian-widgets' ),
+				'type'    => Controls_Manager::SELECT,
+				'options' => [
+					'show' => esc_html__( 'Show', 'samanzavarian-widgets' ),
+					'hide' => esc_html__( 'Hide', 'samanzavarian-widgets' ),
+				],
+				'default'              => 'show',
+				'description'          => esc_html__( 'Arrows never point past the end of a row.', 'samanzavarian-widgets' ),
+				'selectors_dictionary' => [
+					'show' => '--szp-arrows:1',
+					'hide' => '--szp-arrows:0',
+				],
+				'selectors' => [ '{{WRAPPER}} .sz-process' => '{{VALUE}}' ],
+			]
+		);
+
+		$this->add_control(
+			'arrow_type',
+			[
+				'label'   => esc_html__( 'Arrow', 'samanzavarian-widgets' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => 'drawn',
+				'options' => [
+					'drawn' => esc_html__( 'Hand-drawn (design)', 'samanzavarian-widgets' ),
+					'icon'  => esc_html__( 'Icon', 'samanzavarian-widgets' ),
+				],
+			]
+		);
+
+		$this->add_control(
+			'arrow_icon',
+			[
+				'label'       => esc_html__( 'Arrow icon', 'samanzavarian-widgets' ),
+				'type'        => Controls_Manager::ICONS,
+				'default'     => self::ARROW_ICON_DEFAULT,
+				'description' => esc_html__( 'Pick one that points right; it is turned to point down in one column and mirrored on right-to-left sites. Each step can override it.', 'samanzavarian-widgets' ),
+				'condition'   => [ 'arrow_type' => 'icon' ],
+			]
+		);
+
+		$this->end_controls_section();
+	}
+
 	private function style_layout(): void {
 		$this->start_controls_section(
 			'style_layout',
@@ -315,11 +390,12 @@ class Process extends Widget_Base {
 			'gap_x',
 			[
 				'label'       => esc_html__( 'Column gap', 'samanzavarian-widgets' ),
-				'placeholder' => Control_Helpers::ph( 56 ),
-				'type'        => Controls_Manager::SLIDER,
-				'size_units'  => [ 'px', 'em', 'vw', 'custom' ],
-				'range'       => [ 'px' => [ 'min' => 0, 'max' => 120 ] ],
-				'description' => esc_html__( 'Design: grows from 28 to 56px with the screen, 14px below 900px. Arrows stay centred in the gap.', 'samanzavarian-widgets' ),
+				'placeholder'    => Control_Helpers::ph( 56 ),
+				'tablet_default' => Control_Helpers::ph( 32 ),
+				'type'           => Controls_Manager::SLIDER,
+				'size_units'     => [ 'px', 'em', 'vw', 'custom' ],
+				'range'          => [ 'px' => [ 'min' => 0, 'max' => 120 ] ],
+				'description'    => esc_html__( 'Desktop design: grows from 28 to 56px with the screen. Arrows stay centred in the gap.', 'samanzavarian-widgets' ),
 				'selectors'   => [ '{{WRAPPER}} .sz-process' => '--szp-gap-x: {{SIZE}}{{UNIT}};' ],
 			]
 		);
@@ -328,11 +404,13 @@ class Process extends Widget_Base {
 			'gap_y',
 			[
 				'label'       => esc_html__( 'Row gap', 'samanzavarian-widgets' ),
-				'placeholder' => Control_Helpers::ph( 56 ),
-				'type'        => Controls_Manager::SLIDER,
-				'size_units'  => [ 'px', 'em', 'vw', 'custom' ],
-				'range'       => [ 'px' => [ 'min' => 0, 'max' => 120 ] ],
-				'description' => esc_html__( 'Space between rows when cards wrap. Design: 28–56px, 18px below 900px.', 'samanzavarian-widgets' ),
+				'placeholder'    => Control_Helpers::ph( 56 ),
+				'tablet_default' => Control_Helpers::ph( 18 ),
+				'mobile_default' => Control_Helpers::ph( 40 ),
+				'type'           => Controls_Manager::SLIDER,
+				'size_units'     => [ 'px', 'em', 'vw', 'custom' ],
+				'range'          => [ 'px' => [ 'min' => 0, 'max' => 120 ] ],
+				'description'    => esc_html__( 'Space between rows when cards wrap. In one column the arrows sit in this gap.', 'samanzavarian-widgets' ),
 				'selectors'   => [ '{{WRAPPER}} .sz-process' => '--szp-gap-y: {{SIZE}}{{UNIT}};' ],
 			]
 		);
@@ -436,7 +514,7 @@ class Process extends Widget_Base {
 			Group_Control_Box_Shadow::get_type(),
 			[
 				'name'     => 'card_shadow_hover',
-				'selector' => '{{WRAPPER}} .sz-process__card:hover',
+				'selector' => '{{WRAPPER}} .sz-process__card:hover, {{WRAPPER}} a.sz-process__card:focus-visible',
 			]
 		);
 
@@ -783,7 +861,7 @@ class Process extends Widget_Base {
 			[
 				'label'     => esc_html__( 'Color', 'samanzavarian-widgets' ),
 				'type'      => Controls_Manager::COLOR,
-				'selectors' => [ '{{WRAPPER}} .sz-process__arrow' => 'stroke: {{VALUE}};' ],
+				'selectors' => [ '{{WRAPPER}} .sz-process__arrow' => 'color: {{VALUE}};' ],
 			]
 		);
 
@@ -794,7 +872,8 @@ class Process extends Widget_Base {
 				'placeholder' => Control_Helpers::ph( 1.5, '' ),
 				'type'        => Controls_Manager::SLIDER,
 				'range'       => [ 'px' => [ 'min' => 0.5, 'max' => 4, 'step' => 0.1 ] ],
-				'selectors'   => [ '{{WRAPPER}} .sz-process__arrow' => 'stroke-width: {{SIZE}};' ],
+				'description' => esc_html__( 'For the hand-drawn arrow and line icons.', 'samanzavarian-widgets' ),
+				'selectors'   => [ '{{WRAPPER}} svg.sz-process__arrow, {{WRAPPER}} .sz-process__arrow svg.szi' => 'stroke-width: {{SIZE}};' ],
 			]
 		);
 
@@ -805,8 +884,45 @@ class Process extends Widget_Base {
 				'placeholder' => Control_Helpers::ph( 54 ),
 				'type'        => Controls_Manager::SLIDER,
 				'size_units'  => [ 'px' ],
-				'range'       => [ 'px' => [ 'min' => 20, 'max' => 140 ] ],
+				'range'       => [ 'px' => [ 'min' => 12, 'max' => 140 ] ],
 				'selectors'   => [ '{{WRAPPER}} .sz-process' => '--szp-arrow-w: {{SIZE}}{{UNIT}};' ],
+			]
+		);
+
+		$this->add_responsive_control(
+			'arrow_rotate',
+			[
+				'label'       => esc_html__( 'Rotate', 'samanzavarian-widgets' ),
+				'placeholder' => Control_Helpers::ph( 0, 'deg' ),
+				'type'        => Controls_Manager::SLIDER,
+				'size_units'  => [ 'deg' ],
+				'range'       => [ 'deg' => [ 'min' => -180, 'max' => 180 ] ],
+				'selectors'   => [ '{{WRAPPER}} .sz-process' => '--szp-arrow-rot: {{SIZE}}deg;' ],
+			]
+		);
+
+		$this->add_responsive_control(
+			'arrow_offset_x',
+			[
+				'label'       => esc_html__( 'Offset along', 'samanzavarian-widgets' ),
+				'placeholder' => Control_Helpers::ph( 0 ),
+				'type'        => Controls_Manager::SLIDER,
+				'size_units'  => [ 'px' ],
+				'range'       => [ 'px' => [ 'min' => -80, 'max' => 80 ] ],
+				'description' => esc_html__( 'Positive moves toward the next card.', 'samanzavarian-widgets' ),
+				'selectors'   => [ '{{WRAPPER}} .sz-process' => '--szp-arrow-dx: {{SIZE}}{{UNIT}};' ],
+			]
+		);
+
+		$this->add_responsive_control(
+			'arrow_offset_y',
+			[
+				'label'       => esc_html__( 'Offset up/down', 'samanzavarian-widgets' ),
+				'placeholder' => Control_Helpers::ph( 0 ),
+				'type'        => Controls_Manager::SLIDER,
+				'size_units'  => [ 'px' ],
+				'range'       => [ 'px' => [ 'min' => -80, 'max' => 80 ] ],
+				'selectors'   => [ '{{WRAPPER}} .sz-process' => '--szp-arrow-dy: {{SIZE}}{{UNIT}};' ],
 			]
 		);
 
@@ -873,8 +989,10 @@ class Process extends Widget_Base {
 		$this->add_responsive_control(
 			'grid_extend_x',
 			[
-				'label'       => esc_html__( 'Extend sideways', 'samanzavarian-widgets' ),
-				'placeholder' => Control_Helpers::ph( 20 ),
+				'label'          => esc_html__( 'Extend sideways', 'samanzavarian-widgets' ),
+				'placeholder'    => Control_Helpers::ph( 20 ),
+				'mobile_default' => Control_Helpers::ph( 0 ),
+				'description'    => esc_html__( 'Off on mobile by default: on a narrow screen the lines past the edge would make the page scroll sideways.', 'samanzavarian-widgets' ),
 				'type'        => Controls_Manager::SLIDER,
 				'size_units'  => [ 'px' ],
 				'range'       => [ 'px' => [ 'min' => 0, 'max' => 300 ] ],
@@ -933,6 +1051,7 @@ class Process extends Widget_Base {
 		$start      = isset( $settings['number_start'] ) && '' !== $settings['number_start'] ? (int) $settings['number_start'] : 1;
 		$pad        = 'yes' === ( $settings['number_pad'] ?? '' );
 		$dark_first = 'dark' === ( $settings['skin_pattern'] ?? 'light' );
+		$arrow      = 'icon' === ( $settings['arrow_type'] ?? 'drawn' ) ? $settings['arrow_icon'] ?? self::ARROW_ICON_DEFAULT : null;
 
 		$this->add_render_attribute(
 			'board',
@@ -954,15 +1073,18 @@ class Process extends Widget_Base {
 		<ol <?php $this->print_render_attribute_string( 'board' ); ?>>
 			<?php
 			foreach ( $steps as $index => $step ) {
-				$this->render_step( $step, $index, $total, $tag, $show_num ? self::number_label( $start + $index, $pad ) : null, $dark_first );
+				$this->render_step( $step, $index, $index < $total - 1, $tag, $show_num ? self::number_label( $start + $index, $pad ) : null, $dark_first, $arrow );
 			}
 			?>
 		</ol>
 		<?php
 	}
 
-	/** @param array<string,mixed> $step */
-	private function render_step( array $step, int $index, int $total, string $tag, ?string $number, bool $dark_first ): void {
+	/**
+	 * @param array<string,mixed>      $step
+	 * @param array<string,mixed>|null $arrow the widget's arrow icon, or null for the drawn arrow
+	 */
+	private function render_step( array $step, int $index, bool $has_next, string $tag, ?string $number, bool $dark_first, ?array $arrow ): void {
 		$skin = self::skin( $step['skin'] ?? '', $index, $dark_first );
 
 		$item_classes = [ 'sz-process__item', 'sz-process__item--' . $skin ];
@@ -974,9 +1096,19 @@ class Process extends Widget_Base {
 		$icon  = Icon_Library::html( $step['icon'] ?? [] );
 		$title = trim( (string) ( $step['title'] ?? '' ) );
 		$desc  = trim( (string) ( $step['description'] ?? '' ) );
+
+		$card_tag = 'div';
+		$card_key = 'card-' . $index;
+
+		$this->add_render_attribute( $card_key, 'class', 'sz-process__card' );
+
+		if ( ! empty( $step['link']['url'] ) ) {
+			$card_tag = 'a';
+			$this->add_link_attributes( $card_key, $step['link'] );
+		}
 		?>
 		<li class="<?php echo esc_attr( implode( ' ', $item_classes ) ); ?>">
-			<div class="sz-process__card">
+			<<?php echo $card_tag; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- literal 'a' or 'div' ?> <?php $this->print_render_attribute_string( $card_key ); ?>>
 				<?php if ( '' !== $icon ) : ?>
 					<span class="sz-process__icon sz-app sz-app--<?php echo 'dark' === $skin ? 'orange' : 'white'; ?>" aria-hidden="true"><?php echo $icon; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- markup from Elementor's icon renderer or our static glyph map ?></span>
 				<?php endif; ?>
@@ -992,14 +1124,43 @@ class Process extends Widget_Base {
 				<?php if ( null !== $number ) : ?>
 					<span class="sz-process__num" aria-hidden="true"><?php echo esc_html( $number ); ?></span>
 				<?php endif; ?>
-			</div>
-			<?php if ( $index < $total - 1 ) : ?>
-				<svg class="sz-process__arrow" viewBox="0 0 54 30" aria-hidden="true" focusable="false">
-					<path class="sz-process__arrow-over" d="<?php echo esc_attr( self::ARROW_OVER ); ?>"/>
-					<path class="sz-process__arrow-under" d="<?php echo esc_attr( self::ARROW_UNDER ); ?>"/>
-				</svg>
-			<?php endif; ?>
+			</<?php echo $card_tag; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
+			<?php
+			if ( $has_next ) {
+				self::render_arrow( $step, $arrow );
+			}
+			?>
 		</li>
+		<?php
+	}
+
+	/**
+	 * The arrow out of one step: the step's own choice first, then the
+	 * widget's. An icon that renders nothing falls back to the drawn arrow
+	 * rather than leaving a gap in the sequence.
+	 *
+	 * @param array<string,mixed>      $step
+	 * @param array<string,mixed>|null $widget_icon
+	 */
+	private static function render_arrow( array $step, ?array $widget_icon ): void {
+		$choice = $step['arrow'] ?? '';
+
+		if ( 'none' === $choice ) {
+			return;
+		}
+
+		$icon = 'icon' === $choice ? $step['arrow_icon'] ?? null : $widget_icon;
+		$html = is_array( $icon ) ? Icon_Library::html( $icon ) : '';
+
+		if ( '' !== $html ) {
+			echo '<span class="sz-process__arrow sz-process__arrow--icon" aria-hidden="true">' . $html . '</span>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- markup from Elementor's icon renderer or our static glyph map
+			return;
+		}
+		?>
+		<svg class="sz-process__arrow" viewBox="0 0 54 30" aria-hidden="true" focusable="false">
+			<path class="sz-process__arrow-over" d="<?php echo esc_attr( self::ARROW_OVER ); ?>"/>
+			<path class="sz-process__arrow-under" d="<?php echo esc_attr( self::ARROW_UNDER ); ?>"/>
+		</svg>
 		<?php
 	}
 

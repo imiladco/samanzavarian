@@ -22,9 +22,9 @@ $file = dirname( __DIR__ ) . '/assets/css/widgets/process.css';
 $css  = file_get_contents( $file );
 
 $block = "/* BEGIN GENERATED */\n"
-	// The design: four columns, then two at ≤900px.
+	// Desktop only. Tablet and mobile come from the Columns control's
+	// defaults, so they follow the site's Elementor breakpoints.
 	. '.sz-process{' . Process_Layout::vars( 4 ) . "}\n"
-	. '@media (max-width:900px){.sz-process{' . Process_Layout::vars( 2 ) . "}}\n"
 	. Process_Layout::item_rules()
 	. '/* END GENERATED */';
 
