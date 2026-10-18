@@ -29,7 +29,10 @@ class Service_Panel extends Widget_Base {
 	public const SCENES = [ 'ai', 'direction', 'post', 'content' ];
 
 	/** Scenes that have a script (assets/js/scenes/<name>.js). */
-	public const ANIMATED_SCENES = [ 'ai' ];
+	public const ANIMATED_SCENES = [ 'ai', 'post' ];
+
+	/** Scenes with controls a visitor can use. */
+	public const INTERACTIVE_SCENES = [ 'post' ];
 
 	public function get_name(): string {
 		return 'sz-service-panel';
@@ -190,6 +193,7 @@ class Service_Panel extends Widget_Base {
 		$this->end_controls_section();
 
 		$this->controls_ai();
+		$this->controls_post();
 
 		$this->start_controls_section( 'section_info', [ 'label' => esc_html__( 'Card', 'samanzavarian-widgets' ) ] );
 
@@ -287,6 +291,7 @@ class Service_Panel extends Widget_Base {
 
 		$this->style_panel();
 		$this->style_ai();
+		$this->style_post();
 		$this->style_card();
 		$this->style_chips();
 		$this->style_button();
@@ -552,6 +557,276 @@ class Service_Panel extends Widget_Base {
 		$lines = array_values( array_filter( array_map( 'trim', $lines ), 'strlen' ) );
 
 		return $lines ? $lines : [ '' ];
+	}
+
+	/* -----------------------------------------------------------------
+	 * Scene: Post-production
+	 * ----------------------------------------------------------------- */
+
+	/** The design's two sliders. Knob positions match it: 18 on ±50 is 68%, −12 on ±75 is 42%. */
+	private const POST_ADJUSTMENTS = [
+		[ 'label' => 'Warmth', 'effect' => 'warmth', 'min' => -50, 'max' => 50, 'value' => 18, 'c1' => '#8FB3E0', 'c2' => '#E9ECEF', 'c3' => '#FFB07F' ],
+		[ 'label' => 'Shadows', 'effect' => 'shadows', 'min' => -75, 'max' => 75, 'value' => -12, 'c1' => '#1B2633', 'c2' => '', 'c3' => '#E9ECEF' ],
+	];
+
+	/** The design's timeline: three tracks of clips (track, length, colour). */
+	private const POST_CLIPS = [
+		[ 1, 3, '#0D1B2A' ], [ 1, 2, '#2A4560' ], [ 1, 2, '#0D1B2A' ],
+		[ 2, 2, '#FFD3BF' ], [ 2, 4, '#FF6B2C' ], [ 2, 1, '#FFD3BF' ],
+		[ 3, 5, '#E7E9EC' ], [ 3, 2, '#D5D9DF' ],
+	];
+
+	private function controls_post(): void {
+		$on = [ 'scene' => 'post' ];
+
+		$this->start_controls_section(
+			'section_post',
+			[
+				'label'     => esc_html__( 'Post-production scene', 'samanzavarian-widgets' ),
+				'condition' => $on,
+			]
+		);
+
+		$adj = new Repeater();
+		$adj->add_control( 'label', [ 'label' => esc_html__( 'Label', 'samanzavarian-widgets' ), 'type' => Controls_Manager::TEXT, 'default' => 'Exposure' ] );
+		$adj->add_control(
+			'effect',
+			[
+				'label'       => esc_html__( 'Changes', 'samanzavarian-widgets' ),
+				'type'        => Controls_Manager::SELECT,
+				'default'     => 'exposure',
+				'options'     => [
+					'warmth'     => esc_html__( 'Warmth', 'samanzavarian-widgets' ),
+					'shadows'    => esc_html__( 'Shadows', 'samanzavarian-widgets' ),
+					'exposure'   => esc_html__( 'Exposure', 'samanzavarian-widgets' ),
+					'contrast'   => esc_html__( 'Contrast', 'samanzavarian-widgets' ),
+					'saturation' => esc_html__( 'Saturation', 'samanzavarian-widgets' ),
+					'none'       => esc_html__( 'Nothing (just a number)', 'samanzavarian-widgets' ),
+				],
+				'description' => esc_html__( 'What moving the slider does to the timeline clips and the preview image.', 'samanzavarian-widgets' ),
+			]
+		);
+		$adj->add_control( 'min', [ 'label' => esc_html__( 'Minimum', 'samanzavarian-widgets' ), 'type' => Controls_Manager::NUMBER, 'default' => -50 ] );
+		$adj->add_control( 'max', [ 'label' => esc_html__( 'Maximum', 'samanzavarian-widgets' ), 'type' => Controls_Manager::NUMBER, 'default' => 50 ] );
+		$adj->add_control( 'value', [ 'label' => esc_html__( 'Starting value', 'samanzavarian-widgets' ), 'type' => Controls_Manager::NUMBER, 'default' => 0 ] );
+		$adj->add_control( 'c1', [ 'label' => esc_html__( 'Track: low end', 'samanzavarian-widgets' ), 'type' => Controls_Manager::COLOR, 'default' => '#1B2633' ] );
+		$adj->add_control( 'c2', [ 'label' => esc_html__( 'Track: middle', 'samanzavarian-widgets' ), 'type' => Controls_Manager::COLOR, 'default' => '' ] );
+		$adj->add_control( 'c3', [ 'label' => esc_html__( 'Track: high end', 'samanzavarian-widgets' ), 'type' => Controls_Manager::COLOR, 'default' => '#E9ECEF' ] );
+
+		$this->add_control(
+			'post_adjustments',
+			[
+				'label'       => esc_html__( 'Sliders', 'samanzavarian-widgets' ),
+				'type'        => Controls_Manager::REPEATER,
+				'fields'      => $adj->get_controls(),
+				'default'     => self::POST_ADJUSTMENTS,
+				'title_field' => '{{{ label }}}',
+				'description' => esc_html__( 'Visitors can drag them (or use the arrow keys); the number and the clips follow.', 'samanzavarian-widgets' ),
+			]
+		);
+
+		$this->add_control(
+			'post_drift',
+			[
+				'label'        => esc_html__( 'Sliders move on their own', 'samanzavarian-widgets' ),
+				'type'         => Controls_Manager::SWITCHER,
+				'default'      => 'yes',
+				'return_value' => 'yes',
+				'description'  => esc_html__( 'A slow, small drift around the starting value, as if someone were grading. It stops while a visitor holds a slider.', 'samanzavarian-widgets' ),
+			]
+		);
+
+		$this->add_control(
+			'post_preview',
+			[
+				'label'       => esc_html__( 'Preview image', 'samanzavarian-widgets' ),
+				'type'        => Controls_Manager::MEDIA,
+				'description' => esc_html__( 'Optional: a photo the sliders grade live. Empty keeps the design as it is.', 'samanzavarian-widgets' ),
+				'separator'   => 'before',
+			]
+		);
+
+		$clip = new Repeater();
+		$clip->add_control(
+			'track',
+			[
+				'label'   => esc_html__( 'Track', 'samanzavarian-widgets' ),
+				'type'    => Controls_Manager::SELECT,
+				'default' => '1',
+				'options' => [ '1' => '1', '2' => '2', '3' => '3' ],
+			]
+		);
+		$clip->add_control( 'length', [ 'label' => esc_html__( 'Length', 'samanzavarian-widgets' ), 'type' => Controls_Manager::NUMBER, 'default' => 2, 'min' => 1, 'max' => 12 ] );
+		$clip->add_control( 'color', [ 'label' => esc_html__( 'Colour', 'samanzavarian-widgets' ), 'type' => Controls_Manager::COLOR, 'default' => '#2A4560' ] );
+
+		$defaults = [];
+		foreach ( self::POST_CLIPS as $c ) {
+			$defaults[] = [ 'track' => (string) $c[0], 'length' => $c[1], 'color' => $c[2] ];
+		}
+
+		$this->add_control(
+			'post_clips',
+			[
+				'label'       => esc_html__( 'Timeline clips', 'samanzavarian-widgets' ),
+				'type'        => Controls_Manager::REPEATER,
+				'fields'      => $clip->get_controls(),
+				'default'     => $defaults,
+				'title_field' => '<# print( "Track " + track + " · " + length ); #>',
+				'separator'   => 'before',
+			]
+		);
+
+		$this->add_control( 'post_from', [ 'label' => esc_html__( 'Ruler start', 'samanzavarian-widgets' ), 'type' => Controls_Manager::TEXT, 'default' => '00:00:12' ] );
+		$this->add_control( 'post_to', [ 'label' => esc_html__( 'Ruler end', 'samanzavarian-widgets' ), 'type' => Controls_Manager::TEXT, 'default' => '00:00:24' ] );
+
+		$this->add_control(
+			'post_done',
+			[
+				'label'     => esc_html__( 'Finished label', 'samanzavarian-widgets' ),
+				'type'      => Controls_Manager::TEXT,
+				'default'   => 'Final export ready',
+				'separator' => 'before',
+			]
+		);
+
+		$this->add_control(
+			'post_working',
+			[
+				'label'       => esc_html__( 'Working label', 'samanzavarian-widgets' ),
+				'type'        => Controls_Manager::TEXT,
+				'default'     => 'Exporting {p}%',
+				'description' => esc_html__( 'Shown while the playhead runs; {p} is its progress.', 'samanzavarian-widgets' ),
+			]
+		);
+
+		$this->add_control(
+			'post_duration',
+			[
+				'label'       => esc_html__( 'Playhead run', 'samanzavarian-widgets' ),
+				'placeholder' => Control_Helpers::ph( 7, 's' ),
+				'type'        => Controls_Manager::SLIDER,
+				'size_units'  => [ 's' ],
+				'range'       => [ 's' => [ 'min' => 2, 'max' => 30, 'step' => 0.5 ] ],
+			]
+		);
+
+		$this->end_controls_section();
+	}
+
+	private function style_post(): void {
+		$this->start_controls_section(
+			'style_post',
+			[
+				'label'     => esc_html__( 'Post-production scene', 'samanzavarian-widgets' ),
+				'tab'       => Controls_Manager::TAB_STYLE,
+				'condition' => [ 'scene' => 'post' ],
+			]
+		);
+
+		foreach ( [
+			'post_card_bg'  => [ esc_html__( 'Cards', 'samanzavarian-widgets' ), '.szs-grade, {{WRAPPER}} .szs-tl', 'background-color' ],
+			'post_label'    => [ esc_html__( 'Slider labels', 'samanzavarian-widgets' ), '.szs-grade__row', 'color' ],
+			'post_value'    => [ esc_html__( 'Slider values', 'samanzavarian-widgets' ), '.szs-grade__val', 'color' ],
+			'post_knob'     => [ esc_html__( 'Knobs', 'samanzavarian-widgets' ), '.szs-grade__knob', 'background-color' ],
+			'post_head'     => [ esc_html__( 'Playhead', 'samanzavarian-widgets' ), '.szs-tl__head, {{WRAPPER}} .szs-tl__head::before', 'background-color' ],
+			'post_ruler'    => [ esc_html__( 'Ruler text', 'samanzavarian-widgets' ), '.szs-tl__top', 'color' ],
+			'post_pill_bg'  => [ esc_html__( 'Label background', 'samanzavarian-widgets' ), '.szs-pill', 'background-color' ],
+			'post_pill_fg'  => [ esc_html__( 'Label text', 'samanzavarian-widgets' ), '.szs-pill', 'color' ],
+			'post_dot_done' => [ esc_html__( 'Finished dot', 'samanzavarian-widgets' ), '.szs-pill i', 'background-color' ],
+		] as $id => $def ) {
+			$this->add_control(
+				$id,
+				[
+					'label'     => $def[0],
+					'type'      => Controls_Manager::COLOR,
+					'selectors' => [ '{{WRAPPER}} ' . $def[1] => $def[2] . ': {{VALUE}};' ],
+				]
+			);
+		}
+
+		$this->end_controls_section();
+	}
+
+	/**
+	 * Sliders, cleaned: numbers in range, a usable min < max.
+	 *
+	 * @param array<string,mixed> $s
+	 * @return array<int,array<string,mixed>>
+	 */
+	public static function post_adjustments( array $s ): array {
+		$rows = isset( $s['post_adjustments'] ) && is_array( $s['post_adjustments'] ) ? $s['post_adjustments'] : self::POST_ADJUSTMENTS;
+		$out  = [];
+
+		foreach ( $rows as $row ) {
+			$min = is_numeric( $row['min'] ?? null ) ? (float) $row['min'] : -50;
+			$max = is_numeric( $row['max'] ?? null ) ? (float) $row['max'] : 50;
+			if ( $max <= $min ) {
+				$max = $min + 1;
+			}
+			$value = is_numeric( $row['value'] ?? null ) ? (float) $row['value'] : 0;
+
+			$out[] = [
+				'label'  => (string) ( $row['label'] ?? '' ),
+				'effect' => in_array( $row['effect'] ?? '', [ 'warmth', 'shadows', 'exposure', 'contrast', 'saturation', 'none' ], true ) ? $row['effect'] : 'none',
+				'min'    => $min,
+				'max'    => $max,
+				'value'  => max( $min, min( $max, $value ) ),
+				'track'  => self::gradient( [ $row['c1'] ?? '', $row['c2'] ?? '', $row['c3'] ?? '' ] ),
+				'_id'    => (string) ( $row['_id'] ?? '' ),
+			];
+		}
+
+		return $out;
+	}
+
+	/**
+	 * Clips grouped by track, in order.
+	 *
+	 * @param array<string,mixed> $s
+	 * @return array<int,array<int,array{length:int,color:string}>>
+	 */
+	public static function post_tracks( array $s ): array {
+		$clips  = isset( $s['post_clips'] ) && is_array( $s['post_clips'] ) ? $s['post_clips'] : null;
+		$tracks = [ 1 => [], 2 => [], 3 => [] ];
+
+		if ( null === $clips ) {
+			$clips = array_map( static fn( $c ) => [ 'track' => $c[0], 'length' => $c[1], 'color' => $c[2] ], self::POST_CLIPS );
+		}
+
+		foreach ( $clips as $c ) {
+			$t = max( 1, min( 3, (int) ( $c['track'] ?? 1 ) ) );
+			$tracks[ $t ][] = [
+				'length' => max( 1, min( 12, (int) ( $c['length'] ?? 1 ) ) ),
+				'color'  => self::css_color( (string) ( $c['color'] ?? '' ) ),
+			];
+		}
+
+		return array_values( array_filter( $tracks ) );
+	}
+
+	/** Signed, with a real minus sign, like the design: +18, −12, 0. */
+	public static function signed( float $n ): string {
+		$r = (int) round( $n );
+
+		return $r > 0 ? '+' . $r : ( $r < 0 ? '−' . abs( $r ) : '0' );
+	}
+
+	/** A colour value safe inside a style attribute (hex, rgb/hsl(), named, or a CSS variable). */
+	public static function css_color( string $c ): string {
+		$c = trim( $c );
+
+		return preg_match( '/^(#[0-9a-fA-F]{3,8}|(?:rgb|rgba|hsl|hsla)\([0-9.,%\s\/]+\)|var\(--[a-zA-Z0-9_-]+\)|[a-zA-Z]+)$/', $c ) ? $c : '';
+	}
+
+	/** @param string[] $colors */
+	private static function gradient( array $colors ): string {
+		$stops = array_values( array_filter( array_map( [ self::class, 'css_color' ], $colors ), 'strlen' ) );
+
+		if ( ! $stops ) {
+			return '';
+		}
+
+		return 1 === count( $stops ) ? $stops[0] : 'linear-gradient(90deg,' . implode( ',', $stops ) . ')';
 	}
 
 	private function style_panel(): void {
@@ -894,7 +1169,12 @@ class Service_Panel extends Widget_Base {
 		$scene = in_array( $scene, self::SCENES, true ) ? $scene : 'ai';
 		$data  = in_array( $scene, self::ANIMATED_SCENES, true ) ? ' data-szs="' . esc_attr( $scene ) . '"' : '';
 
-		echo '<div class="sz-svc__art szs szs--' . esc_attr( $scene ) . '"' . $data . ' aria-hidden="true">'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above
+		// Scenes are decoration and hidden from assistive tech — except where
+		// the visitor can use something (the grading sliders): that scene
+		// hides its decorative parts one by one instead.
+		$hidden = in_array( $scene, self::INTERACTIVE_SCENES, true ) ? '' : ' aria-hidden="true"';
+
+		echo '<div class="sz-svc__art szs szs--' . esc_attr( $scene ) . '"' . $data . $hidden . '>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above
 		include SZW_PATH . 'includes/Widgets/scenes/' . $scene . '.php';
 		echo '</div>';
 	}

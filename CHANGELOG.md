@@ -4,6 +4,26 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.6.0
+- Service Panel — **Post-production scene, live and usable**:
+  - The grading sliders are real range inputs under the design's knobs:
+    visitors drag them (anywhere on the track) or use the keyboard, screen
+    readers hear "Warmth, +18". The number and the grade follow.
+  - The grade is real: clips (and an optional preview image) warm, cool,
+    brighten or deepen — measured from each slider's start, so at rest the
+    colours are exactly the design's.
+  - On their own the sliders drift slowly, gliding from wherever they are;
+    a held or just-released slider is left alone.
+  - The timeline runs: the playhead is the export's progress ("Exporting
+    46%"), cuts move on the way, "Final export ready" pops in, then it
+    rewinds for the next pass — always within the visible part of the card.
+  - Controls: sliders (label, effect, range, start, track colours), drift,
+    preview image, clips (track, length, colour), ruler, labels, run time;
+    Style: every colour.
+  - Reduced motion: nothing moves on its own; the sliders still work by hand.
+- Scene runtime: scene scripts are created even with reduced motion, so a
+  scene's hand controls always work; only automatic motion is held back.
+
 ## 0.5.0
 - Service Panel — **AI scene, editable and animated**: the prompt types itself,
   Generate is pressed, frames wait on sweeping plates, resolve from noise to

@@ -179,4 +179,32 @@ szw_ok( [ 'sz-service-panel', 'sz-scene-ai' ] === $make( [] )->get_script_depend
 szw_ok( [ 'sz-service-panel' ] === $make( [ 'scene' => 'media' ] )->get_script_depends(), 'a media panel loads no scene script' );
 szw_ok( wp_script_is( 'sz-scene-ai', 'registered' ) && in_array( 'sz-service-panel', wp_scripts()->registered['sz-scene-ai']->deps, true ), 'scene scripts load after the panel runtime' );
 
+/* ------------------------------------------------------------------ */
+
+szw_group( 'Panel — Post-production scene' );
+
+$html = szw_render( Service_Panel::preset( 'post' ), 'sz-service-panel' );
+szw_ok( (bool) preg_match( '/class="sz-svc__art szs szs--post" data-szs="post">/', $html ), 'the scene is not hidden from assistive tech (it has controls)…' );
+szw_ok( 2 === substr_count( $html, 'class="szs-tl szs-a" aria-hidden="true"' ) + substr_count( $html, 'class="szs-pill szs-a" aria-hidden="true"' ), '…its decoration is, piece by piece' );
+szw_ok( 2 === substr_count( $html, 'type="range"' ), 'two real range inputs' );
+preg_match_all( '/<label for="([^"]+)">([^<]+)<\/label>/', $html, $lb );
+preg_match_all( '/<input class="szs-grade__input" id="([^"]+)"/', $html, $in );
+szw_ok( [ 'Warmth', 'Shadows' ] === $lb[2] && $lb[1] === $in[1], 'each labelled: Warmth, Shadows' );
+szw_ok( (bool) preg_match( '/--p:0\.68;background:linear-gradient\(90deg,#8FB3E0,#E9ECEF,#FFB07F\)/', $html ) && (bool) preg_match( '/--p:0\.42;background:linear-gradient\(90deg,#1B2633,#E9ECEF\)/', $html ), 'knobs at 68% / 42% on the design\'s tracks' );
+szw_ok( [ '+18', '−12' ] === szw_all( '/<output class="szs-grade__val"[^>]*>([^<]+)</', $html ), 'values signed with a real minus, as designed' );
+szw_ok( (bool) preg_match( '/min="-50" max="50" step="1" value="18" data-effect="warmth" aria-valuetext="\+18"/', $html ), 'range, value, effect and spoken value' );
+szw_ok( [ 'flex:3;background:#0D1B2A', 'flex:2;background:#2A4560', 'flex:2;background:#0D1B2A' ] === array_slice( szw_all( '/<i style="([^"]+)"><\/i>/', $html ), 0, 3 ), 'timeline clips: the design\'s first track' );
+szw_ok( false !== strpos( $html, '<span class="szs-pill__text">Final export ready</span>' ) && false === strpos( $html, 'szs-shot' ), 'resting label; no preview image unless one is set' );
+
+szw_ok( '+18' === Service_Panel::signed( 18.4 ) && '−12' === Service_Panel::signed( -12 ) && '0' === Service_Panel::signed( -0.3 ), 'signed(): +18, −12, 0' );
+szw_ok( '#abc' === Service_Panel::css_color( '#abc' ) && 'var(--e-global-color-accent)' === Service_Panel::css_color( 'var(--e-global-color-accent)' ) && '' === Service_Panel::css_color( 'red;background:url(x)' ), 'colours are checked before going into a style attribute' );
+$adj = Service_Panel::post_adjustments( [ 'post_adjustments' => [ [ 'label' => 'X', 'min' => 10, 'max' => 5, 'value' => 99, 'effect' => 'evil' ] ] ] );
+szw_ok( 10.0 === $adj[0]['min'] && 11.0 === $adj[0]['max'] && 11.0 === $adj[0]['value'] && 'none' === $adj[0]['effect'], 'a broken range is repaired, the value clamped, an unknown effect ignored' );
+$tracks = Service_Panel::post_tracks( [ 'post_clips' => [ [ 'track' => '3', 'length' => 99, 'color' => '#fff' ], [ 'track' => '9', 'length' => 0, 'color' => 'bad;x' ] ] ] );
+szw_ok( 1 === count( $tracks ) && [ [ 'length' => 12, 'color' => '#fff' ], [ 'length' => 1, 'color' => '' ] ] === $tracks[0], 'clips: track 9 → 3, lengths 1–12, a bad colour dropped, empty tracks left out' );
+
+$html = szw_render( array_merge( Service_Panel::preset( 'post' ), [ 'post_preview' => [ 'url' => 'https://x.test/p.jpg', 'id' => '' ] ] ), 'sz-service-panel' );
+szw_ok( (bool) preg_match( '/<figure class="szs-shot szs-a" aria-hidden="true"><img class="szs-shot__media" src="https:\/\/x\.test\/p\.jpg"/', $html ), 'a preview image joins the scene' );
+szw_ok( [ 'sz-service-panel', 'sz-scene-post' ] === $make( [ 'scene' => 'post' ] )->get_script_depends(), 'a Post panel loads only its own scene script' );
+
 szw_finish();

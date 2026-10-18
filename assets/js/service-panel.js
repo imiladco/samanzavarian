@@ -12,8 +12,9 @@
  * Scene contract:
  *   window.szwScenes.register( 'ai', ( root ) => ( { play(), pause() } ) )
  * root is the scene's .szs element. play() and pause() may be called any
- * number of times; with reduced motion neither is ever called, and the
- * server markup — the design's finished state — is what shows.
+ * number of times; with reduced motion play() is never called, and the
+ * server markup — the design's finished state — is what shows. A factory
+ * may also wire up controls the visitor uses by hand; those work always.
  */
 ( function () {
 	'use strict';
@@ -85,8 +86,9 @@
 
 		root.querySelectorAll( '.sz-svc .szs[data-szs]' ).forEach( ( el ) => {
 			const factory = factories[ el.dataset.szs ];
-			// With reduced motion a scene is never started: the markup is final.
-			if ( ! factory || controllers.has( el ) || reduce.matches ) {
+			// Created even with reduced motion (a scene may have controls the
+			// visitor uses by hand); live() keeps play() from ever being called.
+			if ( ! factory || controllers.has( el ) ) {
 				return;
 			}
 			controllers.set( el, factory( el, { refresh } ) );

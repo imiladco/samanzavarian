@@ -205,19 +205,41 @@
 /* ---------- Post: grading sliders and a timeline ---------- */
 .szs .szs-grade{position:absolute;left:9%;top:40px;width:260px;padding:16px 16px 14px;border-radius:20px;background:#fff;box-shadow:var(--sz-s3);--ar:-3deg}
 .szs .szs-grade__row{display:flex;justify-content:space-between;font-size:13px;font-weight:600;line-height:1.6;color:var(--sz-ink)}
-.szs .szs-grade__row span{color:var(--sz-t3);font-weight:500;font-variant-numeric:tabular-nums}
-.szs .szs-grade__track{position:relative;height:6px;margin:12px 0 14px;border-radius:9px;background:linear-gradient(90deg,#8FB3E0,#E9ECEF 50%,#FFB07F)}
-.szs .szs-grade__track i{position:absolute;top:50%;left:68%;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(13,27,42,.25),0 0 0 .5px rgba(13,27,42,.08)}
-.szs .szs-grade__track--2{background:linear-gradient(90deg,#1B2633,#E9ECEF)}
-.szs .szs-grade__track--2 i{left:42%}
-.szs .szs-tl{position:absolute;left:18%;right:-30px;bottom:-10px;padding:16px;border-radius:22px;background:#fff;box-shadow:var(--sz-s3);--ar:-2deg}
+.szs .szs-grade{direction:ltr;z-index:1}
+.szs .szs-grade__row label{display:inline;margin:0;padding:0;font:inherit;color:inherit;letter-spacing:inherit;text-transform:none;cursor:default}
+.szs .szs-grade__val{color:var(--sz-t3);font-weight:500;font-variant-numeric:tabular-nums}
+/* the track takes the pointer; the knob sits at the design's own position
+   (its centre at --p of the width — a native thumb would sit up to 11px off) */
+.szs .szs-grade__track{position:relative;height:6px;margin:12px 0 14px;border-radius:9px;background:linear-gradient(90deg,#8FB3E0,#E9ECEF 50%,#FFB07F);cursor:pointer;touch-action:none}
+.szs .szs-grade__track::before{content:"";position:absolute;inset:-12px -6px}
+.szs .szs-grade__knob{position:absolute;top:50%;left:calc(var(--p) * 100%);width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(13,27,42,.25),0 0 0 .5px rgba(13,27,42,.08);transition:transform .25s var(--sz-spring),box-shadow .25s;pointer-events:none}
+.szs .szs-grade__track.is-held .szs-grade__knob{transform:scale(1.14);box-shadow:0 4px 14px rgba(13,27,42,.3),0 0 0 .5px rgba(13,27,42,.08)}
+/* the real control: invisible, but there for keyboards and screen readers */
+.szs .szs-grade__input{position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;opacity:0;pointer-events:none;appearance:none;-webkit-appearance:none;background:none}
+.szs .szs-grade__input:focus-visible + .szs-grade__knob{outline:2px solid var(--sz-orange);outline-offset:2px}
+
+/* the grade, applied to what it grades (set by the script; none at rest) */
+.szs .szs-tl__row i,.szs .szs-shot__media{filter:var(--szs-grade,none);transition:filter .25s var(--sz-ease)}
+.szs .szs-shot{position:absolute;right:8%;top:100px;z-index:0;width:min(240px,34%);aspect-ratio:16/10;margin:0;overflow:hidden;border-radius:16px;background:var(--sz-fill);box-shadow:var(--sz-s3);--ar:3deg}
+.szs .szs-shot__media{position:absolute;inset:0;display:block;width:100%;height:100%;max-width:none;object-fit:cover}
+.szs .szs-tl{position:absolute;z-index:1;left:18%;right:-30px;bottom:-10px;padding:16px;border-radius:22px;background:#fff;box-shadow:var(--sz-s3);--ar:-2deg}
 .szs .szs-tl__top{display:flex;justify-content:space-between;margin-bottom:10px;font-size:11px;line-height:1.6;color:var(--sz-t3);font-variant-numeric:tabular-nums}
 .szs .szs-tl__row{display:flex;gap:4px;margin-top:6px}
-.szs .szs-tl__row i{height:20px;border-radius:6px}
+.szs .szs-tl__row i{height:20px;border-radius:6px;transition:flex-grow .7s var(--sz-spring),filter .25s var(--sz-ease)}
 .szs .szs-tl__head{position:absolute;top:32px;bottom:12px;left:46%;width:2px;border-radius:2px;background:var(--sz-orange)}
 .szs .szs-tl__head::before{content:"";position:absolute;top:-7px;left:-5px;width:12px;height:12px;border-radius:4px;background:var(--sz-orange)}
 .szs .szs-pill{position:absolute;right:9%;top:52px;z-index:2;display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 13px;border-radius:99px;background:#fff;box-shadow:var(--sz-s2);font-size:13px;font-weight:600;line-height:1.6;color:var(--sz-ink);--ar:4deg}
 .szs .szs-pill i{width:7px;height:7px;border-radius:50%;background:#30B46C}
+.szs .szs-pill__text{font-variant-numeric:tabular-nums}
+
+/* ---------- Post: the running timeline (driven by assets/js/scenes/post.js) ---------- */
+/* while running, the playhead travels the part of the clip area you can see:
+   inside the 16px padding, and short of the 30px the card hangs past the panel */
+.szs .szs-tl.is-playing .szs-tl__head{left:calc(16px + var(--h,0) * (100% - 62px))}
+.szs .szs-tl.is-rewinding .szs-tl__head{transition:left .6s var(--sz-ease)}
+.szs .szs-pill.is-working i{background:var(--sz-orange);animation:szs-pulse 1.1s ease-in-out infinite}
+@keyframes szs-pulse{50%{transform:scale(1.6);opacity:.55}}
+.szs .szs-pill.is-pop{animation:szs-pop .55s var(--sz-spring)}
 
 /* ---------- Content: week calendar and a notification ---------- */
 .szs .szs-week{position:absolute;left:50%;top:70px;width:min(460px,84%);margin-left:max(-230px,-42%);padding:16px;border-radius:24px;background:#fff;box-shadow:var(--sz-s3);--ar:-2deg}
@@ -247,6 +269,7 @@
   .szs .szs-grade{left:5%;width:220px}
   .szs .szs-tl{left:8%}
   .szs .szs-pill{right:4%;top:150px}
+  .szs .szs-shot{right:4%;top:24px;width:44%}
   .szs .szs-week{width:90%;margin-left:-45%;padding:12px}
   .szs .szs-day{min-height:100px}
   .szs .szs-post{font-size:9.5px}
