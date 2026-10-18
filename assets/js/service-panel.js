@@ -18,10 +18,18 @@
  * Scene contract:
  *   window.szwScenes.register( name, ( root, api ) => ( { play(), pause() } ) )
  *   api.mode      'once' | 'loop' | 'static'
+ *   api.time      the scene's own clock: it runs only while the scene plays,
+ *                 so a scene written as a story (await api.time.wait( ms ))
+ *                 simply holds still when paused and carries on after.
+ *                 api.time.t (ms played), .wait( ms ), .frame( fn( dt ) )
  *   api.done()    a "once" story has finished; the scene rests from now on
  *   api.refresh() re-evaluate (e.g. after putting other videos on show)
- * play()/pause() may be called any number of times; pause() must leave the
- * scene in a finished state. Hand controls a factory wires up always work.
+ * play()/pause() may be called any number of times. Hand controls a factory
+ * wires up always work.
+ *
+ * Stage: every scene draws on a fixed design stage (.szs-stage). It is
+ * scaled here to the panel's width and height (the stylesheet has a stepped
+ * guess for the first paint). Transforms only: scaling never shifts layout.
  */
 ( function () {
 	'use strict';
@@ -58,6 +66,59 @@
 
 	const inEditor = () => document.body.classList.contains( 'elementor-editor-active' );
 
+	/** A clock that only moves while its scene plays. */
+	function makeClock() {
+		const c = { t: 0, on: false, waiters: [], frames: new Set(), last: 0, raf: 0 };
+		c.wait = ( ms ) => new Promise( ( r ) => c.waiters.push( { at: c.t + ms, r } ) );
+		c.frame = ( fn ) => {
+			c.frames.add( fn );
+			return () => c.frames.delete( fn );
+		};
+		const loop = ( now ) => {
+			if ( ! c.on ) {
+				return;
+			}
+			const dt = Math.min( now - c.last, 100 );
+			c.last = now;
+			c.t += dt;
+			c.frames.forEach( ( fn ) => fn( dt ) );
+			if ( c.waiters.length ) {
+				const due = c.waiters.filter( ( w ) => c.t >= w.at );
+				c.waiters = c.waiters.filter( ( w ) => c.t < w.at );
+				due.forEach( ( w ) => w.r() );
+			}
+			c.raf = requestAnimationFrame( loop );
+		};
+		c.run = ( on ) => {
+			if ( on === c.on ) {
+				return;
+			}
+			c.on = on;
+			if ( on ) {
+				c.last = performance.now();
+				c.raf = requestAnimationFrame( loop );
+			} else {
+				cancelAnimationFrame( c.raf );
+			}
+		};
+		return c;
+	}
+
+	/** Scale a scene's design stage to its panel: as large as fits, never larger than designed. */
+	const stages = 'ResizeObserver' in window ? new ResizeObserver( ( entries ) => entries.forEach( ( e ) => fit( e.target ) ) ) : null;
+	function fit( art ) {
+		const stage = art.querySelector( ':scope > .szs-stage' );
+		if ( ! stage || ! stage.offsetWidth ) {
+			return;
+		}
+		// a scene may run 12% under the card below it, as designed
+		const k = Math.min( 1, art.clientWidth / stage.offsetWidth, art.clientHeight / ( stage.offsetHeight * 0.88 ) );
+		const ty = Math.max( 0, ( art.clientHeight - stage.offsetHeight * k ) / 2 );
+		stage.style.setProperty( '--k', k.toFixed( 4 ) );
+		stage.style.setProperty( '--ty', ty.toFixed( 1 ) + 'px' );
+		stage.classList.add( 'is-fit' );
+	}
+
 	let userPaused = false;
 	try {
 		userPaused = window.localStorage.getItem( PREF ) === '1';
@@ -85,12 +146,21 @@
 		const free = visible( svc ) && ! reduce.matches && ! paused( state );
 		const sceneOn = !! state.ctrl && 'static' !== state.mode && ! state.done;
 
+		if ( state.root ) {
+			// is-live: on screen and allowed to move (placeholder footage keeps
+			// playing after a "once" story); is-running: the story itself plays.
+			state.root.classList.toggle( 'is-live', free && 'static' !== state.mode );
+			state.root.classList.toggle( 'is-running', !! state.ctrl && sceneOn && free );
+		}
+
 		if ( state.ctrl ) {
 			state.root.classList.toggle( 'is-paused', paused( state ) && sceneOn );
 			state.root.classList.toggle( 'is-settled', state.done );
 			if ( sceneOn && free ) {
+				state.time.run( true );
 				state.ctrl.play();
 			} else {
+				state.time.run( false );
 				state.ctrl.pause();
 			}
 		}
@@ -126,11 +196,15 @@
 		panels.forEach( ( state, svc ) => {
 			if ( ! svc.isConnected ) {
 				if ( state.ctrl ) {
+					state.time.run( false );
 					state.ctrl.pause();
 				}
 				panels.delete( svc );
 				if ( io ) {
 					io.unobserve( svc );
+				}
+				if ( stages && state.root ) {
+					stages.unobserve( state.root );
 				}
 				return;
 			}
@@ -148,6 +222,7 @@
 					mode: root ? root.dataset.szsMotion || 'once' : 'loop',
 					button: svc.querySelector( ':scope > .sz-svc__motion' ),
 					ctrl: null,
+					time: makeClock(),
 					done: false,
 					preview: false,
 				};
@@ -155,11 +230,18 @@
 				if ( io ) {
 					io.observe( svc );
 				}
+				if ( root ) {
+					fit( root );
+					if ( stages ) {
+						stages.observe( root );
+					}
+				}
 			}
 			// The scene's script may register after the panel is first seen.
 			if ( state.root && ! state.ctrl && factories[ state.root.dataset.szs ] ) {
 				state.ctrl = factories[ state.root.dataset.szs ]( state.root, {
 					mode: state.mode,
+					time: state.time,
 					refresh,
 					done() {
 						state.done = true;

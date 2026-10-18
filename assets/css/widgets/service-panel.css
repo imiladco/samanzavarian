@@ -137,232 +137,58 @@
 .sz-svc .sz-svc__editor-note b{font-weight:600;color:#8A7330}
 
 /* =====================================================================
-   Scenes
+   Scenes — the shared frame. Each scene's own styles are in
+   widgets/scenes/<scene>.css, loaded only where that scene is used.
+
+   A scene is drawn on a design stage (695×400 px; a scene may define a
+   compact stage for narrow panels) and scaled to fit its panel. The
+   runtime sets the exact scale (--k) and centres it vertically (--ty);
+   the steps below are its first-paint guess, from the panel's width.
    ===================================================================== */
+.szs .szs-stage{
+  --k:1;
+  position:absolute;top:0;left:50%;
+  width:695px;height:400px;margin-left:-347.5px;
+  transform:translateY(var(--ty,0px)) scale(var(--k));
+  transform-origin:50% 0;
+  font-family:var(--sz-font);color:var(--sz-ink);
+  -webkit-font-smoothing:antialiased;
+}
+.szs .szs-stage *,.szs .szs-stage *::before,.szs .szs-stage *::after{box-sizing:border-box}
+.szs .szs-stage :is(i,b,em,small){font-style:normal}
+@container szs (max-width:690px){.szs .szs-stage:not(.is-fit){--k:.92}}
+@container szs (max-width:640px){.szs .szs-stage:not(.is-fit){--k:.85}}
+@container szs (max-width:600px){.szs .szs-stage:not(.is-fit){--k:.8}}
+
+/* narrow panels: the scene's compact stage (520 wide), same idea */
+@container szs (max-width:560px){
+  .szs .szs-stage{width:520px;margin-left:-260px}
+  .szs .szs-stage:not(.is-fit){--k:1}
+}
+@container szs (max-width:520px){.szs .szs-stage:not(.is-fit){--k:.92}}
+@container szs (max-width:480px){.szs .szs-stage:not(.is-fit){--k:.85}}
+@container szs (max-width:440px){.szs .szs-stage:not(.is-fit){--k:.77}}
+@container szs (max-width:400px){.szs .szs-stage:not(.is-fit){--k:.69}}
+@container szs (max-width:360px){.szs .szs-stage:not(.is-fit){--k:.62}}
+@container szs (max-width:320px){.szs .szs-stage:not(.is-fit){--k:.55}}
 
 /* pieces settle in when their tab opens */
-.szs .szs-a{
-  transform:rotate(var(--ar,0deg));
-  transition:transform .9s var(--sz-spring),opacity .6s var(--sz-ease);
-}
-.sz-tabs__panel:not(.is-active) .szs .szs-a{opacity:0;transform:translateY(24px) rotate(var(--ar,0deg)) scale(.96)}
-.sz-tabs__panel.is-active .szs .szs-a:nth-child(2){transition-delay:.06s}
-.sz-tabs__panel.is-active .szs .szs-a:nth-child(3){transition-delay:.12s}
-.sz-tabs__panel.is-active .szs .szs-a:nth-child(4){transition-delay:.18s}
+.szs .szs-stage > *{transition:opacity .6s var(--sz-ease),translate .9s var(--sz-spring)}
+.sz-tabs__panel:not(.is-active) .szs .szs-stage > *{opacity:0;translate:0 24px}
+.sz-tabs__panel.is-active .szs .szs-stage > :nth-child(2){transition-delay:.06s}
+.sz-tabs__panel.is-active .szs .szs-stage > :nth-child(3){transition-delay:.12s}
+.sz-tabs__panel.is-active .szs .szs-stage > :nth-child(4){transition-delay:.18s}
 
-/* placeholder "generated" images */
-.szs .szs-mesh{position:relative;display:block;overflow:hidden;background:var(--sz-navy)}
-.szs .szs-mesh::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.08),transparent 40%);pointer-events:none}
-.szs .szs-mesh--1{background:radial-gradient(60% 70% at 18% 22%,#FF8A55 0%,transparent 60%),radial-gradient(70% 80% at 85% 85%,#0D1B2A 0%,transparent 65%),radial-gradient(50% 60% at 70% 20%,#FFD3BF 0%,transparent 60%),#F1A27F}
-.szs .szs-mesh--2{background:radial-gradient(60% 60% at 75% 25%,#FF6B2C 0%,transparent 55%),radial-gradient(80% 80% at 20% 90%,#2A4560 0%,transparent 65%),#0D1B2A}
-.szs .szs-mesh--3{background:radial-gradient(60% 70% at 25% 30%,#FFFFFF 0%,transparent 60%),radial-gradient(70% 70% at 80% 80%,#C9D3DF 0%,transparent 60%),radial-gradient(40% 40% at 70% 30%,#FFD9C8 0%,transparent 60%),#E9EDF2}
-.szs .szs-mesh--4{background:radial-gradient(70% 60% at 50% 110%,#FF6B2C 0%,transparent 60%),radial-gradient(60% 60% at 20% 10%,#2C4865 0%,transparent 60%),#0B1622}
-.szs .szs-mesh--5{background:radial-gradient(70% 70% at 80% 20%,#FFF0E8 0%,transparent 60%),radial-gradient(70% 70% at 20% 80%,#FF8A55 0%,transparent 60%),#FFB896}
-.szs .szs-mesh--6{background:radial-gradient(60% 60% at 30% 30%,#8FA3B8 0%,transparent 60%),radial-gradient(70% 70% at 80% 80%,#0D1B2A 0%,transparent 60%),#3E5670}
+/* Decorative loops move only while the scene is live: on screen, in an open
+   tab, not paused, not "Still", motion allowed. */
+.sz-svc .szs:not(.is-live) *,.sz-svc .szs:not(.is-live) *::before,.sz-svc .szs:not(.is-live) *::after{animation-play-state:paused}
 
-/* ---------- AI: prompt sheet with generated frames ---------- */
-.szs .szs-gen{position:absolute;left:50%;top:44px;width:min(440px,78%);margin-left:max(-220px,-39%);--ar:-3deg}
-.szs .szs-gen__sheet{border-radius:24px;background:#fff;padding:14px;box-shadow:0 40px 80px -30px rgba(0,0,0,.6)}
-.szs .szs-gen__prompt{display:flex;align-items:center;gap:8px;height:42px;padding:0 6px 0 14px;border-radius:13px;background:var(--sz-fill);font-size:13px;line-height:1.6;color:var(--sz-t2)}
-.szs .szs-gen__prompt span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.szs .szs-gen__prompt b{height:30px;padding:0 12px;display:grid;place-items:center;border-radius:10px;background:var(--sz-orange);color:var(--sz-navy);font-size:12px;font-weight:700;transition:transform .2s var(--sz-spring),filter .2s}
-.szs .szs-gen{--szs-ring:var(--sz-orange)}
-/* rounds of three share one cell; the current one shows */
-.szs .szs-gen__rounds{display:grid;grid-template-columns:minmax(0,1fr);margin-top:10px}
-.szs .szs-gen__grid{grid-area:1/1;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.szs .szs-gen__grid.szs-off{visibility:hidden}
-.szs .szs-gen__frame{
-  position:relative;display:block;aspect-ratio:3/4;border-radius:13px;
-  box-shadow:0 0 0 0 #fff,0 0 0 0 var(--szs-ring);
-  transition:transform .75s var(--sz-spring),opacity .45s var(--sz-ease),box-shadow .45s var(--sz-spring),filter .9s var(--sz-ease);
-}
-.szs .szs-gen__frame.is-picked{box-shadow:0 0 0 2.5px #fff,0 0 0 4.5px var(--szs-ring)}
-.szs .szs-gen__media{position:absolute;inset:0;display:block;width:100%;height:100%;max-width:none;object-fit:cover;border-radius:inherit}
-.szs .szs-gen__badge{position:absolute;left:-24px;top:-24px;z-index:1;width:60px;height:60px;border-radius:18px;font-size:28px;transform:rotate(-12deg)}
-.szs .szs-picked{position:absolute;right:7%;bottom:34px;--ar:6deg;display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px 0 8px;border-radius:99px;background:rgba(255,255,255,.14);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);font-size:13px;font-weight:600;line-height:1.6;color:#fff}
-.szs .szs-picked i{width:22px;height:22px;border-radius:50%;background:var(--sz-orange);display:grid;place-items:center;color:var(--sz-navy);font-size:12px}
-.szs .szs-picked svg{width:1em;height:1em;stroke-width:3}
-
-/* twinkles and a light sweep over the approved frame */
-.szs .szs-twk{position:absolute;z-index:2;fill:#FFD3BF;pointer-events:none;opacity:0}
-.szs .szs-twk--1{width:16px;height:16px;left:44px;top:-30px}
-.szs .szs-twk--2{width:10px;height:10px;left:-34px;top:40px;fill:#fff}
-.sz-svc .szs .szs-twk{animation:szs-twinkle 2.8s ease-in-out infinite}
-.sz-svc .szs .szs-twk--2{animation-delay:1.3s}
-@keyframes szs-twinkle{0%,100%{opacity:0;transform:scale(.4) rotate(0)}45%,55%{opacity:1;transform:scale(1) rotate(20deg)}}
-.szs .szs-gen__frame.is-picked{overflow:hidden}
-.szs .szs-gen__frame.is-picked::before{content:"";position:absolute;inset:-20% auto -20% 0;width:45%;z-index:2;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:translateX(-133%) skewX(-12deg);pointer-events:none}
-.sz-svc .szs .szs-gen__frame.is-picked::before{animation:szs-sweep 3.6s ease-in-out 1s infinite}
-
-/* ---------- AI: the generation states (driven by assets/js/scenes/ai.js) ---------- */
-/* the prompt being typed */
-.szs .szs-gen__text.is-typing::after{content:"";display:inline-block;width:1.5px;height:1.05em;margin-left:1px;vertical-align:-.15em;background:currentColor;animation:szs-caret .9s steps(1) infinite}
-@keyframes szs-caret{50%{opacity:0}}
-/* Generate pressed */
-.szs .szs-gen__go.is-press{transform:scale(.9);filter:brightness(1.12)}
-/* a frame waiting for its image: a light sweeping over an empty plate */
-.szs .szs-gen__frame.is-loading{
-  background:linear-gradient(110deg,#E9ECF0 30%,#F6F7F9 50%,#E9ECF0 70%) 0 0/250% 100%;
-  animation:szs-shimmer 1.1s linear infinite;
-}
-.szs .szs-gen__frame.is-loading::after,
-.szs .szs-gen__frame.is-loading > *{opacity:0}
-@keyframes szs-shimmer{from{background-position:120% 0}to{background-position:-130% 0}}
-/* arriving: from noise to sharp, the way a diffusion model resolves */
-.szs .szs-gen__frame.is-noisy{filter:blur(14px) saturate(.35) contrast(1.2);transform:scale(.96);transition:none}
-/* leaving: tossed off the sheet */
-.szs .szs-gen__frame.is-out{opacity:0;transform:translate(-38%,10%) rotate(-9deg) scale(.86)}
-/* the approval label: away while generating, pops in on approval */
-.szs .szs-picked.is-waiting{opacity:0;transform:translateY(10px) rotate(var(--ar)) scale(.9)}
-
-.szs .szs-picked.is-pop{animation:szs-pop .55s var(--sz-spring)}
-@keyframes szs-pop{0%{transform:rotate(var(--ar)) scale(.82);opacity:.2}60%{transform:rotate(var(--ar)) scale(1.05);opacity:1}100%{transform:rotate(var(--ar)) scale(1)}}
-/* by transform (the design moved `left`, re-laying out every frame); 45% wide, so -133% ≈ -60% and 289% ≈ 130% of the frame */
-@keyframes szs-sweep{0%{transform:translateX(-133%) skewX(-12deg)}35%,100%{transform:translateX(289%) skewX(-12deg)}}
-/* Decorative loops (twinkles, the sweep) stop: in a closed tab, when the
-   visitor paused, once a "play once" scene has settled, and in "Still".
-   Pseudo-elements listed too — `*` alone does not reach ::before/::after. */
-.sz-tabs__panel:not(.is-active) .szs *,
-.sz-tabs__panel:not(.is-active) .szs *::before,
-.sz-tabs__panel:not(.is-active) .szs *::after,
-.szs.is-paused *,.szs.is-paused *::before,.szs.is-paused *::after{animation-play-state:paused}
-/* named one by one: each must outrank the rule that starts the loop */
-.sz-svc .szs.is-settled .szs-twk,
-.sz-svc .szs.is-settled .szs-gen__frame.is-picked::before,
-.sz-svc .szs[data-szs-motion="static"] .szs-twk,
-.sz-svc .szs[data-szs-motion="static"] .szs-gen__frame.is-picked::before{animation:none}
-
-/* ---------- Direction: palette, references and a note ---------- */
-.szs .szs-mood{position:absolute;overflow:hidden;border-radius:20px;box-shadow:var(--sz-s3)}
-.szs .szs-mood__media{position:absolute;inset:0;display:block;width:100%;height:100%;max-width:none;object-fit:cover}
-.szs .szs-mood--a{left:12%;top:60px;width:34%;aspect-ratio:4/5;--ar:-7deg}
-.szs .szs-mood--b{left:36%;top:36px;width:30%;aspect-ratio:3/4;--ar:4deg;z-index:2}
-.szs .szs-mood--c{left:64%;top:96px;width:26%;aspect-ratio:1;--ar:-3deg}
-.szs .szs-swatch{position:absolute;left:10%;top:22px;z-index:4;display:flex;gap:6px;padding:7px;border-radius:99px;background:#fff;box-shadow:var(--sz-s2);--ar:-4deg}
-.szs .szs-swatch b{width:22px;height:22px;border-radius:50%}
-.szs .szs-note{position:absolute;right:8%;top:24px;z-index:4;width:180px;margin:1em 0;padding:14px 16px;border-radius:18px;background:#FFF6D9;box-shadow:var(--sz-s2);font-size:13px;line-height:1.45;color:#5B4A1B;--ar:5deg}
-.szs .szs-note b{display:block;margin-bottom:2px;font-size:12px;font-weight:600;color:#8A7330}
-
-/* ---------- Direction: curating a board (assets/js/scenes/direction.js) ---------- */
-.szs--direction{--szs-ring:var(--sz-orange)}
-/* every reference — chosen or not — glides between the pile and the composition */
-.szs .szs-mood,.szs .szs-ref{transition:transform .9s var(--sz-spring),opacity .5s var(--sz-ease),box-shadow .35s var(--sz-ease),filter .5s var(--sz-ease)}
-.szs .szs-ref{position:absolute;z-index:1;overflow:hidden;aspect-ratio:4/5;border-radius:16px;box-shadow:var(--sz-s3);transform:rotate(var(--ar,0deg))}
-.szs .szs-mood.is-landing,.szs .szs-ref.is-landing{opacity:0;transform:translateY(-40px) rotate(var(--ar,0deg)) scale(1.08)}
-.szs .szs-mood.is-chosen{box-shadow:0 0 0 3px #fff,0 0 0 5px var(--szs-ring),var(--sz-s3)}
-.szs .szs-ref.is-cleared{opacity:0;filter:blur(3px) grayscale(1);transform:translateY(14px) rotate(var(--ar,0deg)) scale(.82)}
-.szs .szs-mood.is-gone{opacity:0;transform:scale(.9) rotate(var(--ar,0deg))}
-/* the art director's pointer */
-.szs .szs-cursor{position:absolute;z-index:7;width:22px;height:22px;margin:-3px 0 0 -4px;opacity:0;pointer-events:none;filter:drop-shadow(0 2px 4px rgba(13,27,42,.35));transition:left .65s var(--sz-ease),top .65s var(--sz-ease),opacity .3s,transform .15s}
-.szs .szs-cursor.is-on{opacity:1}
-.szs .szs-cursor.is-click{transform:scale(.82)}
-/* colours flying from the pictures into the palette */
-.szs .szs-fly{position:absolute;z-index:6;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;box-shadow:0 0 0 2px #fff,0 4px 10px rgba(13,27,42,.3);pointer-events:none;transition:transform .8s cubic-bezier(.45,0,.2,1)}
-.szs .szs-swatch b{transition:transform .45s var(--sz-spring)}
-.szs .szs-swatch b.is-empty{transform:scale(0)}
-.szs .szs-swatch.is-away,.szs .szs-note.is-away{opacity:0;transform:translateY(-10px) rotate(var(--ar,0deg)) scale(.94)}
-.szs .szs-note__text.is-typing::after{content:"";display:inline-block;width:1.5px;height:1.05em;margin-left:1px;vertical-align:-.15em;background:currentColor;animation:szs-caret .9s steps(1) infinite}
-
-/* ---------- Post: grading sliders and a timeline ---------- */
-.szs .szs-grade{position:absolute;left:9%;top:40px;width:260px;padding:16px 16px 14px;border-radius:20px;background:#fff;box-shadow:var(--sz-s3);--ar:-3deg}
-.szs .szs-grade__row{display:flex;justify-content:space-between;font-size:13px;font-weight:600;line-height:1.6;color:var(--sz-ink)}
-.szs .szs-grade{direction:ltr;z-index:1}
-.szs .szs-grade__row label{display:inline;margin:0;padding:0;font:inherit;color:inherit;letter-spacing:inherit;text-transform:none;cursor:default}
-.szs .szs-grade__val{color:var(--sz-t3);font-weight:500;font-variant-numeric:tabular-nums}
-/* the track takes the pointer; the knob sits at the design's own position
-   (its centre at --p of the width — a native thumb would sit up to 11px off) */
-.szs .szs-grade__track{position:relative;height:6px;margin:12px 0 14px;border-radius:9px;background:linear-gradient(90deg,#8FB3E0,#E9ECEF 50%,#FFB07F);cursor:pointer;touch-action:none}
-.szs .szs-grade__track::before{content:"";position:absolute;inset:-12px -6px}
-.szs .szs-grade__knob{position:absolute;top:50%;left:calc(var(--p) * 100%);width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(13,27,42,.25),0 0 0 .5px rgba(13,27,42,.08);transition:scale .25s var(--sz-spring),box-shadow .25s;pointer-events:none}
-.szs .szs-grade__track.is-held .szs-grade__knob{scale:1.14;box-shadow:0 4px 14px rgba(13,27,42,.3),0 0 0 .5px rgba(13,27,42,.08)}
-/* the real control: invisible, but there for keyboards and screen readers */
-.szs .szs-grade__input{position:absolute;inset:0;width:100%;height:100%;margin:0;padding:0;opacity:0;pointer-events:none;appearance:none;-webkit-appearance:none;background:none}
-.szs .szs-grade__input:focus-visible + .szs-grade__knob{outline:2px solid var(--sz-orange);outline-offset:2px}
-/* "you can move this": a grab cursor, and two pulses the first time the scene plays */
-.szs .szs-grade__track{cursor:grab}
-.szs .szs-grade__track.is-held{cursor:grabbing}
-.szs .szs-grade__knob::after{content:"";position:absolute;inset:-6px;border:2px solid var(--sz-orange);border-radius:50%;opacity:0;pointer-events:none}
-.szs .szs-grade.is-hint .szs-grade__knob::after{animation:szs-hint 1.2s var(--sz-ease) 2}
-.szs .szs-grade.is-hint .szs-grade__track:nth-of-type(n+3) .szs-grade__knob::after{animation-delay:.3s}
-@keyframes szs-hint{0%{opacity:.75;transform:scale(.7)}100%{opacity:0;transform:scale(1.55)}}
-
-/* the grade, applied to what it grades (set by the script; none at rest) */
-.szs .szs-tl__row i,.szs .szs-shot__media{filter:var(--szs-grade,none);transition:filter .25s var(--sz-ease)}
-.szs .szs-shot{position:absolute;right:8%;top:100px;z-index:0;width:min(240px,34%);aspect-ratio:16/10;margin:0;overflow:hidden;border-radius:16px;background:var(--sz-fill);box-shadow:var(--sz-s3);--ar:3deg}
-.szs .szs-shot__media{position:absolute;inset:0;display:block;width:100%;height:100%;max-width:none;object-fit:cover}
-.szs .szs-tl{position:absolute;z-index:1;left:18%;right:-30px;bottom:-10px;padding:16px;border-radius:22px;background:#fff;box-shadow:var(--sz-s3);--ar:-2deg}
-.szs .szs-tl__top{display:flex;justify-content:space-between;margin-bottom:10px;font-size:11px;line-height:1.6;color:var(--sz-t3);font-variant-numeric:tabular-nums}
-.szs .szs-tl__row{display:flex;gap:4px;margin-top:6px}
-.szs .szs-tl__row i{height:20px;border-radius:6px;transition:flex-grow .7s var(--sz-spring),filter .25s var(--sz-ease)}
-.szs .szs-tl__head{position:absolute;top:32px;bottom:12px;left:46%;width:2px;border-radius:2px;background:var(--sz-orange)}
-.szs .szs-tl__head::before{content:"";position:absolute;top:-7px;left:-5px;width:12px;height:12px;border-radius:4px;background:var(--sz-orange)}
-.szs .szs-pill{position:absolute;right:9%;top:52px;z-index:2;display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 13px;border-radius:99px;background:#fff;box-shadow:var(--sz-s2);font-size:13px;font-weight:600;line-height:1.6;color:var(--sz-ink);--ar:4deg}
-.szs .szs-pill i{width:7px;height:7px;border-radius:50%;background:#30B46C}
-.szs .szs-pill__text{font-variant-numeric:tabular-nums}
-
-/* ---------- Post: the running timeline (driven by assets/js/scenes/post.js) ---------- */
-/* the playhead keeps its place in the layout; the script moves it with
-   `translate` (left would re-lay out every frame and count as layout shift) */
-.szs .szs-tl.is-rewinding .szs-tl__head{transition:translate .6s var(--sz-ease)}
-.szs .szs-pill.is-working i{background:var(--sz-orange);animation:szs-pulse 1.1s ease-in-out infinite}
-@keyframes szs-pulse{50%{transform:scale(1.6);opacity:.55}}
-.szs .szs-pill.is-pop{animation:szs-pop .55s var(--sz-spring)}
-
-/* ---------- Content: week calendar and a notification ---------- */
-.szs .szs-week{position:absolute;left:50%;top:70px;width:min(460px,84%);margin-left:max(-230px,-42%);padding:16px;border-radius:24px;background:#fff;box-shadow:var(--sz-s3);--ar:-2deg}
-.szs .szs-week__head{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;font-size:15px;font-weight:600;line-height:1.6;color:var(--sz-ink)}
-.szs .szs-week__head span{font-size:12px;font-weight:500;color:var(--sz-t3)}
-.szs .szs-week__days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
-.szs .szs-day{display:grid;gap:6px;align-content:start;min-height:120px;padding:8px 5px;border-radius:12px;background:var(--sz-fill);font-size:11px;font-weight:600;line-height:1.6;color:var(--sz-t3);text-align:center}
-.szs .szs-day.is-today{background:var(--sz-peach);color:#B8460F}
-.szs .szs-day{transition:background-color .45s var(--sz-ease),color .45s var(--sz-ease)}
-/* a post; its type's colours come inline (Post types control). A name that
-   is not a type shows plainly, like the design's outlined Story. */
-.szs .szs-post{display:block;padding:6px 2px;border-radius:7px;background:#fff;color:var(--sz-ink);box-shadow:0 0 0 1px var(--sz-line);font-style:normal;font-size:10.5px;font-weight:600;line-height:1.2}
-
-/* ---------- Content: planning and turning the page (assets/js/scenes/content.js) ---------- */
-.szs .szs-post.is-drop{animation:szs-drop .6s var(--sz-spring) both}
-@keyframes szs-drop{from{opacity:0;transform:translateY(-18px) rotate(-6deg) scale(.82)}}
-.szs .szs-day.is-hit{animation:szs-hit .5s var(--sz-ease)}
-@keyframes szs-hit{40%{box-shadow:inset 0 0 0 1.5px rgba(255,107,44,.4)}}
-.szs .szs-notif.is-away{opacity:0;transform:translateY(-14px) scale(.96)}
-/* the page that turns: a copy of the week, lifted off the top edge */
-.szs .szs-week__leaf{position:absolute;inset:0;z-index:3;margin:0;padding:inherit;border-radius:inherit;background:#fff;transform-origin:50% 0;backface-visibility:hidden;pointer-events:none;box-shadow:0 18px 30px -18px rgba(13,27,42,.35);animation:szs-leaf .85s cubic-bezier(.5,0,.75,0) forwards}
-@keyframes szs-leaf{0%{transform:perspective(1100px) rotateX(0)}100%{transform:perspective(1100px) rotateX(-112deg) translateY(-4px);opacity:0}}
-.szs .szs-notif{position:absolute;left:50%;top:22px;z-index:4;width:min(320px,70%);margin-left:max(-160px,-35%);display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:18px;background:rgba(255,255,255,.82);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:var(--sz-s2);font-size:13px;line-height:1.3;color:var(--sz-t2)}
-.szs .szs-notif .sz-app{width:30px;height:30px;border-radius:8px;font-size:15px}
-.szs .szs-notif b{display:block;color:var(--sz-ink);font-weight:600}
-/* the type legend, used only where posts become colour chips (narrow) */
-.szs .szs-week__legend{display:none}
-
-/* ---------- narrow panel (the design's phone composition) ---------- */
+/* ---------- narrow panel: the card ---------- */
 @container szs (max-width:484px){
   .sz-svc .sz-svc__card{margin:0 10px 10px;padding:16px}
   .sz-svc .sz-svc__text{font-size:15px}
-  .szs .szs-gen{top:40px;width:86%;margin-left:-43%}
-  .szs .szs-picked{bottom:22px;right:4%}
-  .szs .szs-note{width:150px;right:4%;font-size:12px}
-  .szs .szs-mood--a{left:4%;width:42%}
-  .szs .szs-mood--b{left:34%;width:36%}
-  .szs .szs-mood--c{left:67%;width:30%}
-  .szs .szs-grade{left:5%;width:220px}
-  .szs .szs-tl{left:8%}
-  .szs .szs-pill{right:4%;top:150px}
-  .szs .szs-shot{right:4%;top:24px;width:44%}
-  .szs .szs-week{width:90%;margin-left:-45%;padding:12px}
-  .szs .szs-day{min-height:80px}
-  /* 9.5px names overflowed a 27px day; colour chips plus a legend read better */
-  .szs .szs-post{height:9px;padding:0;overflow:hidden;border-radius:4px;font-size:0;line-height:0}
-  /* a legend row under the days; days 20px shorter, so the card keeps its size */
-  .szs .szs-week__legend{display:flex;flex-wrap:wrap;justify-content:center;gap:2px 10px;height:12px;margin-top:8px;overflow:hidden;font-size:9.5px;font-weight:500;line-height:12px;color:var(--sz-t2)}
-  .szs .szs-week__legend span{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
-  .szs .szs-week__legend i{flex:none;width:8px;height:8px;border-radius:2px}
 }
 
 @media (prefers-reduced-motion:reduce){
-  .szs .szs-a,.szs .szs-gen__frame{transition:none}
-  /* as specific as the rules that start them, or they win (they did) */
-  .sz-svc .szs .szs-twk,
-  .sz-svc .szs .szs-gen__frame.is-picked::before,
-  .sz-svc .szs *,.sz-svc .szs *::before,.sz-svc .szs *::after{animation:none}
+  .sz-svc .szs *,.sz-svc .szs *::before,.sz-svc .szs *::after{animation:none;transition:none}
 }

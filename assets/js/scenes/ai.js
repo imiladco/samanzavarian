@@ -1,226 +1,247 @@
 /**
- * Scene: AI production. Plays the sheet like a real generation session:
+ * Scene: AI visual production — a client's brief, and the reel of what was delivered.
  *
- *   type the prompt → press Generate → frames wait on a sweeping plate →
- *   each resolves from noise to sharp → the approval ring settles on the
- *   picked frame and the label updates.
+ * The server prints the resting picture: the first piece in focus, its
+ * neighbours soft at the sides, the first brief and result. Here:
  *
- * With more than one round (more than three frames) the round is held, its
- * frames are tossed off the sheet while the prompt is erased, and the next
- * round is generated. "Play once" goes through the rounds once and rests on
- * the last; "Keep playing" cycles (a single round regenerates).
+ *   • first time it plays: the camera pulls back to the whole reel, every
+ *     piece numbered with its shape, so it is clear there are several;
+ *     then it glides to the first piece and pushes in;
+ *   • a piece plays for its length (a video's own; the time bar and the
+ *     clock show it), then the camera pulls back, glides to the next piece
+ *     and pushes in with a focus pull and autofocus brackets. The brief and
+ *     the result change on the way. Next = random, every piece once per
+ *     round, never the same twice in a row.
  *
- * The server prints the finished first round; that is what shows without
- * JavaScript, with reduced motion, and whenever this scene is paused. Play
- * starts from a blank sheet; inside tabs that happens as the panel fades
- * in, so the switch is never seen.
- * Timing lives in data-szs-ai (Service_Panel → scenes/ai.php).
+ * "Play once": one round of the reel, then back to the first piece, resting.
+ * "Keep playing": rounds without end.
+ *
+ * Only the piece in focus plays its video (and the two involved in a glide,
+ * while the reel is in view); the rest stay paused (.szs-off).
  */
 ( function () {
 	'use strict';
 
-	const sleep = ( ms ) => new Promise( ( r ) => setTimeout( r, ms ) );
-	const nextFrame = () => new Promise( ( r ) => requestAnimationFrame( () => requestAnimationFrame( r ) ) );
+	const W = 412; // the window, design px (see AI_Showreel::WIN)
+	const OUT = 0.5; // scale of the reel when pulled back
 
-	function create( scene, api ) {
-		const gen = scene.querySelector( '[data-szs-ai]' );
+	const shuffle = ( a ) => {
+		for ( let i = a.length - 1; i > 0; i-- ) {
+			const j = Math.floor( Math.random() * ( i + 1 ) );
+			[ a[ i ], a[ j ] ] = [ a[ j ], a[ i ] ];
+		}
+		return a;
+	};
+	const pad = ( n ) => String( n ).padStart( 2, '0' );
+	const clock = ( s ) => Math.floor( s / 60 ) + ':' + pad( Math.floor( s % 60 ) );
+
+	/** Swap the text of a ticker: the old line leaves up, the new one comes in from below. */
+	function swap( box, html, tag ) {
+		const old = box.lastElementChild;
+		const nu = document.createElement( tag );
+		nu.className = 'b-in';
+		nu.innerHTML = html; // printed and escaped by the server
+		box.appendChild( nu );
+		void nu.offsetWidth;
+		nu.classList.remove( 'b-in' );
+		if ( old ) {
+			old.classList.add( 'b-out' );
+			setTimeout( () => old.remove(), 550 );
+		}
+	}
+
+	function create( root, api ) {
+		const sheet = root.querySelector( '[data-szs-ai]' );
 		const noop = { play() {}, pause() {} };
-
-		if ( ! gen ) {
+		if ( ! sheet ) {
 			return noop;
 		}
-
 		let cfg;
 		try {
-			cfg = JSON.parse( gen.dataset.szsAi );
+			cfg = JSON.parse( sheet.dataset.szsAi );
 		} catch ( e ) {
 			return noop;
 		}
 
-		const text = gen.querySelector( '.szs-gen__text' );
-		const go = gen.querySelector( '.szs-gen__go' );
-		const rounds = Array.from( gen.querySelectorAll( '.szs-gen__grid' ) );
-		const pill = scene.querySelector( '.szs-picked' );
-		const pillText = pill && pill.querySelector( '.szs-picked__text' );
+		const strip = sheet.querySelector( '.szs-ai__strip' );
+		const items = Array.from( strip.children );
+		const af = sheet.querySelector( '.szs-ai__af' );
+		const bar = sheet.querySelector( '.szs-ai__prog i' );
+		const brief = sheet.querySelector( '.szs-ai__brief' );
+		const okBox = root.querySelector( '.szs-ai__ok' );
+		const ok = okBox && okBox.querySelector( 'span' );
+		const hudN = sheet.querySelector( '.szs-ai__n' );
+		const hudF = sheet.querySelector( '.szs-ai__f' );
+		const H = strip.parentElement.clientHeight || 204;
+		const n = items.length;
+		const glide = cfg.glide || 1;
+		const geo = items.map( ( e ) => ( { x: e.offsetLeft, w: e.offsetWidth } ) );
+		const total = geo.length ? geo[ n - 1 ].x + geo[ n - 1 ].w : W;
 
-		let token = 0; // bumps on pause: every running step checks it and stops
-		let running = false;
-		let round = 0;
-
-		const prompt = ( r ) => cfg.prompts[ r % cfg.prompts.length ] || '';
-		const frames = ( r ) => Array.from( rounds[ r ].children );
-		const label = ( r ) => cfg.label.replace( '{n}', String( r * 3 + cfg.pick ) );
-
-		function show( r ) {
-			rounds.forEach( ( grid, i ) => {
-				grid.classList.toggle( 'is-current', i === r );
-				grid.classList.toggle( 'szs-off', i !== r );
-			} );
-			api.refresh(); // videos of the shown round play, the others stop
+		if ( n < 2 || ! cfg.pieces ) {
+			return noop;
 		}
 
-		/** The sheet a round starts from: empty prompt, frames still loading. */
-		function blank( r ) {
-			text.textContent = '';
-			if ( pill ) {
-				pill.classList.add( 'is-waiting' ); // nothing is approved yet
-			}
-			frames( r ).forEach( ( f ) => {
-				f.classList.remove( 'is-picked', 'is-out', 'is-noisy' );
-				f.classList.add( 'is-loading' );
-			} );
-		}
-
-		/** The finished round, as the server prints it. */
-		function finish( r ) {
-			show( r );
-			text.textContent = prompt( r );
-			text.classList.remove( 'is-typing' );
-			go.classList.remove( 'is-press' );
-			frames( r ).forEach( ( f, i ) => {
-				f.classList.remove( 'is-loading', 'is-out', 'is-noisy' );
-				f.classList.toggle( 'is-picked', i === cfg.pick - 1 );
-			} );
-			if ( pillText ) {
-				pillText.textContent = label( r );
-			}
-			if ( pill ) {
-				pill.classList.remove( 'is-waiting' );
-			}
-		}
-
-		async function type( str, alive ) {
-			text.classList.add( 'is-typing' );
-			if ( cfg.speed <= 0 ) {
-				text.textContent = str;
-			} else {
-				for ( let i = 1; i <= str.length; i++ ) {
-					if ( ! alive() ) {
-						return false;
-					}
-					text.textContent = str.slice( 0, i );
-					// people type unevenly and pause on spaces
-					await sleep( cfg.speed * ( str[ i - 1 ] === ' ' ? 1.8 : 0.6 + Math.random() * 0.8 ) );
-				}
-			}
-			await sleep( 300 );
-			text.classList.remove( 'is-typing' );
-			return alive();
-		}
-
-		async function erase( alive ) {
-			text.classList.add( 'is-typing' );
-			let s = text.textContent;
-			while ( s.length ) {
-				if ( ! alive() ) {
-					return false;
-				}
-				s = s.slice( 0, -Math.max( 1, Math.ceil( s.length / 12 ) ) );
-				text.textContent = s;
-				await sleep( 22 );
-			}
-			return alive();
-		}
-
-		async function generate( r, alive ) {
-			show( r );
-			blank( r );
-
-			if ( ! ( await type( prompt( r ), alive ) ) ) {
-				return false;
-			}
-
-			go.classList.add( 'is-press' );
-			await sleep( 170 );
-			go.classList.remove( 'is-press' );
-
-			// "thinking": the plates sweep for a moment
-			await sleep( 700 );
-			if ( ! alive() ) {
-				return false;
-			}
-
-			for ( const f of frames( r ) ) {
-				f.classList.add( 'is-noisy' );
-				f.classList.remove( 'is-loading' );
-				await nextFrame(); // let the noisy state paint, then resolve it
-				f.classList.remove( 'is-noisy' );
-				await sleep( 180 );
-				if ( ! alive() ) {
-					return false;
-				}
-			}
-
-			await sleep( 750 );
-			if ( ! alive() ) {
-				return false;
-			}
-
-			const picked = frames( r )[ cfg.pick - 1 ];
-			if ( picked ) {
-				picked.classList.add( 'is-picked' );
-			}
-			if ( pillText ) {
-				pillText.textContent = label( r );
-				pill.classList.remove( 'is-pop', 'is-waiting' );
-				void pill.offsetWidth; // restart the animation
-				pill.classList.add( 'is-pop' );
-			}
-			return true;
-		}
-
-		async function leave( r, alive ) {
-			frames( r ).forEach( ( f, i ) => setTimeout( () => alive() && f.classList.add( 'is-out' ), i * 80 ) );
-			if ( ! ( await erase( alive ) ) ) {
-				return false;
-			}
-			await sleep( 420 );
-			return alive();
-		}
-
-		async function run( tk ) {
-			const alive = () => tk === token;
-
-			if ( ! ( await generate( round, alive ) ) ) {
+		const at = ( cx, k ) => `translate(${ ( W / 2 - k * cx ).toFixed( 2 ) }px,${ ( H / 2 - ( k * H ) / 2 ).toFixed( 2 ) }px) scale(${ k })`;
+		const cam = ( i, k ) => at( geo[ i ].x + geo[ i ].w / 2, k );
+		const move = ( t, ms, ease ) => {
+			strip.style.transition = `transform ${ Math.round( ms / glide ) }ms ${ ease }`;
+			strip.style.transform = t;
+			return api.time.wait( ms / glide );
+		};
+		const video = ( i ) => items[ i ].querySelector( 'video' );
+		/** Seconds a piece stays: its setting, or its video's real length. */
+		const secs = ( i ) => {
+			const v = video( i );
+			const d = v && isFinite( v.duration ) && v.duration > 0 && ! cfg.pieces[ i ].fixed ? v.duration : cfg.pieces[ i ].secs;
+			return Math.max( 2, Math.min( 30, d ) );
+		};
+		const label = ( i, s ) => {
+			const f = cfg.pieces[ i ].format;
+			return ( f ? f + ' · ' : '' ) + clock( s ) + ' / ' + clock( secs( i ) );
+		};
+		/** Which pieces may play their video: the focused one, and those in a glide. */
+		const showOnly = ( list ) => {
+			items.forEach( ( e, k ) => e.classList.toggle( 'szs-off', ! list.includes( k ) ) );
+			api.refresh();
+		};
+		const focus = ( i ) => {
+			items.forEach( ( e, k ) => e.classList.toggle( 'is-focus', k === i ) );
+			if ( i < 0 ) {
 				return;
 			}
+			const w = geo[ i ].w;
+			af.style.left = ( ( W - w ) / 2 + w * 0.18 ).toFixed( 1 ) + 'px';
+			af.style.width = ( w * 0.64 ).toFixed( 1 ) + 'px';
+		};
 
-			for ( ;; ) {
-				// "Play once": every round once, then rest on the last.
-				if ( 'loop' !== api.mode && round === rounds.length - 1 ) {
-					api.done();
-					return;
-				}
-				await sleep( cfg.hold );
-				if ( ! alive() || ! ( await leave( round, alive ) ) ) {
-					return;
-				}
-				round = ( round + 1 ) % rounds.length;
-				if ( ! ( await generate( round, alive ) ) ) {
-					return;
+		let cur = 0;
+		let shownAt = 0;
+		let shownSec = -1;
+		let holding = false;
+		let started = false;
+
+		// The time bar and the clock follow the piece's own time.
+		api.time.frame( () => {
+			if ( ! holding ) {
+				return;
+			}
+			const len = secs( cur ) * 1000;
+			const e = Math.min( len, api.time.t - shownAt );
+			bar.style.transform = `scaleX(${ ( e / len ).toFixed( 4 ) })`;
+			const sec = Math.floor( e / 1000 );
+			if ( sec !== shownSec ) {
+				shownSec = sec;
+				hudF.textContent = label( cur, sec );
+			}
+		} );
+
+		async function pushIn( j ) {
+			items[ j ].classList.remove( 'is-pull' );
+			void items[ j ].offsetWidth;
+			items[ j ].classList.add( 'is-pull' );
+			focus( j );
+			const v = video( j );
+			if ( v ) {
+				v.currentTime = 0;
+			}
+			if ( cfg.af ) {
+				af.classList.remove( 'is-hunt' );
+				void af.offsetWidth;
+				af.classList.add( 'is-hunt' );
+			}
+			const arrive = move( cam( j, 1 ), 820, 'cubic-bezier(.16,.84,.24,1)' );
+			await api.time.wait( 620 / glide );
+			root.classList.remove( 'is-out' );
+			items.forEach( ( e ) => e.classList.remove( 'is-target' ) );
+			showOnly( [ j ] );
+			cur = j;
+			shownSec = -1;
+			hudN.textContent = pad( j + 1 ) + ' / ' + pad( n );
+			hudF.textContent = label( j, 0 );
+			bar.style.transform = 'scaleX(0)';
+			shownAt = api.time.t;
+			holding = true;
+			await arrive;
+		}
+
+		async function go( j ) {
+			const i = cur;
+			holding = false;
+			items[ j ].classList.add( 'is-target' );
+			showOnly( [ i, j ] );
+			root.classList.add( 'is-out' );
+			focus( -1 );
+			await move( cam( i, OUT ), 520, 'cubic-bezier(.55,0,.35,1)' ); // pull back
+			swap( brief, cfg.pieces[ j ].brief, 'div' ); // the brief changes on the way
+			await api.time.wait( 130 / glide );
+			await move( cam( j, OUT ), Math.min( 1300, 560 + Math.abs( j - i ) * 150 ), 'cubic-bezier(.65,0,.35,1)' ); // glide
+			await api.time.wait( 60 );
+			if ( ok ) {
+				okBox.hidden = ! cfg.pieces[ j ].result;
+				swap( ok, cfg.pieces[ j ].result, 'em' );
+			}
+			await pushIn( j ); // push in, focus pulls
+		}
+
+		/** Random, every piece once per round, never twice in a row. */
+		let queue = [];
+		const next = () => {
+			if ( ! queue.length ) {
+				queue = shuffle( items.map( ( e, k ) => k ) );
+				if ( queue[ queue.length - 1 ] === cur ) {
+					[ queue[ 0 ], queue[ queue.length - 1 ] ] = [ queue[ queue.length - 1 ], queue[ 0 ] ];
 				}
 			}
+			return queue.pop();
+		};
+
+		async function run() {
+			if ( cfg.overview ) {
+				// The whole reel first.
+				root.classList.add( 'is-out', 'is-intro' );
+				focus( -1 );
+				showOnly( items.map( ( e, k ) => k ) );
+				await api.time.wait( 250 );
+				await move( at( total / 2, ( W - 24 ) / total ), 1000, 'cubic-bezier(.55,0,.25,1)' );
+				await api.time.wait( 1300 );
+				root.classList.remove( 'is-intro' );
+				items[ 0 ].classList.add( 'is-target' );
+				showOnly( [ 0 ] );
+				await move( cam( 0, OUT ), 900, 'cubic-bezier(.65,0,.35,1)' );
+				await pushIn( 0 );
+			} else {
+				shownAt = api.time.t;
+				holding = true;
+			}
+
+			// "Play once": every other piece once, then home to the first.
+			let left = 'loop' === api.mode ? Infinity : n - 1;
+			queue = shuffle( items.map( ( e, k ) => k ).filter( ( k ) => k !== 0 ) );
+			for ( ;; ) {
+				await api.time.wait( Math.max( 0, secs( cur ) * 1000 - ( api.time.t - shownAt ) ) );
+				if ( left-- <= 0 ) {
+					break;
+				}
+				await go( next() );
+			}
+			if ( cur !== 0 ) {
+				await go( 0 );
+			}
+			holding = false;
+			bar.style.transform = 'scaleX(0)';
+			hudF.textContent = label( 0, 0 );
+			api.done();
 		}
 
 		return {
 			play() {
-				if ( running ) {
-					return;
+				if ( ! started ) {
+					started = true;
+					run();
 				}
-				running = true;
-				run( ++token );
 			},
-			pause() {
-				// Only when something runs: finish() shows a round, showing a round
-				// refreshes the runtime, and the runtime calls pause() again.
-				if ( ! running ) {
-					return;
-				}
-				running = false;
-				token++;
-				// Hidden now; leave it finished, so it never sits half-drawn.
-				finish( round );
-			},
+			pause() {}, // the clock stops, so the story simply holds where it is
 		};
 	}
 

@@ -23,7 +23,7 @@ $GLOBALS['szw_failed'] = $GLOBALS['szw_failed'] ?? 0;
 function szw_ok( bool $condition, string $label ): void {
 	echo ( $condition ? "  ✓ " : "  ✗ " ) . $label . "\n";
 	if ( ! $condition ) {
-		$GLOBALS['szw_failed']++;
+		$GLOBALS['szw_failed'] = ( $GLOBALS['szw_failed'] ?? 0 ) + 1;
 	}
 }
 
@@ -106,9 +106,11 @@ function szw_finish(): void {
 		return; // all.php prints the total
 	}
 
-	echo "\n" . ( $GLOBALS['szw_failed'] ? 'FAILED: ' . $GLOBALS['szw_failed'] : 'ALL PASSED' ) . "\n";
+	$failed = $GLOBALS['szw_failed'] ?? 0; // unset until the first failure under `wp eval-file`
 
-	if ( $GLOBALS['szw_failed'] ) {
+	echo "\n" . ( $failed ? 'FAILED: ' . $failed : 'ALL PASSED' ) . "\n";
+
+	if ( $failed ) {
 		exit( 1 );
 	}
 }

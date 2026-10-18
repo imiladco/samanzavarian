@@ -1,349 +1,178 @@
 /**
- * Scene: Creative direction — from chaos to direction.
+ * Scene: Creative direction — three routes for one campaign, and the client's choice.
  *
- * Each board:
- *   1. references land on the board in a loose pile (the chosen three among them);
- *   2. a pointer picks the three, one by one (they get the orange ring);
- *   3. the others are cleared away;
- *   4. the chosen three glide into the design's composition;
- *   5. the palette's colours fly out of the pictures into the swatch;
- *   6. the direction note is written.
- * Then the board is put away and the next one starts. "Play once" goes
- * through the boards once and rests on the last; "Keep playing" cycles.
- *
- * The server prints board one finished (the design); that shows without
- * JavaScript, with reduced motion and whenever the scene is paused.
+ * How a direction really gets chosen:
+ *   1. before direction: the three pictures look like three different shoots;
+ *   2. the director shows each route on the same three pictures: the palette
+ *      and the note change, a layout grid shows for a moment, and a scan line
+ *      restyles the pictures one after another;
+ *   3. the client chooses one ("Approved direction").
+ * "Play once" ends on the choice; "Keep playing" starts again from 1.
+ * The server prints route one applied (the design), which is also what shows
+ * with "Still" or reduced motion.
  */
 ( function () {
 	'use strict';
 
-	const sleep = ( ms ) => new Promise( ( r ) => setTimeout( r, ms ) );
+	const shuffle = ( a ) => {
+		for ( let i = a.length - 1; i > 0; i-- ) {
+			const j = Math.floor( Math.random() * ( i + 1 ) );
+			[ a[ i ], a[ j ] ] = [ a[ j ], a[ i ] ];
+		}
+		return a;
+	};
 
-	// The pile: spots as % of the art box (left, top), and a tilt for each.
-	const SPOTS = [ [ 6, 16 ], [ 31, 7 ], [ 55, 12 ], [ 73, 26 ], [ 15, 47 ], [ 41, 41 ], [ 63, 50 ], [ 27, 27 ] ];
-	const TILTS = [ -12, 8, -5, 13, 6, -9, 11, -3 ];
+	function swap( box, html, tag ) {
+		const old = box.lastElementChild;
+		const nu = document.createElement( tag );
+		nu.className = 'b-in';
+		nu.innerHTML = html; // escaped by the server
+		box.appendChild( nu );
+		void nu.offsetWidth;
+		nu.classList.remove( 'b-in' );
+		if ( old ) {
+			old.classList.add( 'b-out' );
+			setTimeout( () => old.remove(), 550 );
+		}
+	}
 
-	const POINTER = '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M4 2l15 11-6.5 1.2L16 21l-3 1.4-3.4-6.6L4 20z" fill="#0D1B2A" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/></svg>';
-
-	function create( scene, api ) {
-		const swatch = scene.querySelector( '[data-szs-direction]' );
+	function create( root, api ) {
+		const swatch = root.querySelector( '[data-szs-direction]' );
 		const noop = { play() {}, pause() {} };
-
 		if ( ! swatch ) {
 			return noop;
 		}
-
 		let cfg;
 		try {
 			cfg = JSON.parse( swatch.dataset.szsDirection );
 		} catch ( e ) {
 			return noop;
 		}
-
-		const boards = cfg.boards && cfg.boards.length ? cfg.boards : null;
-		if ( ! boards ) {
+		if ( ! cfg.routes || ! cfg.routes.length ) {
 			return noop;
 		}
 
-		const picks = Array.from( scene.querySelectorAll( '.szs-mood' ) );
-		const note = scene.querySelector( '.szs-note' );
-		const noteText = note && note.querySelector( '.szs-note__text' );
-		const narrow = () => scene.clientWidth <= 484;
+		const dots = Array.from( swatch.children );
+		const status = root.querySelector( '.szs-dir__status' );
+		const head = root.querySelector( '.szs-dir__nh' );
+		const nt = root.querySelector( '.szs-dir__nt' );
+		const grid = root.querySelector( '.szs-dir__grid' );
+		const clips = Array.from( root.querySelectorAll( '.szs-dir__clip' ) );
+		const L = cfg.labels;
+		const fill = ( text, map ) => text.replace( /\{(\w+)\}/g, ( m, k ) => ( k in map ? map[ k ] : m ) );
 
-		let refs = [];
-		let flyers = [];
-		let cursor = null;
+		const say = ( text, dot ) => text && swap( status, `<i style="--dot:${ dot }"></i>${ text }`, 'span' );
 
-		/** Centre of an element, in px from the art box's corner. */
-		function centre( el ) {
-			const a = scene.getBoundingClientRect();
-			const r = el.getBoundingClientRect();
-			return { x: ( r.left + r.right ) / 2 - a.left, y: ( r.top + r.bottom ) / 2 - a.top };
+		function palette( pal ) {
+			dots.forEach( ( b, i ) => setTimeout( () => {
+				b.style.backgroundColor = pal[ i ] || '';
+				b.classList.add( 'is-hit' );
+				setTimeout( () => b.classList.remove( 'is-hit' ), 380 );
+			}, i * 90 ) );
 		}
 
-		function dress( el, item, base ) {
-			el.className = base + ' szs-mesh szs-mesh--' + item.mesh;
-			el.innerHTML = item.html || ''; // printed and escaped by the server (Service_Panel::media_html)
-		}
-
-		/** Where a spot of the pile is, in px of the art box. */
-		function pile( spot, i, height ) {
-			const w = scene.clientWidth;
-			const pw = ( narrow() ? 0.3 : 0.22 ) * w;
-			return {
-				x: ( SPOTS[ spot ][ 0 ] / 100 ) * w,
-				y: ( SPOTS[ spot ][ 1 ] / 100 ) * scene.clientHeight,
-				w: pw,
-				r: TILTS[ ( spot + i ) % TILTS.length ],
-			};
-		}
-
-		/** A reference that is not chosen: new on the board, placed for real. */
-		function place( el, spot, i ) {
-			const p = pile( spot, i );
-			el.style.left = p.x + 'px';
-			el.style.top = p.y + 'px';
-			el.style.width = p.w + 'px';
-			el.style.setProperty( '--ar', p.r + 'deg' );
-		}
-
-		/**
-		 * A chosen picture never leaves its place in the layout: it is moved
-		 * into the pile by transform only (FLIP), so the page never shifts —
-		 * moving left/top/width counted as layout shift (CLS) against the site.
-		 */
-		function placePick( el, spot, i ) {
-			const p = pile( spot, i );
-			const fw = el.offsetWidth;
-			const fh = el.offsetHeight;
-			const sc = p.w / fw;
-			const tx = p.x + p.w / 2 - ( el.offsetLeft + fw / 2 );
-			const ty = p.y + ( fh * sc ) / 2 - ( el.offsetTop + fh / 2 );
-			el.style.transform = `translate(${ tx.toFixed( 1 ) }px, ${ ty.toFixed( 1 ) }px) rotate(${ p.r }deg) scale(${ sc.toFixed( 4 ) })`;
-		}
-
-		function unplace( el ) {
-			[ 'transform', 'left', 'top', 'width', '--ar' ].forEach( ( prop ) => el.style.removeProperty( prop ) );
-		}
-
-		function swatchDots( b, filled ) {
-			swatch.innerHTML = '';
-			boards[ b ].palette.forEach( ( c ) => {
-				const dot = document.createElement( 'b' );
-				dot.style.background = c;
-				if ( ! filled ) {
-					dot.classList.add( 'is-empty' );
-				}
-				swatch.appendChild( dot );
-			} );
-		}
-
-		function cleanup() {
-			refs.forEach( ( r ) => r.remove() );
-			flyers.forEach( ( f ) => f.remove() );
-			refs = [];
-			flyers = [];
-			if ( cursor ) {
-				cursor.classList.remove( 'is-on', 'is-click' );
-			}
-		}
-
-		/** Board b finished, as the server prints board one. */
-		function finish( b ) {
-			cleanup();
-			const board = boards[ b ];
-			picks.forEach( ( el, i ) => {
-				dress( el, board.picks[ i ], 'szs-mood szs-mood--' + 'abc'[ i ] + ' szs-a' );
-				unplace( el );
-			} );
-			swatchDots( b, true );
-			swatch.classList.remove( 'is-away' );
-			if ( note ) {
-				note.classList.remove( 'is-away' );
-				noteText.textContent = board.note;
-				noteText.classList.remove( 'is-typing' );
-			}
-		}
-
-		async function play( b, alive ) {
-			const board = boards[ b ];
-
-			// 0. a clean board
-			cleanup();
-			swatch.classList.add( 'is-away' );
-			if ( note ) {
-				note.classList.add( 'is-away' );
-			}
-			await sleep( 350 );
-			if ( ! alive() ) {
-				return false;
-			}
-			swatchDots( b, false );
-			if ( noteText ) {
-				noteText.textContent = '';
-			}
-
-			// 1. the pile: chosen and not, spots shuffled
-			const count = Math.min( SPOTS.length, 3 + board.refs.length );
-			const spots = SPOTS.slice( 0, count ).map( ( s, i ) => i ).sort( () => Math.random() - 0.5 );
-			const all = [];
-
-			picks.forEach( ( el, i ) => {
-				dress( el, board.picks[ i ], 'szs-mood szs-mood--' + 'abc'[ i ] + ' szs-a is-landing' );
-				placePick( el, spots[ i ], i );
-				all.push( el );
-			} );
-			board.refs.forEach( ( item, i ) => {
-				if ( 3 + i >= count ) {
+		/** Restyle the three pictures, one after another. */
+		async function restyle( pics, how, accent ) {
+			[ 'a', 'b', 'c' ].forEach( ( slot, i ) => setTimeout( () => {
+				const clip = clips[ i ];
+				if ( ! clip ) {
 					return;
 				}
-				const el = document.createElement( 'i' );
-				dress( el, item, 'szs-ref is-landing' );
-				el.setAttribute( 'aria-hidden', 'true' );
-				place( el, spots[ 3 + i ], 3 + i );
-				scene.appendChild( el );
-				refs.push( el );
-				all.push( el );
-			} );
-
-			// set up in place without animating there, then let them land
-			all.forEach( ( el ) => {
-				el.style.transition = 'none';
-			} );
-			void scene.offsetWidth;
-			all.forEach( ( el ) => {
-				el.style.transition = '';
-			} );
-			void scene.offsetWidth;
-			for ( const el of all.slice().sort( () => Math.random() - 0.5 ) ) {
-				el.classList.remove( 'is-landing' );
-				await sleep( 90 );
-			}
-			await sleep( 700 );
-			if ( ! alive() ) {
-				return false;
-			}
-
-			// 2. choose three
-			if ( ! cursor ) {
-				cursor = document.createElement( 'span' );
-				cursor.className = 'szs-cursor';
-				cursor.setAttribute( 'aria-hidden', 'true' );
-				cursor.innerHTML = POINTER;
-				scene.appendChild( cursor );
-			}
-			const start = centre( scene.querySelector( '.szs-ref' ) || picks[ 0 ] );
-			cursor.style.left = start.x + 'px';
-			cursor.style.top = start.y + 'px';
-			cursor.classList.add( 'is-on' );
-			for ( const el of picks ) {
-				const c = centre( el );
-				cursor.style.left = c.x + 'px';
-				cursor.style.top = c.y + 'px';
-				await sleep( 700 );
-				if ( ! alive() ) {
-					return false;
+				const old = clip.lastElementChild;
+				const tmp = document.createElement( 'div' );
+				tmp.innerHTML = pics[ slot ]; // escaped by the server
+				const nu = tmp.firstElementChild;
+				nu.classList.add( 'wipe' === how ? 'is-wipe' : 'is-fade' );
+				clip.appendChild( nu );
+				let scan = null;
+				if ( 'wipe' === how ) {
+					scan = document.createElement( 'i' );
+					scan.className = 'szs-dir__scan';
+					scan.style.setProperty( '--acc', accent );
+					clip.appendChild( scan );
 				}
-				cursor.classList.add( 'is-click' );
-				await sleep( 150 );
-				cursor.classList.remove( 'is-click' );
-				el.classList.add( 'is-chosen' );
-				await sleep( 200 );
-			}
-			cursor.classList.remove( 'is-on' );
-
-			// 3. clear the rest
-			refs.forEach( ( el, i ) => setTimeout( () => el.classList.add( 'is-cleared' ), i * 70 ) );
-			await sleep( 650 );
-			if ( ! alive() ) {
-				return false;
-			}
-			refs.forEach( ( r ) => r.remove() );
-			refs = [];
-
-			// 4. compose
-			picks.forEach( unplace );
-			await sleep( 950 );
-			picks.forEach( ( el ) => el.classList.remove( 'is-chosen' ) );
-			if ( ! alive() ) {
-				return false;
-			}
-
-			// 5. palette, pulled from the pictures
-			swatch.classList.remove( 'is-away' );
-			await sleep( 350 );
-			const dots = Array.from( swatch.children );
-			dots.forEach( ( dot, i ) => {
+				void nu.offsetWidth;
+				nu.classList.add( 'is-on' );
+				if ( scan ) {
+					scan.classList.add( 'is-on' );
+				}
 				setTimeout( () => {
-					if ( ! alive() ) {
-						return;
+					if ( old && old !== nu ) {
+						old.remove();
 					}
-					const from = centre( picks[ i % picks.length ] );
-					const to = centre( dot );
-					const fly = document.createElement( 'span' );
-					fly.className = 'szs-fly';
-					fly.style.left = from.x + 'px';
-					fly.style.top = from.y + 'px';
-					fly.style.background = boards[ b ].palette[ i ];
-					scene.appendChild( fly );
-					flyers.push( fly );
-					void fly.offsetWidth;
-					fly.style.transform = `translate(${ to.x - from.x }px, ${ to.y - from.y }px) scale(1)`;
-					setTimeout( () => {
-						dot.classList.remove( 'is-empty' );
-						fly.remove();
-					}, 820 );
-				}, i * 200 );
-			} );
-			await sleep( dots.length * 200 + 900 );
-			if ( ! alive() ) {
-				return false;
-			}
-
-			// 6. the note
-			if ( note ) {
-				note.classList.remove( 'is-away' );
-				await sleep( 300 );
-				noteText.classList.add( 'is-typing' );
-				for ( let i = 1; i <= board.note.length; i++ ) {
-					if ( ! alive() ) {
-						return false;
+					if ( scan ) {
+						scan.style.opacity = '0';
+						setTimeout( () => scan.remove(), 300 );
 					}
-					noteText.textContent = board.note.slice( 0, i );
-					await sleep( board.note[ i - 1 ] === ' ' ? 55 : 22 + Math.random() * 26 );
-				}
-				await sleep( 400 );
-				noteText.classList.remove( 'is-typing' );
-			}
-			return alive();
+					api.refresh(); // videos in the new pictures
+				}, 950 );
+			}, i * 200 ) );
+			await api.time.wait( 1400 );
 		}
 
-		let token = 0;
-		let running = false;
-		let current = 0;
+		async function show( route, letter, count ) {
+			const map = { letter, count, name: route.name };
+			head.textContent = fill( L.dir_route_title, map );
+			say( fill( L.dir_say_route, map ), route.pal[ 1 ] || '#FF6B2C' );
+			swap( nt, route.note, 'span' );
+			palette( route.pal );
+			await api.time.wait( 1300 );
+			say( fill( L.dir_say_apply, map ), route.pal[ 1 ] || '#FF6B2C' );
+			grid.classList.add( 'is-on' );
+			await api.time.wait( 350 );
+			await restyle( route.pics, 'wipe', route.pal[ 1 ] || '#FF6B2C' );
+			grid.classList.remove( 'is-on' );
+		}
 
-		async function run( tk ) {
-			const alive = () => tk === token;
+		let started = false;
 
-			if ( ! ( await play( current, alive ) ) ) {
-				return;
-			}
+		async function run() {
+			await api.time.wait( 400 );
 			for ( ;; ) {
-				// "Play once": every board once, then rest on the last.
-				if ( 'loop' !== api.mode && current === boards.length - 1 ) {
+				// 1. before direction
+				head.textContent = L.dir_note_title;
+				say( L.dir_say_before, cfg.before.pal[ 1 ] );
+				swap( nt, `<em>${ cfg.before.note }</em>`, 'span' );
+				palette( cfg.before.pal );
+				await restyle( cfg.before.pics, 'fade' );
+				await api.time.wait( 2800 );
+
+				// 2. the routes: the first (the design's), then the others in any order
+				const order = [ 0 ].concat( shuffle( cfg.routes.map( ( r, i ) => i ).slice( 1 ) ) );
+				const count = order.length;
+				for ( let n = 0; n < count; n++ ) {
+					await show( cfg.routes[ order[ n ] ], 'ABCDEFGH'[ n ], count );
+					await api.time.wait( cfg.hold );
+				}
+
+				// 3. the client's choice
+				const k = cfg.choice ? Math.min( cfg.choice, count ) - 1 : Math.floor( Math.random() * count );
+				const pick = cfg.routes[ order[ k ] ];
+				const map = { letter: 'ABCDEFGH'[ k ], count, name: pick.name };
+				head.textContent = fill( L.dir_chosen, map );
+				say( fill( L.dir_say_chosen, map ), '#1F9D60' );
+				swap( nt, pick.note, 'span' );
+				palette( pick.pal );
+				if ( k !== count - 1 ) {
+					await api.time.wait( 600 );
+					await restyle( pick.pics, 'wipe', pick.pal[ 1 ] || '#FF6B2C' );
+				}
+				if ( 'loop' !== api.mode ) {
 					api.done();
 					return;
 				}
-				await sleep( cfg.hold );
-				if ( ! alive() ) {
-					return;
-				}
-				// put the board away
-				picks.forEach( ( el ) => el.classList.add( 'is-gone' ) );
-				await sleep( 500 );
-				current = ( current + 1 ) % boards.length;
-				if ( ! ( await play( current, alive ) ) ) {
-					return;
-				}
+				await api.time.wait( 4200 );
 			}
 		}
 
 		return {
 			play() {
-				if ( running ) {
-					return;
+				if ( ! started ) {
+					started = true;
+					run();
 				}
-				running = true;
-				run( ++token );
 			},
-			pause() {
-				if ( ! running ) {
-					return;
-				}
-				running = false;
-				token++;
-				finish( current );
-			},
+			pause() {},
 		};
 	}
 

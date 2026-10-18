@@ -1,0 +1,83 @@
+/* =====================================================================
+   Scene: Content systems — a rolling plan that runs on rules.
+   Stage coordinates (695×400; compact 520). See Scenes/Content_Planner.php.
+   ===================================================================== */
+
+.szs--content{--szs-live:#1F9D60}
+
+/* the notification: what just happened, or what is next */
+.szs--content .szs-cp__notif{position:absolute;left:188px;top:22px;z-index:4;display:flex;align-items:center;gap:10px;width:320px;padding:10px 12px;border-radius:18px;background:rgba(255,255,255,.88);-webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);box-shadow:var(--sz-s2);font-size:13px;line-height:1.38;color:var(--sz-t2)}
+.szs--content .szs-cp__ic{flex:none;width:30px;height:30px;border-radius:9px;font-size:15px;transition:background .4s}
+.szs--content .szs-cp__notif[data-k="live"] .szs-cp__ic{background:linear-gradient(145deg,#2EBB75,#1F9D60)}
+.szs--content .szs-cp__notif[data-k="trend"] .szs-cp__ic{background:linear-gradient(145deg,#8B6CFF,#5B3FE0)}
+.szs--content .szs-cp__notif[data-k="move"] .szs-cp__ic{background:linear-gradient(145deg,#3D7BFF,#1F5BD8)}
+.szs--content .szs-cp__tx{flex:1;display:grid;height:36px;min-width:0;overflow:hidden}
+.szs--content .szs-cp__tx > span{grid-area:1/1;display:grid;white-space:nowrap;transition:transform .45s var(--sz-ease),opacity .35s}
+.szs--content .szs-cp__tx b{overflow:hidden;text-overflow:ellipsis;font-weight:600;color:var(--sz-ink)}
+
+/* the plan */
+.szs--content .szs-cp__card{position:absolute;left:118px;top:68px;width:462px;height:222px;padding:16px;border-radius:24px;background:#fff;box-shadow:var(--sz-s3);rotate:-2deg}
+.szs--content .szs-cp__card.no-key{height:196px}
+.szs--content .szs-cp__hd{display:flex;justify-content:space-between;align-items:baseline}
+.szs--content .szs-cp__hd > b{font-size:15px;font-weight:600;color:var(--sz-ink)}
+.szs--content .szs-cp__wk{display:flex;gap:8px;align-items:baseline;font-size:12.5px;color:var(--sz-t3)}
+.szs--content .szs-cp__clock{display:inline-flex;align-items:center;gap:5px;min-width:62px;font-size:11px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--sz-t2);opacity:0;transition:opacity .4s}
+.szs--content .szs-cp__clock::before{content:"";width:9px;height:7px;background:var(--sz-orange);clip-path:polygon(0 0,45% 50%,45% 0,100% 50%,45% 100%,45% 50%,0 100%)}
+.szs--content.is-running .szs-cp__clock{opacity:1}
+.szs--content .szs-cp__wno{display:grid;height:18px;overflow:hidden}
+.szs--content .szs-cp__wno > span{grid-area:1/1;line-height:18px;text-align:right;transition:transform .5s var(--sz-ease),opacity .4s}
+.szs--content .szs-cp__win{position:absolute;left:16px;right:16px;top:52px;height:128px;overflow:hidden;border-radius:12px}
+.szs--content .szs-cp__strip{position:absolute;left:0;top:0;height:100%;will-change:transform}
+.szs--content .szs-cp__day{position:absolute;top:0;height:100%;border-radius:12px;background:var(--sz-fill);transition:background-color .5s}
+.szs--content .szs-cp__day > b{position:absolute;left:0;right:0;top:7px;font-size:11px;font-weight:600;letter-spacing:.02em;text-align:center;color:var(--sz-t3);transition:color .5s}
+.szs--content .szs-cp__day.is-today{background:var(--sz-peach)}
+.szs--content .szs-cp__day.is-today > b{color:#D9531A}
+.szs--content .szs-cp__day.is-past > b{color:#AEB5BE}
+.szs--content .szs-cp__day.is-unplanned{background:repeating-linear-gradient(135deg,#F4F5F7 0 6px,#EEF0F2 6px 12px)}
+.szs--content .szs-cp__day.is-unplanned::after{content:attr(data-unplanned);position:absolute;left:4px;right:4px;top:46%;font-size:9px;font-weight:600;line-height:1.25;text-align:center;color:#AEB5BE}
+
+/* a post: its format, its time; planned (dashed) → being made (filling) → ready → published */
+.szs--content .szs-cp__chip{--tc:#fff;--tf:var(--sz-ink);position:absolute;left:0;top:0;height:22px;border-radius:7px;background:var(--tc);box-shadow:0 0 0 1px var(--tl,transparent);font-size:10px;font-weight:600;line-height:22px;letter-spacing:-.01em;text-align:center;white-space:nowrap;color:var(--tf);outline:1px dashed transparent;outline-offset:-1px;transition:translate .75s cubic-bezier(.65,0,.25,1),transform .35s var(--sz-spring),box-shadow .35s,background-color .4s,color .4s,outline-color .4s}
+.szs--content .szs-cp__chip::before{content:"";position:absolute;top:0;bottom:0;right:0;left:calc(var(--p,1) * 100%);border-radius:0 7px 7px 0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.92) 0 2.5px,rgba(255,255,255,.6) 2.5px 5px);transition:left .25s linear}
+.szs--content .szs-cp__chip > span{position:relative;text-shadow:0 0 3px var(--tc),0 0 1px var(--tc)}
+.szs--content .szs-cp__chip.is-idea{background:transparent;box-shadow:none;outline-color:#9AA2AD;color:var(--sz-t3)}
+.szs--content .szs-cp__chip.is-idea::before{display:none}
+.szs--content .szs-cp__chip.is-idea > span{text-shadow:none}
+.szs--content .szs-cp__chip.is-ready::before,.szs--content .szs-cp__chip.is-live::before{left:100%}
+.szs--content .szs-cp__chip small{position:absolute;left:0;right:0;top:100%;margin-top:3px;font-size:9px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums;color:#8A929C}
+.szs--content .szs-cp__chip.is-live small{color:var(--szs-live)}
+.szs--content .szs-cp__chip.is-live small::before,.szs--content .k-live{content:"";display:inline-block;width:9px;height:9px;margin:0 3px 0 -2px;vertical-align:-1.5px;border-radius:50%;background:var(--szs-live) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 7 5'%3E%3Cpath d='M.8 2.4 2.7 4.2 6.2.8' fill='none' stroke='%23fff' stroke-width='1.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat 50% 55%/5px 4px}
+.szs--content .szs-cp__chip.is-lift{z-index:5;transform:translateY(-7px) scale(1.1);box-shadow:0 12px 20px -6px rgba(13,27,42,.4)}
+.szs--content .szs-cp__chip.is-pop{animation:szs-cp-pop .6s var(--sz-spring)}
+@keyframes szs-cp-pop{0%{transform:scale(.4);opacity:0}100%{transform:none;opacity:1}}
+.szs--content .szs-cp__chip.is-flash{animation:szs-cp-flash .7s ease-out}
+@keyframes szs-cp-flash{0%{box-shadow:0 0 0 0 rgba(255,107,44,.6)}100%{box-shadow:0 0 0 9px rgba(255,107,44,0)}}
+.szs--content .szs-cp__chip.is-pulse{animation:szs-cp-pulse .7s ease-out}
+@keyframes szs-cp-pulse{0%{box-shadow:0 0 0 0 rgba(31,157,96,.6)}100%{box-shadow:0 0 0 10px rgba(31,157,96,0)}}
+
+/* shared to stories: a ring by the day's name */
+.szs--content .szs-cp__ring,.szs--content .k-story{position:absolute;top:8px;z-index:3;width:9px;height:9px;border-radius:50%;background:conic-gradient(from 200deg,#FFB347,#FF6B2C,#E5484D,#C13584,#FFB347);box-shadow:0 0 0 1.5px #fff}
+.szs--content .szs-cp__ring{transform:scale(0);transition:transform .5s var(--sz-spring) .35s}
+.szs--content .szs-cp__ring.is-on{transform:scale(1)}
+.szs--content .szs-cp__ring.is-quiet{transition:none}
+
+/* the key: every mark on the plan, drawn exactly as it appears there */
+.szs--content .szs-cp__key{position:absolute;left:18px;right:18px;bottom:13px;display:flex;align-items:center;gap:13px;padding-top:9px;border-top:1px solid #EEF0F2;font-size:10.5px;font-weight:600;white-space:nowrap;color:var(--sz-t3)}
+.szs--content .szs-cp__key > span{display:inline-flex;align-items:center;gap:5px}
+.szs--content .szs-cp__key i{flex:none;display:block}
+.szs--content .k-plan{width:16px;height:10px;border-radius:3px;outline:1px dashed #9AA2AD;outline-offset:-1px}
+.szs--content .k-make{position:relative;width:16px;height:10px;overflow:hidden;border-radius:3px;background:var(--sz-navy)}
+.szs--content .k-make::after{content:"";position:absolute;top:0;bottom:0;right:0;width:45%;background:repeating-linear-gradient(135deg,rgba(255,255,255,.92) 0 2.5px,rgba(255,255,255,.6) 2.5px 5px)}
+.szs--content .k-ready{width:16px;height:10px;border-radius:3px;background:var(--sz-navy)}
+.szs--content .szs-cp__key .k-live{width:10px;height:10px;margin:0;background-size:6px 4px}
+.szs--content .szs-cp__key .k-story{position:static}
+
+.szs--content .b-in{transform:translateY(100%);opacity:0}
+.szs--content .b-out{transform:translateY(-100%);opacity:0}
+
+/* compact stage (narrow panels) */
+@container szs (max-width:560px){
+  .szs--content .szs-cp__notif{left:100px}
+  .szs--content .szs-cp__card{left:29px;top:72px}
+  .szs--content .szs-cp__key{gap:9px;font-size:10px}
+}

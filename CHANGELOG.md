@@ -4,6 +4,64 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.10.0 — the four "What I do" scenes, rebuilt
+Each scene now shows what the work really looks like, worked out with the
+site owner on a live prototype before any of it was built. Every text, item,
+colour and timing is editable; the Animation setting, the pause button and
+reduced motion work as before.
+
+- **AI visual production — brief to showreel.** The top line is the client's
+  brief to the freelancer (who, what, the constraint), not a prompt being
+  typed. Under it, a reel of delivered pieces, each in its real shape (a Reel
+  or Story is 9:16, a website loop 16:9, a product shot square…), never
+  cropped. It opens on the whole reel so it is clear there are several, then:
+  a piece plays its own length (video length, shown as a clock and a time
+  bar), the camera pulls back, glides to another piece (random, all before
+  any repeats, never twice in a row), pushes in, and the focus pulls sharp
+  with autofocus brackets. Neighbours stay soft at the sides. Only the piece
+  in focus plays its video. Placeholder footage until videos are added.
+- **Creative direction — three routes, one choice.** Three pictures of one
+  product in three formats (post 4:5, story 9:16, ad 1:1; pictures only, no
+  text). Before direction they look like three different shoots; the
+  director shows three routes on the same pictures (palette, note, light,
+  set and grade change together), and the client chooses one.
+- **Post-production — an editor at work.** The playhead is a real transport
+  (1×, 2×, 4×, rewind, stop, shown by the timecode) and the timecode is
+  always exactly where it is (hh:mm:ss:ff at 24/25/30 fps). The view moves
+  like an editor's hand: the playhead travels and pages on, or holds while
+  the timeline runs under it, or both move, or the editor looks ahead. Cuts,
+  trims (snapping, rippling) and inserts happen at the playhead and are
+  reviewed at 1×; every few edits a version is exported. The timeline never
+  repeats. The grading sliders grade the clips; visitors can drag the sliders
+  and scrub the timeline.
+- **Content systems — a rolling plan that runs on rules.** Yesterday, today
+  and five days ahead, rolling a day at a time with "Today" fixed in place.
+  Smart time-lapse: quiet days pass in about a second, never quite the same,
+  and time slows as a post's moment comes. Posts go out at their time (shown
+  under each) only if ready, then are shared to stories; the team makes them
+  in office hours, a few at a time, from a few days ahead; next week is
+  planned on Thursday; in some weeks a trend gets a fast Reel and something
+  else may move a day, saying why; a strong Reel gets a carousel version. A
+  key under the days explains every mark. Plans of later weeks follow a
+  cadence (one post a day, quieter weekend, no format twice in a row).
+
+Under the hood
+- Each scene is its own class (`includes/Widgets/Scenes/`), with its own
+  script and stylesheet, loaded only where that scene is used.
+- Scenes draw on a fixed design stage that is scaled to the panel's width
+  and height (a compact stage for narrow panels), so they look the same in a
+  wide tab, a column or a phone. Scaling is a transform: no layout shift.
+- Scenes run on a clock that only moves while the scene is visible and
+  playing, so a paused or hidden scene holds exactly where it is.
+- Layout shift over all four stories: 0.0009. After "Play once" a scene's
+  clock stops; the AI placeholders keep moving while on screen, as videos
+  would (never off screen, in a closed tab, when paused, "Still" or with
+  reduced motion).
+- Settings of the previous scenes (prompts, frames, boards, weekly grids) are
+  replaced; panels saved with them show the new defaults until edited.
+- Tests: 220 checks, plus browser checks of every scene in the editor,
+  "Play once" to rest, reduced motion and layout shift.
+
 ## 0.9.0 — product review of "What I do"
 Reviewed as the site owner, the visitor and the business, measured on a real
 page. Changes:
