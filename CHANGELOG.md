@@ -4,6 +4,44 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.11.0 — Selected work: a filterable project slider
+A new widget, **Selected Work**, built from the prototype approved by the site
+owner: the filters and the slider only (heading and stats stay outside it).
+
+- **Filters.** A segmented control whose white thumb springs from filter to
+  filter, each with its project count; a filter with no projects is not
+  shown, so the slider is never empty. Arrow keys, Home and End; the result is
+  read out ("3 projects in Photo"). On phones the row scrolls, fades at a cut
+  edge, and keeps the active filter in view.
+- **Filtering moves, never jumps.** Leaving cards fade out where they were,
+  staying cards slide to their new place (a card that changes size fades
+  instead of stretching), new cards rise one after another, and the slider
+  returns to the start. The first card of each filter is wide (under "All",
+  the featured project); never on phones.
+- **The slider.** Mouse drag with a throw that settles on a card; a drag over
+  40px always lands at least one card further. Page buttons move by as many
+  cards as are in view and disable at the ends. The progress bar is a
+  scrubber (drag it or click the track). The position reads "1–3 of 8",
+  counting projects only. Arrow keys, Home and End when the slider has focus.
+  Cards slide out to the window's edges and still stop aligned with the
+  content column; measured before the first paint, so nothing moves on load
+  (layout shift 0.0001).
+- **Cards.** Image or one of the design's eight gradients; a preview video
+  that is downloaded on the first hover and plays only while hovered, with a
+  "Preview" label; tilt and glare under a mouse; light or dark text; a
+  "Featured" label. A last card leads to the full archive ("See all 106+
+  projects"); projects without a link of their own go to the profile.
+- **Address and analytics.** Choosing Photo writes #work-photo (replaceState,
+  no history spam); opening that link, or clicking one anywhere on the page,
+  opens the filter. sz_work_filter, sz_work_open and sz_work_profile go to
+  GTM's dataLayer, or GA4 without GTM.
+- **Editor.** Every text, label, link and colour is editable, card width and
+  shape per breakpoint. The editor points out a project whose filter matches
+  none, and a profile URL still left at behance.net.
+- Works without its script: every card and count is in the HTML and the
+  active filter is drawn correctly. Reduced motion: no tilt, no preview, and
+  filtering changes at once.
+
 ## 0.10.0 — the four "What I do" scenes, rebuilt
 Each scene now shows what the work really looks like, worked out with the
 site owner on a live prototype before any of it was built. Every text, item,

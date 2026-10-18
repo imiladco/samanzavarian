@@ -23,12 +23,14 @@ final class Assets {
 		'sz-process'       => 'widgets/process.css',
 		'sz-service-tabs'  => 'widgets/service-tabs.css',
 		'sz-service-panel' => 'widgets/service-panel.css',
+		'sz-work'          => 'widgets/work.css',
 	];
 
 	/** handle => path under assets/js. Frontend scripts, loaded in the footer, no jQuery. */
 	private const WIDGET_SCRIPTS = [
 		'sz-service-tabs'  => 'service-tabs.js',
 		'sz-service-panel' => 'service-panel.js',
+		'sz-work'          => 'work.js',
 	];
 
 	public static function boot(): void {

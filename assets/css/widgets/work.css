@@ -1,0 +1,170 @@
+/* =====================================================================
+   Selected work — filters, a slider of project cards, and its controls.
+   Markup: Widgets/Work_Rail.php. Behaviour: js/work.js.
+
+   Every Style-tab control writes a custom property on .sz-work; the
+   defaults below are the design. The root is a size container, so the
+   phone layout follows the widget's own width, not the window's.
+   ===================================================================== */
+
+.sz-work{
+  --szw-cw:clamp(260px,30vw,340px); --szw-gap:18px; --szw-ratio:3/4; --szw-radius:30px; --szw-pad:22px;
+  --szw-top:6px; --szw-under:30px;
+  --szw-track:#EBEDF0; --szw-thumb:#fff; --szw-ftext:var(--sz-t2); --szw-ftext-on:var(--sz-ink);
+  --szw-count:rgba(13,27,42,.06); --szw-count-text:var(--sz-t3); --szw-count-on:var(--sz-navy); --szw-count-text-on:#fff;
+  --szw-fradius:14px; --szw-fh:36px; --szw-fdur:450ms;
+  --szw-on-dark:#fff; --szw-on-light:var(--sz-ink); --szw-flag:rgba(255,255,255,.16);
+  --szw-bar:rgba(255,255,255,.72); --szw-bar-title:var(--sz-ink); --szw-bar-text:var(--sz-t2); --szw-icon:38px;
+  --szw-view:var(--sz-fill); --szw-view-text:#C24A12; --szw-view-on:var(--sz-orange); --szw-view-text-on:var(--sz-navy);
+  --szw-end:var(--sz-card); --szw-end-title:var(--sz-ink); --szw-end-text:var(--sz-t2); --szw-end-btn:var(--sz-navy); --szw-end-btn-text:#fff;
+  --szw-btn:46px; --szw-btn-bg:var(--sz-card); --szw-btn-icon:var(--sz-ink); --szw-prog:#E3E6EA; --szw-prog-on:var(--sz-navy);
+  --szw-pos:var(--sz-t2); --szw-pos-on:var(--sz-ink);
+  --szw-bl:0px; --szw-br:0px;
+  container:szwork/inline-size;
+  position:relative;
+}
+.sz-work a{text-decoration:none}
+.sz-work a:not([class]){color:inherit}
+.sz-work button{font:inherit;color:inherit;margin:0;text-transform:none;letter-spacing:inherit}
+.sz-work :focus-visible{outline:2.5px solid rgba(255,107,44,.85);outline-offset:3px}
+.sz-work__sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+
+/* ---------- filters: a segmented control with a sliding thumb and counts ---------- */
+.sz-work__top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:var(--szw-top)}
+.sz-work__fwrap{position:relative;min-width:0;max-width:100%}
+/* fades at a cut edge say the row goes on (phones) */
+.sz-work__fwrap::before,.sz-work__fwrap::after{content:"";position:absolute;top:0;bottom:0;width:22px;z-index:3;pointer-events:none;opacity:0;transition:opacity .25s}
+.sz-work__fwrap::before{left:0;border-radius:var(--szw-fradius) 0 0 var(--szw-fradius);background:linear-gradient(90deg,var(--szw-track),transparent)}
+.sz-work__fwrap::after{right:0;border-radius:0 var(--szw-fradius) var(--szw-fradius) 0;background:linear-gradient(270deg,var(--szw-track),transparent)}
+.sz-work__fwrap.can-l::before,.sz-work__fwrap.can-r::after{opacity:1}
+.sz-work__filters{position:relative;display:flex;gap:2px;padding:3px;border-radius:var(--szw-fradius);background:var(--szw-track);overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain}
+.sz-work__filters::-webkit-scrollbar{display:none}
+.sz-work__thumb{position:absolute;left:0;top:3px;height:var(--szw-fh);width:0;border-radius:calc(var(--szw-fradius) - 3px);background:var(--szw-thumb);box-shadow:0 1px 2px rgba(13,27,42,.08),0 3px 10px rgba(13,27,42,.08);opacity:0;pointer-events:none}
+.sz-work.is-ready .sz-work__thumb{opacity:1;transition:transform var(--szw-fdur) var(--sz-spring),width var(--szw-fdur) var(--sz-spring)}
+.sz-work__filter{position:relative;z-index:1;flex:none;display:inline-flex;align-items:center;gap:6px;height:var(--szw-fh);padding:0 14px 0 16px;border:0;border-radius:calc(var(--szw-fradius) - 3px);background:transparent;font-size:14px;font-weight:600;line-height:1;white-space:nowrap;color:var(--szw-ftext);cursor:pointer;transition:color .2s,background-color .2s}
+.sz-work__filter:hover,.sz-work__filter[aria-pressed="true"]{color:var(--szw-ftext-on);background:transparent}
+/* before the script places the thumb (and without it), the active filter carries its own background */
+.sz-work:not(.is-ready) .sz-work__filter[aria-pressed="true"]{background:var(--szw-thumb);box-shadow:0 1px 2px rgba(13,27,42,.08),0 3px 10px rgba(13,27,42,.08)}
+.sz-work__filter sup{position:static;top:0;min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:var(--szw-count);font-size:11px;font-weight:600;line-height:18px;text-align:center;vertical-align:baseline;color:var(--szw-count-text);font-variant-numeric:tabular-nums;transition:background-color .25s,color .25s}
+.sz-work__filter[aria-pressed="true"] sup{background:var(--szw-count-on);color:var(--szw-count-text-on)}
+.sz-work__filter:focus-visible{outline-offset:-2px}
+
+.sz-work .sz-work__profile{flex:none;display:inline-flex;align-items:center;gap:9px;min-height:42px;margin-left:auto;padding:0 6px;border-radius:99px;font-size:14px;font-weight:600;color:var(--sz-ink)}
+.sz-work__profile .sz-app{width:28px;height:28px;border-radius:8px;font-size:15px}
+.sz-work__profile:hover .sz-work__profile-t{text-decoration:underline;text-decoration-color:var(--sz-orange);text-underline-offset:4px;text-decoration-thickness:1.5px}
+@container szwork (max-width:640px){
+  .sz-work__profile{position:relative;padding:0}
+  .sz-work__profile:has(.sz-app) .sz-work__profile-t{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+  .sz-work__profile .sz-app{width:42px;height:42px;border-radius:12px;font-size:18px}
+}
+
+/* ---------- the rail ---------- */
+.sz-work__box{position:relative}
+.sz-work__rail{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:var(--szw-cw);gap:var(--szw-gap);overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;padding:10px 0 var(--szw-under);scrollbar-width:none;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+.sz-work__rail::-webkit-scrollbar{display:none}
+/* out to the window's edges; the script measures how far that is */
+.sz-work.is-bleed .sz-work__rail{margin-left:calc(-1 * var(--szw-bl));margin-right:calc(-1 * var(--szw-br));padding-left:var(--szw-bl);padding-right:var(--szw-br);scroll-padding-left:var(--szw-bl);scroll-padding-right:var(--szw-br)}
+@media (pointer:fine){
+  .sz-work__rail{cursor:grab}
+  .sz-work__rail.is-dragging{cursor:grabbing;scroll-snap-type:none}
+  .sz-work__rail.is-dragging .sz-work__card{pointer-events:none}
+}
+.sz-work__rail:focus-visible{outline:none}
+.sz-work__rail:focus-visible .sz-work__card:not([hidden]){outline:2.5px solid rgba(255,107,44,.85);outline-offset:4px}
+.sz-work__rail:focus-visible .sz-work__card:not([hidden]) ~ .sz-work__card{outline:0}
+
+/* ---------- a card ---------- */
+.sz-work .sz-work__card{position:relative;display:block;min-width:0;scroll-snap-align:start;aspect-ratio:var(--szw-ratio);border-radius:var(--szw-radius);box-shadow:var(--sz-s2);color:var(--szw-on-dark);isolation:isolate;transform-style:preserve-3d;transition:transform .5s var(--sz-spring),box-shadow .4s,opacity .35s;-webkit-tap-highlight-color:transparent}
+.sz-work .sz-work__card[hidden]{display:none}
+.sz-work .sz-work__card.is-light{color:var(--szw-on-light)}
+.sz-work__card.is-wide{grid-column:span 2;aspect-ratio:auto;min-height:calc(var(--szw-cw) / (var(--szw-ratio)))}
+.sz-work__media{position:absolute;inset:0;z-index:-1;overflow:hidden;border-radius:inherit;background:var(--sz-navy)}
+.sz-work__media > *{position:absolute;inset:0;display:block;width:100%;height:100%;max-width:none;margin:0;object-fit:cover;transition:transform .9s var(--sz-ease),opacity .4s}
+.sz-work__card:hover .sz-work__media > *{transform:scale(1.05)}
+.sz-work__video{opacity:0}
+.sz-work__card.is-playing .sz-work__video{opacity:1}
+
+/* placeholder artwork: the design's gradients */
+.sz-work__mesh--1{background:radial-gradient(60% 70% at 18% 22%,#FF8A55 0%,transparent 60%),radial-gradient(70% 80% at 85% 85%,#0D1B2A 0%,transparent 65%),radial-gradient(50% 60% at 70% 20%,#FFD3BF 0%,transparent 60%),#F1A27F}
+.sz-work__mesh--2{background:radial-gradient(60% 60% at 75% 25%,#FF6B2C 0%,transparent 55%),radial-gradient(80% 80% at 20% 90%,#2A4560 0%,transparent 65%),#0D1B2A}
+.sz-work__mesh--3{background:radial-gradient(60% 70% at 25% 30%,#FFFFFF 0%,transparent 60%),radial-gradient(70% 70% at 80% 80%,#C9D3DF 0%,transparent 60%),radial-gradient(40% 40% at 70% 30%,#FFD9C8 0%,transparent 60%),#E9EDF2}
+.sz-work__mesh--4{background:radial-gradient(70% 60% at 50% 110%,#FF6B2C 0%,transparent 60%),radial-gradient(60% 60% at 20% 10%,#2C4865 0%,transparent 60%),#0B1622}
+.sz-work__mesh--5{background:radial-gradient(70% 70% at 80% 20%,#FFF0E8 0%,transparent 60%),radial-gradient(70% 70% at 20% 80%,#FF8A55 0%,transparent 60%),#FFB896}
+.sz-work__mesh--6{background:radial-gradient(60% 60% at 30% 30%,#8FA3B8 0%,transparent 60%),radial-gradient(70% 70% at 80% 80%,#0D1B2A 0%,transparent 60%),#3E5670}
+.sz-work__mesh--7{background:radial-gradient(60% 60% at 70% 30%,#FFE1C9 0%,transparent 60%),radial-gradient(70% 70% at 20% 85%,#C25A2C 0%,transparent 60%),#E89A6E}
+.sz-work__mesh--8{background:radial-gradient(60% 60% at 30% 70%,#4E6A88 0%,transparent 60%),radial-gradient(60% 60% at 80% 20%,#FF8A55 0%,transparent 55%),#14243A}
+
+/* glare under the pointer (the script sets --gx/--gy) */
+.sz-work__card::before{content:"";position:absolute;inset:0;z-index:3;border-radius:inherit;background:radial-gradient(420px circle at var(--gx,50%) var(--gy,0%),rgba(255,255,255,.22),transparent 45%);opacity:0;transition:opacity .35s;pointer-events:none}
+.sz-work__card.is-tilt::before{opacity:1}
+.sz-work__card.is-tilt{transition:transform .12s linear,box-shadow .4s}
+.sz-work__card:hover{box-shadow:var(--sz-s3)}
+.sz-work__card:active{transform:scale(.98)}
+.sz-work__card:focus-visible{outline-offset:4px}
+
+.sz-work__head{position:absolute;left:var(--szw-pad);right:var(--szw-pad);top:var(--szw-pad);z-index:2;display:block}
+.sz-work__cat{display:block;font-size:13px;font-weight:600;line-height:1.4;color:inherit;opacity:.85}
+.sz-work__card .sz-work__title{margin:4px 0 0;padding:0;max-width:12ch;font-family:inherit;font-size:26px;font-weight:700;line-height:1.1;letter-spacing:-.03em;color:inherit;text-shadow:0 2px 20px rgba(0,0,0,.2);text-wrap:balance}
+.sz-work__card.is-light .sz-work__cat{color:var(--sz-t2);opacity:1}
+.sz-work__card.is-light .sz-work__title{text-shadow:none}
+.sz-work__card.is-wide .sz-work__title{max-width:14ch;font-size:clamp(28px,3vw,38px)}
+
+.sz-work__flag{position:absolute;right:16px;top:16px;z-index:2;display:inline-flex;align-items:center;height:28px;padding:0 11px;border-radius:99px;background:var(--szw-flag);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.2);font-size:12px;font-weight:600;line-height:1;color:#fff}
+.sz-work__card.is-light .sz-work__flag{background:rgba(13,27,42,.06);box-shadow:none;color:var(--sz-ink)}
+/* a card with a video says so on hover, while the video starts */
+.sz-work__pv{position:absolute;left:var(--szw-pad);bottom:86px;z-index:2;display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px 0 7px;border-radius:99px;background:rgba(13,27,42,.45);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);font-size:11px;font-weight:600;line-height:1;color:#fff;opacity:0;transform:translateY(4px);transition:opacity .25s,transform .35s var(--sz-spring)}
+.sz-work__pv i{width:0;height:0;border-left:6px solid #fff;border-top:4px solid transparent;border-bottom:4px solid transparent}
+.sz-work__card:hover .sz-work__pv,.sz-work__card:focus-visible .sz-work__pv{opacity:1;transform:none}
+
+.sz-work__cbar{position:absolute;left:12px;right:12px;bottom:12px;z-index:2;display:flex;align-items:center;gap:10px;padding:10px 10px 10px 12px;border-radius:20px;background:var(--szw-bar);-webkit-backdrop-filter:blur(18px) saturate(160%);backdrop-filter:blur(18px) saturate(160%);color:var(--szw-bar-title)}
+.sz-work__icon{width:var(--szw-icon);height:var(--szw-icon);border-radius:11px;font-size:calc(var(--szw-icon) * .47)}
+.sz-work__cbar-t{flex:1;min-width:0;overflow:hidden;font-size:13px;line-height:1.3;white-space:nowrap;text-overflow:ellipsis;color:var(--szw-bar-text)}
+.sz-work__cbar-t b{display:block;overflow:hidden;font-size:14px;font-weight:600;white-space:nowrap;text-overflow:ellipsis;color:var(--szw-bar-title)}
+.sz-work__view{flex:none;display:grid;place-items:center;height:30px;padding:0 14px;border-radius:99px;background:var(--szw-view);font-size:13px;font-style:normal;font-weight:700;line-height:1;color:var(--szw-view-text);transition:background-color .25s,color .25s}
+.sz-work__card:hover .sz-work__view,.sz-work__card:focus-visible .sz-work__view{background:var(--szw-view-on);color:var(--szw-view-text-on)}
+
+/* the last card: the way to everything else */
+.sz-work .sz-work__end{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:16px;padding:28px;background:var(--szw-end);color:var(--szw-end-title)}
+.sz-work__end-icon{width:64px;height:64px;border-radius:18px;font-size:30px}
+.sz-work__end-title{display:block;max-width:13ch;font-size:24px;font-weight:700;line-height:1.1;letter-spacing:-.03em;color:var(--szw-end-title);text-wrap:balance}
+.sz-work__end-text{display:block;max-width:24ch;font-size:15px;line-height:1.55;color:var(--szw-end-text)}
+.sz-work__end-btn{display:inline-flex;align-items:center;justify-content:center;height:52px;padding:0 22px;border-radius:99px;background:var(--szw-end-btn);box-shadow:0 10px 24px -10px rgba(13,27,42,.6);font-size:15px;font-weight:600;line-height:1;color:var(--szw-end-btn-text);transition:transform .35s var(--sz-spring)}
+.sz-work__end:hover .sz-work__end-btn{transform:translateY(-2px)}
+
+@container szwork (max-width:600px){
+  .sz-work__card.is-wide{grid-column:span 1;aspect-ratio:var(--szw-ratio);min-height:0}
+  .sz-work__card.is-wide .sz-work__title{font-size:26px;max-width:12ch}
+}
+
+/* filter motion: leaving cards are ghosts fading where they were; new ones rise */
+.sz-work__ghost{position:absolute;z-index:4;margin:0;pointer-events:none;transition:opacity .28s ease,transform .32s var(--sz-ease)}
+.sz-work__ghost.is-out{opacity:0;transform:scale(.9)}
+.sz-work__card.is-enter{opacity:0;transform:translateY(18px) scale(.97)}
+
+/* ---------- under the rail: position, scrubber, page buttons ---------- */
+.sz-work__bar{display:flex;align-items:center;gap:18px}
+.sz-work__pos{flex:none;min-width:12ch;font-size:13px;font-weight:500;line-height:1.4;color:var(--szw-pos);font-variant-numeric:tabular-nums}
+.sz-work__pos b{font-weight:600;color:var(--szw-pos-on)}
+.sz-work__prog{position:relative;flex:1;height:22px;cursor:pointer;touch-action:none}
+.sz-work__prog::before{content:"";position:absolute;left:0;right:0;top:9px;height:4px;border-radius:9px;background:var(--szw-prog)}
+.sz-work__prog i{position:absolute;left:0;top:9px;width:40px;height:4px;border-radius:9px;background:var(--szw-prog-on);transition:height .2s,top .2s}
+.sz-work__prog:hover i,.sz-work__prog.is-held i{top:7px;height:8px}
+.sz-work__ctrl{flex:none;display:flex;gap:8px}
+.sz-work__btn{display:grid;place-items:center;width:var(--szw-btn);height:var(--szw-btn);padding:0;border:0;border-radius:50%;background:var(--szw-btn-bg);box-shadow:var(--sz-s1),inset 0 0 0 1px rgba(13,27,42,.06);color:var(--szw-btn-icon);cursor:pointer;transition:transform .3s var(--sz-spring),opacity .2s}
+.sz-work__btn:hover{background:var(--szw-btn-bg);color:var(--szw-btn-icon)}
+.sz-work__btn:active{transform:scale(.92)}
+.sz-work__btn[disabled]{opacity:.4;cursor:default}
+.sz-work__btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+/* everything fits: nothing to scrub or page through */
+.sz-work.is-static .sz-work__prog,.sz-work.is-static .sz-work__ctrl{visibility:hidden}
+@container szwork (max-width:560px){
+  .sz-work__bar{gap:12px}
+  .sz-work__pos{min-width:9ch}
+}
+
+.sz-work__note{margin:12px 0 0;padding:10px 14px;border-radius:12px;background:#FFF4E5;font-size:13px;line-height:1.5;color:#7A4A00}
+
+@media (prefers-reduced-motion:reduce){
+  .sz-work *,.sz-work *::before,.sz-work *::after{transition-duration:.01ms!important;animation:none!important}
+  .sz-work__card:hover .sz-work__media > *{transform:none}
+}

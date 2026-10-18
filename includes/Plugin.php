@@ -14,6 +14,7 @@ final class Plugin {
 		Widgets\Process::class,
 		Widgets\Service_Tabs::class,
 		Widgets\Service_Panel::class,
+		Widgets\Work_Rail::class,
 	];
 
 	public const CATEGORY = 'samanzavarian';
