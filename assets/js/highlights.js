@@ -6,9 +6,12 @@
  *   the deck dip; the counter rolls. Web Animations (compositor only).
  *   Reduced motion: a short crossfade, and nothing advances by itself.
  * - Auto-advance with story segments: the current one fills with the time
- *   left. Pauses under the pointer, while focused, off screen and in a
- *   background tab; runs no frames then. Picking a card (button, segment,
- *   swipe, key) stops it for good; the pause button stops or restarts it.
+ *   left. Pauses while keyboard focus is inside, off screen and in a
+ *   background tab; runs no frames then. Not under a resting mouse: a pointer
+ *   left on the deck froze it and read as broken (owner's report). Picking a
+ *   card (button, segment, swipe, key) stops it for good; the pause button
+ *   stops or restarts it. In the editor it runs too, and selecting a card in
+ *   the panel shows that card and stops it.
  * - Screen readers: the slide region is aria-live only once the visitor has
  *   taken over, so automatic changes are not read out.
  */
@@ -30,13 +33,11 @@
 			this.pp = root.querySelector( '.sz-hl__pp' );
 			this.labels = Object.assign( { pause: 'Pause', play: 'Play' }, JSON.parse( root.dataset.labels || '{}' ) );
 			this.reduce = media( '(prefers-reduced-motion: reduce)' );
-			this.edit = !! ( window.elementorFrontend && window.elementorFrontend.isEditMode && window.elementorFrontend.isEditMode() );
-			this.auto = root.dataset.auto === '1' && ! this.reduce && ! this.edit;
+			this.auto = root.dataset.auto === '1' && ! this.reduce;
 			this.playing = this.auto;
 			this.dur = parseInt( root.dataset.duration, 10 ) || 5200;
 			this.i = 0;
 			this.elapsed = 0;
-			this.hover = false;
 			this.focus = false;
 			this.seen = false;
 			this.off = [];
@@ -78,7 +79,7 @@
 		/* ---------------- the clock ---------------- */
 
 		running() {
-			return this.auto && this.playing && this.seen && ! this.hover && ! this.focus && document.visibilityState !== 'hidden';
+			return this.auto && this.playing && this.seen && ! this.focus && document.visibilityState !== 'hidden';
 		}
 
 		/** Frames only while the clock can move. */
@@ -263,19 +264,10 @@
 				} );
 			}
 
-			// pause under the pointer and while focus is inside; resume when it leaves
-			const card = this.root.querySelector( '.sz-hl__card' );
-			this.on( card, 'pointerenter', ( e ) => {
-				if ( e.pointerType === 'mouse' ) {
-					this.hover = true;
-				}
-			} );
-			this.on( card, 'pointerleave', () => {
-				this.hover = false;
-				this.wake();
-			} );
+			// pause while keyboard focus is inside; resume when it leaves (a mouse click
+			// that focuses a button has already taken over, so it needs no pause of its own)
 			this.on( this.root, 'focusin', ( e ) => {
-				this.focus = e.target !== this.pp;
+				this.focus = e.target !== this.pp && e.target.matches( ':focus-visible' );
 			} );
 			this.on( this.root, 'focusout', ( e ) => {
 				if ( ! this.root.contains( e.relatedTarget ) ) {
@@ -309,6 +301,14 @@
 			onInit() {
 				super.onInit();
 				mount( this.$element[ 0 ].querySelector( '[data-sz-hl]' ) );
+			}
+
+			// a card selected in the editor's panel: show it, and hold still while it is edited
+			onEditSettingsChange( name, value ) {
+				const inst = instances.get( this.$element[ 0 ].querySelector( '[data-sz-hl]' ) );
+				if ( 'activeItemIndex' === name && inst && value ) {
+					inst.go( value - 1, { user: true } );
+				}
 			}
 			onDestroy() {
 				const root = this.$element[ 0 ].querySelector( '[data-sz-hl]' ), inst = root && instances.get( root );

@@ -4,6 +4,20 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.16.1 — Highlights: it advances where it should
+Reported by the site owner: the cards did not move, and the timer under them
+was a fixed line.
+
+- **In the Elementor editor** auto-advance was off on purpose, so the card
+  being edited would not slide away. Shown in the editor, that read as
+  broken. Now it runs there too, and choosing a card in the panel shows it
+  and holds still while you edit it.
+- **A resting mouse no longer freezes it.** Auto-advance paused under the
+  pointer, so a mouse left on the deck stopped the clock and the segment
+  stood still. Now only keyboard focus inside pauses it (besides off screen
+  and a background tab); anyone who wants it stopped has the pause button,
+  and picking a card stops it as before.
+
 ## 0.16.0 — Highlights: "What I bring to a project"
 A new widget, **Highlights**: the design's deck of short cards with story
 segments, rethought before it was built.

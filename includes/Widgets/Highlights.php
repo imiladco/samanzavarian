@@ -20,8 +20,8 @@ defined( 'ABSPATH' ) || exit;
  * longest card and never jumps between them. The script moves the deck: the
  * leaving card's content slides away in the direction of travel, the next
  * one's icon springs in and its title and text follow; the sheets under the
- * deck dip as if the top card was lifted off. Auto-advance pauses under the
- * pointer or focus, in a background tab and off screen; it stops for good
+ * deck dip as if the top card was lifted off. Auto-advance pauses under
+ * keyboard focus, in a background tab and off screen; it stops for good
  * once the visitor takes over, and the pause button (WCAG 2.2.2) stops or
  * restarts it. Screen readers hear only the changes a visitor makes.
  */
@@ -138,7 +138,7 @@ class Highlights extends Widget_Base {
 				'type'         => Controls_Manager::SWITCHER,
 				'default'      => 'yes',
 				'return_value' => 'yes',
-				'description'  => esc_html__( 'Pauses under the pointer, while focused, in a background tab and off screen. Stops for good once a visitor picks a card; the pause button restarts it. Never with reduced motion.', 'samanzavarian-widgets' ),
+				'description'  => esc_html__( 'Pauses while keyboard focus is on it, in a background tab and off screen. Stops for good once a visitor picks a card; the pause button restarts it. Never with reduced motion. In the editor, picking a card in the panel shows it and holds still.', 'samanzavarian-widgets' ),
 			]
 		);
 
