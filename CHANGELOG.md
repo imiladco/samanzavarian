@@ -4,6 +4,25 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.21.0 — Toolkit: education and tools, under the career
+A new widget, **Toolkit**: the design's card of Education, "Editing and
+finishing" and "AI image and video", one row each.
+
+- **Rows of two kinds:** two lines of text (the degree, then where; years,
+  if given, join the second line after a dot), or tools as pills with the
+  row's colour as their dot. Add, remove or reorder rows freely.
+- **How many:** a row of pills can show its count right after its label
+  (on for the AI row: 8).
+- **Used every day:** end a tool's line with * and its pill says "daily"
+  after a hairline, in words rather than a symbol to decode.
+- **Honest affordance:** the pills are not buttons, so they do not react to
+  the pointer.
+- **The arrival:** the first time the card scrolls into view the rows rise
+  in turn, each tile springs in and its pills follow in a quick cascade;
+  then the card is plain again. On screen at load or with reduced motion it
+  is simply there.
+- **Phones:** below 700px of card the label sits above its content.
+
 ## 0.20.0 — Career Timeline: a timeline you work, not a picture of one
 0.19.0 rebuilt the box properly but it still looked like the design. This
 release changes what you see and what you can do with it:
