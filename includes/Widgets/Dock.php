@@ -17,6 +17,9 @@ defined( 'ABSPATH' ) || exit;
  * from the pointer's distance, every frame, only while the pointer is
  * there). A separator can stand before an item (the design's Behance).
  *
+ * Like an open app on the Mac dock, the item whose section (#link on this
+ * page) is on screen gets a small dot under it.
+ *
  * By default it sits pinned to the bottom of its container, centred. On a
  * phone it joins the flow as a three-column grid of the items marked for
  * phones.
@@ -87,8 +90,38 @@ class Dock extends Widget_Base {
 		);
 		$this->add_control( 'label_aria', [ 'label' => esc_html__( 'Name for screen readers', 'samanzavarian-widgets' ), 'type' => Controls_Manager::TEXT, 'default' => 'What I do' ] );
 		$this->add_control( 'pin', [ 'label' => esc_html__( 'Pinned to the bottom of its container', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'prefix_class' => 'sz-dock-pin-', 'separator' => 'before', 'description' => esc_html__( 'Centred, 30px from the bottom (phones: in the flow).', 'samanzavarian-widgets' ) ] );
-		$this->add_control( 'magnify', [ 'label' => esc_html__( 'Swell under the pointer', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes' ] );
 		$this->end_controls_section();
+		$this->register_style();
+	}
+
+	private function register_style(): void {
+		Style_Controls::box(
+			$this,
+			'st_bar',
+			esc_html__( 'Bar', 'samanzavarian-widgets' ),
+			'{{WRAPPER}} .sz-dock',
+			[
+				'extra' => [
+					'gap'  => [ 'label' => esc_html__( 'Space between items', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SLIDER, 'range' => [ 'px' => [ 'min' => 0, 'max' => 40 ] ], 'selectors' => [ '{{WRAPPER}} .sz-dock' => 'gap: {{SIZE}}px;' ], 'responsive' => true ],
+					'blur' => [ 'label' => esc_html__( 'Frost (blur)', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SLIDER, 'range' => [ 'px' => [ 'min' => 0, 'max' => 60 ] ], 'selectors' => [ '{{WRAPPER}} .sz-dock' => '-webkit-backdrop-filter: saturate(180%) blur({{SIZE}}px); backdrop-filter: saturate(180%) blur({{SIZE}}px);' ] ],
+					'bottom' => [ 'label' => esc_html__( 'Distance from the bottom', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SLIDER, 'range' => [ 'px' => [ 'min' => 0, 'max' => 160 ] ], 'selectors' => [ '{{WRAPPER}}.sz-dock-pin-yes' => 'bottom: {{SIZE}}px;' ], 'condition' => [ 'pin' => 'yes' ], 'responsive' => true ],
+				],
+			]
+		);
+		Style_Controls::box( $this, 'st_item', esc_html__( 'Items', 'samanzavarian-widgets' ), '{{WRAPPER}} .sz-dock__a', [ 'hover' => '{{WRAPPER}} .sz-dock__a:hover' ] );
+		Style_Controls::text( $this, 'st_label', esc_html__( 'Labels', 'samanzavarian-widgets' ), '{{WRAPPER}} .sz-dock__l', [ 'no_margin' => true, 'hover' => '{{WRAPPER}} .sz-dock__a:hover .sz-dock__l' ] );
+		Style_Controls::tile( $this, 'st_tile', esc_html__( 'Tiles (all)', 'samanzavarian-widgets' ), '{{WRAPPER}} .sz-dock__app' );
+		$this->start_controls_section( 'st_more', [ 'label' => esc_html__( 'Separator and dot', 'samanzavarian-widgets' ), 'tab' => Controls_Manager::TAB_STYLE ] );
+		$this->add_control( 'sep_c', [ 'label' => esc_html__( 'Separator', 'samanzavarian-widgets' ), 'type' => Controls_Manager::COLOR, 'selectors' => [ '{{WRAPPER}} .sz-dock__sep' => 'background: {{VALUE}};' ] ] );
+		$this->add_control( 'dot_c', [ 'label' => esc_html__( 'Dot of the section on screen', 'samanzavarian-widgets' ), 'type' => Controls_Manager::COLOR, 'selectors' => [ '{{WRAPPER}} .sz-dock__a::after' => 'background: {{VALUE}};' ] ] );
+		$this->end_controls_section();
+		Style_Controls::motion(
+			$this,
+			[
+				'magnify' => [ 'label' => esc_html__( 'Swell under the pointer', 'samanzavarian-widgets' ) ],
+				'spy'     => [ 'label' => esc_html__( 'A dot under the section on screen', 'samanzavarian-widgets' ) ],
+			]
+		);
 	}
 
 	protected function render(): void {
@@ -97,7 +130,7 @@ class Dock extends Widget_Base {
 		if ( ! $items ) {
 			return;
 		}
-		printf( '<nav class="sz-dock sz-w" aria-label="%s"%s>', esc_attr( (string) ( $s['label_aria'] ?? '' ) ), 'yes' === ( $s['magnify'] ?? 'yes' ) ? ' data-sz-dock' : '' );
+		printf( '<nav class="sz-dock sz-w" aria-label="%s"%s>', esc_attr( (string) ( $s['label_aria'] ?? '' ) ), 'yes' === ( $s['magnify'] ?? 'yes' ) || 'yes' === ( $s['spy'] ?? 'yes' ) ? ' data-sz-dock' . ( 'yes' === ( $s['magnify'] ?? 'yes' ) ? ' data-swell' : '' ) . ( 'yes' === ( $s['spy'] ?? 'yes' ) ? ' data-spy' : '' ) : '' );
 		foreach ( $items as $i => $x ) {
 			if ( 'yes' === ( $x['sep'] ?? '' ) && $i > 0 ) {
 				echo '<i class="sz-dock__sep' . ( 'yes' === ( $x['no_phone'] ?? '' ) ? ' is-wide' : '' ) . '" aria-hidden="true"></i>';

@@ -57,6 +57,18 @@ class Hero_Lead extends Widget_Base {
 		$this->add_responsive_control( 'width', [ 'label' => esc_html__( 'Line length', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SLIDER, 'size_units' => [ 'ch' ], 'range' => [ 'ch' => [ 'min' => 16, 'max' => 70 ] ], 'selectors' => [ '{{WRAPPER}} .sz-lead' => 'max-width: {{SIZE}}ch;' ] ] );
 		$this->add_responsive_control( 'align', [ 'label' => esc_html__( 'Alignment', 'samanzavarian-widgets' ), 'type' => Controls_Manager::CHOOSE, 'options' => [ 'left' => [ 'title' => esc_html__( 'Left', 'samanzavarian-widgets' ), 'icon' => 'eicon-text-align-left' ], 'center' => [ 'title' => esc_html__( 'Center', 'samanzavarian-widgets' ), 'icon' => 'eicon-text-align-center' ], 'right' => [ 'title' => esc_html__( 'Right', 'samanzavarian-widgets' ), 'icon' => 'eicon-text-align-right' ] ], 'default' => 'center', 'selectors_dictionary' => [ 'left' => 'text-align:left;margin-left:0;margin-right:auto', 'center' => 'text-align:center;margin-left:auto;margin-right:auto', 'right' => 'text-align:right;margin-left:auto;margin-right:0' ], 'selectors' => [ '{{WRAPPER}} .sz-lead' => '{{VALUE}}' ] ] );
 		$this->end_controls_section();
+		$this->register_style();
+	}
+
+	private function register_style(): void {
+		Style_Controls::text( $this, 'st_text', esc_html__( 'Text', 'samanzavarian-widgets' ), '{{WRAPPER}} .sz-lead' );
+		Style_Controls::text( $this, 'st_bold', esc_html__( 'Starred words', 'samanzavarian-widgets' ), '{{WRAPPER}} .sz-lead b', [ 'no_margin' => true ] );
+		$this->start_controls_section( 'st_line', [ 'label' => esc_html__( 'Underline', 'samanzavarian-widgets' ), 'tab' => Controls_Manager::TAB_STYLE ] );
+		$this->add_control( 'line', [ 'label' => esc_html__( 'Show', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'selectors' => [ '{{WRAPPER}} .sz-lead__sw svg' => 'display:block' ], 'selectors_dictionary' => [ '' => 'none' ] ] );
+		$this->add_control( 'line_color', [ 'label' => esc_html__( 'Colour', 'samanzavarian-widgets' ), 'type' => Controls_Manager::COLOR, 'selectors' => [ '{{WRAPPER}} .sz-lead__sw path' => 'stroke: {{VALUE}};' ] ] );
+		$this->add_control( 'line_width', [ 'label' => esc_html__( 'Thickness', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SLIDER, 'range' => [ 'px' => [ 'min' => 1, 'max' => 8, 'step' => .5 ] ], 'selectors' => [ '{{WRAPPER}} .sz-lead__sw path' => 'stroke-width: {{SIZE}};' ] ] );
+		$this->add_control( 'line_off', [ 'label' => esc_html__( 'Distance below', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SLIDER, 'size_units' => [ 'em' ], 'range' => [ 'em' => [ 'min' => -.8, 'max' => 0, 'step' => .02 ] ], 'selectors' => [ '{{WRAPPER}} .sz-lead__sw svg' => 'bottom: {{SIZE}}em;' ] ] );
+		$this->end_controls_section();
 	}
 
 	/** "*bold*" → bold with the underline. */

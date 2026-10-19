@@ -64,11 +64,22 @@ class Button extends Widget_Base {
 		$this->add_responsive_control( 'align', [ 'label' => esc_html__( 'Alignment', 'samanzavarian-widgets' ), 'type' => Controls_Manager::CHOOSE, 'options' => [ 'flex-start' => [ 'title' => esc_html__( 'Left', 'samanzavarian-widgets' ), 'icon' => 'eicon-text-align-left' ], 'center' => [ 'title' => esc_html__( 'Center', 'samanzavarian-widgets' ), 'icon' => 'eicon-text-align-center' ], 'flex-end' => [ 'title' => esc_html__( 'Right', 'samanzavarian-widgets' ), 'icon' => 'eicon-text-align-right' ], 'stretch' => [ 'title' => esc_html__( 'Full width', 'samanzavarian-widgets' ), 'icon' => 'eicon-h-align-stretch' ] ], 'default' => 'center', 'mobile_default' => 'stretch', 'selectors' => [ '{{WRAPPER}} .sz-btn-wrap' => 'justify-content: {{VALUE}};' ] ] );
 		$this->end_controls_section();
 
-		$this->start_controls_section( 'section_style', [ 'label' => esc_html__( 'Button', 'samanzavarian-widgets' ), 'tab' => Controls_Manager::TAB_STYLE ] );
+		$this->start_controls_section( 'section_style', [ 'label' => esc_html__( 'Text', 'samanzavarian-widgets' ), 'tab' => Controls_Manager::TAB_STYLE ] );
 		$this->add_group_control( Group_Control_Typography::get_type(), [ 'name' => 'type', 'selector' => '{{WRAPPER}} .sz-btn' ] );
-		$this->add_control( 'bg', [ 'label' => esc_html__( 'Background', 'samanzavarian-widgets' ), 'type' => Controls_Manager::COLOR, 'selectors' => [ '{{WRAPPER}} .sz-btn' => 'background-color: {{VALUE}};' ] ] );
-		$this->add_control( 'fg', [ 'label' => esc_html__( 'Text', 'samanzavarian-widgets' ), 'type' => Controls_Manager::COLOR, 'selectors' => [ '{{WRAPPER}} .sz-btn' => 'color: {{VALUE}};' ] ] );
+		$this->add_control( 'fg', [ 'label' => esc_html__( 'Colour', 'samanzavarian-widgets' ), 'type' => Controls_Manager::COLOR, 'selectors' => [ '{{WRAPPER}} .sz-btn, {{WRAPPER}} .sz-btn:visited' => 'color: {{VALUE}};' ] ] );
+		$this->add_control( 'fg_h', [ 'label' => esc_html__( 'Colour on hover', 'samanzavarian-widgets' ), 'type' => Controls_Manager::COLOR, 'selectors' => [ '{{WRAPPER}} .sz-btn:hover, {{WRAPPER}} .sz-btn:focus-visible' => 'color: {{VALUE}};' ] ] );
+		$this->add_responsive_control( 'h', [ 'label' => esc_html__( 'Height', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SLIDER, 'range' => [ 'px' => [ 'min' => 28, 'max' => 96 ] ], 'selectors' => [ '{{WRAPPER}} .sz-btn' => 'height: {{SIZE}}px;' ] ] );
+		$this->add_responsive_control( 'gap', [ 'label' => esc_html__( 'Space between tile and text', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SLIDER, 'range' => [ 'px' => [ 'min' => 0, 'max' => 30 ] ], 'selectors' => [ '{{WRAPPER}} .sz-btn' => 'gap: {{SIZE}}px;' ] ] );
 		$this->end_controls_section();
+		Style_Controls::box( $this, 'st_box', esc_html__( 'Button', 'samanzavarian-widgets' ), '{{WRAPPER}} .sz-btn', [ 'hover' => '{{WRAPPER}} .sz-btn:hover' ] );
+		Style_Controls::tile( $this, 'st_tile', esc_html__( 'Icon tile', 'samanzavarian-widgets' ), '{{WRAPPER}} .sz-btn__app' );
+		Style_Controls::motion(
+			$this,
+			[
+				'magnet' => [ 'label' => esc_html__( 'Follows the pointer a little', 'samanzavarian-widgets' ) ],
+				'shine'  => [ 'label' => esc_html__( 'A shine crosses it on hover', 'samanzavarian-widgets' ) ],
+			]
+		);
 	}
 
 	protected function render(): void {
@@ -77,7 +88,10 @@ class Button extends Widget_Base {
 			return;
 		}
 		$look = in_array( $s['look'] ?? 'dark', [ 'dark', 'light', 'orange' ], true ) ? $s['look'] : 'dark';
-		$this->add_render_attribute( 'a', 'class', [ 'sz-btn', 'sz-w', 'is-' . $look, 'is-' . ( $s['size'] ?? 'md' ) ] );
+		$this->add_render_attribute( 'a', 'class', [ 'sz-btn', 'sz-w', 'is-' . $look, 'is-' . ( $s['size'] ?? 'md' ), 'yes' === ( $s['shine'] ?? 'yes' ) ? 'has-shine' : '' ] );
+		if ( 'yes' === ( $s['magnet'] ?? 'yes' ) ) {
+			$this->add_render_attribute( 'a', 'data-sz-magnet', '6' );
+		}
 		if ( ! empty( $s['link']['url'] ) ) {
 			$this->add_link_attributes( 'a', $s['link'] );
 		}

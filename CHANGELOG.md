@@ -4,6 +4,38 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.28.0 — Hero widgets: full Style tab, and more life
+**Everything is styleable.** Each hero widget now has a full Style tab
+(a shared set, so they all work alike):
+
+- Hero Title: layout (space between), the whole title, each word on its
+  own (type, colour, shadow), the tile (size, icon size, radius, colours,
+  shadow).
+- Hero Lead: text, the starred words, the underline (show, colour,
+  thickness, distance).
+- Button: text (type, colour, hover colour, height, gap), the button
+  (background or gradient, border, shadow, radius, padding; normal and
+  hover), the icon tile.
+- Hero Floats: cards (normal and hover), captions (box and text, dot
+  colour).
+- Dock: the bar (background, border, shadow, radius, padding, space,
+  frost, distance from the bottom), items (normal and hover), labels,
+  tiles, separator and dot colours.
+
+**More life**, each with its own switch under Style → Motion:
+
+- Hero Title: letter-by-letter entrance (or word by word, or none); the
+  tile leans toward a pointer that comes near.
+- Button: follows the pointer a little; a shine crosses it on hover.
+- Hero Floats: a slow float up and down (paused while off screen); under
+  the pointer a card straightens and comes forward; a card can link (to the
+  project, say).
+- Dock: like an open app on the Mac dock, the item whose section is on
+  screen gets a dot.
+
+Fixed while testing: the Hero Title control "Space between" sat outside a
+section and stopped the Elementor editor from opening.
+
 ## 0.27.0 — Hero widgets: title, lead, button, floating cards, dock
 Five widgets to build the hero from the design ("Available for new
 projects" is the existing Status Pill):
