@@ -4,6 +4,31 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.14.1 — Selected Work: every state of the filter tabs
+Finished the way a segmented control behaves, from the site owner's review.
+
+- **States.**
+  - Hover (unselected): a soft tint fades in behind the tab, the text and its
+    count darken.
+  - Press: the tab sinks (0.97) and the tint deepens, before the thumb
+    arrives.
+  - Selected: no tint on hover; its thumb only lifts a little.
+  - Pressing the selected tab: thumb and label give together (0.96), about
+    their own centre.
+  - Keyboard: an orange ring that follows the tab's corners.
+  - Hover applies only with a real pointer, so it never sticks on a touch
+    screen.
+- The profile link's tile lifts and turns slightly on hover and sinks on
+  press.
+- Style → Filters now has Normal / Hover / Selected tabs, including hover
+  and pressed backgrounds and hover text. Saved colours carry over.
+- **Fix:** unselected tabs were black, not grey, and the Normal text colour
+  had no effect. The widget's own button reset outranked them.
+- **Fix:** a site's global button styles (Elementor Site Settings → Buttons,
+  or a theme's button:hover) could restyle the filter tabs and the slider
+  arrows. Every state of both is now protected. Tested against a deliberately
+  loud kit style: background, padding, border, uppercase, serif.
+
 ## 0.14.0 — Selected Work: a projects library, and two width layers
 From the site owner's review: the filters and controls must not share the
 cards' width, and typing each project's filter into the widget was too

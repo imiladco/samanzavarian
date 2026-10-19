@@ -12,6 +12,7 @@
   --szw-top:6px; --szw-under:30px;
   --szw-track:#EBEDF0; --szw-thumb:#fff; --szw-ftext:var(--sz-t2); --szw-ftext-on:var(--sz-ink);
   --szw-count:rgba(13,27,42,.06); --szw-count-text:var(--sz-t3); --szw-count-on:var(--sz-navy); --szw-count-text-on:#fff;
+  --szw-fhover:rgba(13,27,42,.05); --szw-fpress:rgba(13,27,42,.09); --szw-ftext-hover:var(--sz-ink);
   --szw-fradius:14px; --szw-fh:36px; --szw-fdur:450ms;
   --szw-on-dark:#fff; --szw-on-light:var(--sz-ink); --szw-flag:rgba(255,255,255,.16);
   --szw-bar:rgba(255,255,255,.72); --szw-bar-title:var(--sz-ink); --szw-bar-text:var(--sz-t2); --szw-icon:38px;
@@ -26,7 +27,19 @@
 }
 .sz-work a{text-decoration:none}
 .sz-work a:not([class]){color:inherit}
-.sz-work button{font:inherit;color:inherit;margin:0;text-transform:none;letter-spacing:inherit}
+.sz-work :where(button){font:inherit;color:inherit;margin:0;text-transform:none;letter-spacing:inherit}
+/* Our buttons outrank a site's global button styles in every state: Elementor's kit
+   writes .elementor-kit-N button and button:hover (0,2,1), themes [type=button]:hover.
+   Three classes deep (0,3,0+) wins; states that should differ are set even deeper below. */
+:is(.sz-work .sz-work__filters .sz-work__filter,.sz-work .sz-work__ctrl .sz-work__btn),
+:is(.sz-work .sz-work__filters .sz-work__filter,.sz-work .sz-work__ctrl .sz-work__btn):is(:hover,:focus,:active){
+  min-height:0;margin:0;border:0;font-family:inherit;line-height:1;letter-spacing:normal;text-transform:none;text-decoration:none;box-sizing:border-box}
+.sz-work .sz-work__filters .sz-work__filter,.sz-work .sz-work__filters .sz-work__filter:is(:hover,:focus,:active){
+  height:var(--szw-fh);padding:0 14px 0 16px;border-radius:calc(var(--szw-fradius) - 3px);background:transparent;box-shadow:none;font-size:14px;font-weight:600}
+.sz-work .sz-work__ctrl .sz-work__btn,.sz-work .sz-work__ctrl .sz-work__btn:is(:hover,:focus,:active){
+  width:var(--szw-btn);height:var(--szw-btn);padding:0;border-radius:50%;background:var(--szw-btn-bg);color:var(--szw-btn-icon);box-shadow:var(--sz-s1),inset 0 0 0 1px rgba(13,27,42,.06)}
+.sz-work .sz-work__filters .sz-work__filter:not([aria-pressed="true"]){color:var(--szw-ftext)}
+.sz-work .sz-work__filters .sz-work__filter[aria-pressed="true"],.sz-work .sz-work__filters .sz-work__filter[aria-pressed="true"]:is(:hover,:focus,:active){color:var(--szw-ftext-on)}
 .sz-work :focus-visible{outline:2.5px solid rgba(255,107,44,.85);outline-offset:3px}
 .sz-work__sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
 
@@ -45,17 +58,34 @@
 .sz-work__filters{position:relative;display:flex;gap:2px;padding:3px;border-radius:var(--szw-fradius);background:var(--szw-track);overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain}
 .sz-work__filters::-webkit-scrollbar{display:none}
 .sz-work__thumb{position:absolute;left:0;top:3px;height:var(--szw-fh);width:0;border-radius:calc(var(--szw-fradius) - 3px);background:var(--szw-thumb);box-shadow:0 1px 2px rgba(13,27,42,.08),0 3px 10px rgba(13,27,42,.08);opacity:0;pointer-events:none}
-.sz-work.is-ready .sz-work__thumb{opacity:1;transition:transform var(--szw-fdur) var(--sz-spring),width var(--szw-fdur) var(--sz-spring)}
-.sz-work__filter{position:relative;z-index:1;flex:none;display:inline-flex;align-items:center;gap:6px;height:var(--szw-fh);padding:0 14px 0 16px;border:0;border-radius:calc(var(--szw-fradius) - 3px);background:transparent;font-size:14px;font-weight:600;line-height:1;white-space:nowrap;color:var(--szw-ftext);cursor:pointer;transition:color .2s,background-color .2s}
-.sz-work__filter:hover,.sz-work__filter[aria-pressed="true"]{color:var(--szw-ftext-on);background:transparent}
-/* before the script places the thumb (and without it), the active filter carries its own background */
-.sz-work:not(.is-ready) .sz-work__filter[aria-pressed="true"]{background:var(--szw-thumb);box-shadow:0 1px 2px rgba(13,27,42,.08),0 3px 10px rgba(13,27,42,.08)}
+.sz-work.is-ready .sz-work__thumb{opacity:1;transition:translate var(--szw-fdur) var(--sz-spring),width var(--szw-fdur) var(--sz-spring),scale .3s var(--sz-spring),box-shadow .25s}
+.sz-work .sz-work__filter{position:relative;z-index:1;flex:none;display:inline-flex;align-items:center;gap:6px;height:var(--szw-fh);padding:0 14px 0 16px;border:0;border-radius:calc(var(--szw-fradius) - 3px);background:transparent;font-size:14px;font-weight:600;line-height:1;white-space:nowrap;color:var(--szw-ftext);cursor:pointer;isolation:isolate;-webkit-tap-highlight-color:transparent;transition:color .2s,transform .25s var(--sz-spring)}
+/* the states, as a segmented control does them:
+   rest → hover (a tint fades in behind) → press (sinks, tint deepens) → selected (the thumb springs over).
+   Hover only where there is a real pointer, so it never sticks on a touch screen. */
+.sz-work__filter::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:inherit;background:var(--szw-fhover);opacity:0;transform:scale(.9);transition:opacity .2s,transform .3s var(--sz-ease),background-color .15s}
+.sz-work__filter[aria-pressed="true"]{color:var(--szw-ftext-on);cursor:default}
+.sz-work:not(.is-ready) .sz-work__filters .sz-work__filter[aria-pressed="true"]{background:var(--szw-thumb);box-shadow:0 1px 2px rgba(13,27,42,.08),0 3px 10px rgba(13,27,42,.08)}
 .sz-work__filter sup{position:static;top:0;min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:var(--szw-count);font-size:11px;font-weight:600;line-height:18px;text-align:center;vertical-align:baseline;color:var(--szw-count-text);font-variant-numeric:tabular-nums;transition:background-color .25s,color .25s}
 .sz-work__filter[aria-pressed="true"] sup{background:var(--szw-count-on);color:var(--szw-count-text-on)}
-.sz-work__filter:focus-visible{outline-offset:-2px}
+@media (hover:hover){
+  .sz-work .sz-work__filters .sz-work__filter:not([aria-pressed="true"]):hover{color:var(--szw-ftext-hover)}
+  .sz-work__filter:not([aria-pressed="true"]):hover::before{opacity:1;transform:none}
+  .sz-work__filter:not([aria-pressed="true"]):hover sup{background:rgba(13,27,42,.1);color:var(--szw-ftext-hover)}
+  /* the chosen one: nothing to change, its thumb just lifts a little */
+  .sz-work__filters:has(.sz-work__filter[aria-pressed="true"]:hover) .sz-work__thumb{box-shadow:0 1px 2px rgba(13,27,42,.1),0 6px 16px rgba(13,27,42,.12)}
+}
+.sz-work .sz-work__filters .sz-work__filter:not([aria-pressed="true"]):active{transform:scale(.97)}
+.sz-work__filter:not([aria-pressed="true"]):active::before{opacity:1;transform:none;background:var(--szw-fpress)}
+/* pressing the chosen one: thumb and label give together */
+.sz-work .sz-work__filters .sz-work__filter[aria-pressed="true"]:active{transform:scale(.96)}
+.sz-work__filters:has(.sz-work__filter[aria-pressed="true"]:active) .sz-work__thumb{scale:.96}
+.sz-work .sz-work__filters .sz-work__filter:focus-visible{outline:2px solid rgba(255,107,44,.9);outline-offset:-2px}
 
 .sz-work .sz-work__profile{flex:none;display:inline-flex;align-items:center;gap:9px;min-height:42px;margin-left:auto;padding:0 6px;border-radius:99px;font-size:14px;font-weight:600;color:var(--sz-ink)}
-.sz-work__profile .sz-app{width:28px;height:28px;border-radius:8px;font-size:15px}
+.sz-work__profile .sz-app{width:28px;height:28px;border-radius:8px;font-size:15px;transition:transform .35s var(--sz-spring)}
+@media (hover:hover){.sz-work__profile:hover .sz-app{transform:translateY(-1px) rotate(-6deg) scale(1.06)}}
+.sz-work__profile:active .sz-app{transform:scale(.94)}
 .sz-work__profile:hover .sz-work__profile-t{text-decoration:underline;text-decoration-color:var(--sz-orange);text-underline-offset:4px;text-decoration-thickness:1.5px}
 @container szwork (max-width:640px){
   .sz-work__profile{position:relative;padding:0}
@@ -163,10 +193,10 @@
 .sz-work__prog i{position:absolute;left:0;top:9px;width:40px;height:4px;border-radius:9px;background:var(--szw-prog-on);transition:height .2s,top .2s}
 .sz-work__prog:hover i,.sz-work__prog.is-held i{top:7px;height:8px}
 .sz-work__ctrl{flex:none;display:flex;gap:8px}
-.sz-work__btn{display:grid;place-items:center;width:var(--szw-btn);height:var(--szw-btn);padding:0;border:0;border-radius:50%;background:var(--szw-btn-bg);box-shadow:var(--sz-s1),inset 0 0 0 1px rgba(13,27,42,.06);color:var(--szw-btn-icon);cursor:pointer;transition:transform .3s var(--sz-spring),opacity .2s}
-.sz-work__btn:hover{background:var(--szw-btn-bg);color:var(--szw-btn-icon)}
-.sz-work__btn:active{transform:scale(.92)}
-.sz-work__btn[disabled]{opacity:.4;cursor:default}
+.sz-work .sz-work__btn{display:grid;place-items:center;width:var(--szw-btn);height:var(--szw-btn);padding:0;border:0;border-radius:50%;background:var(--szw-btn-bg);box-shadow:var(--sz-s1),inset 0 0 0 1px rgba(13,27,42,.06);color:var(--szw-btn-icon);cursor:pointer;transition:transform .3s var(--sz-spring),opacity .2s}
+.sz-work .sz-work__btn:hover{background:var(--szw-btn-bg);color:var(--szw-btn-icon)}
+.sz-work .sz-work__ctrl .sz-work__btn:active{transform:scale(.92)}
+.sz-work .sz-work__ctrl .sz-work__btn[disabled]{opacity:.4;cursor:default}
 .sz-work__btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 /* everything fits: nothing to scrub or page through */
 .sz-work.is-static .sz-work__prog,.sz-work.is-static .sz-work__ctrl{visibility:hidden}

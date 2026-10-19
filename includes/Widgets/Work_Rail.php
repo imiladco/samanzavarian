@@ -765,13 +765,30 @@ class Work_Rail extends Widget_Base {
 		$this->add_group_control( Group_Control_Typography::get_type(), [ 'name' => 'filter_typo', 'selector' => '{{WRAPPER}} .sz-work__filter' ] );
 
 		$this->var_color( 'filter_track', esc_html__( 'Track', 'samanzavarian-widgets' ), '--szw-track' );
-		$this->var_color( 'filter_thumb', esc_html__( 'Active background', 'samanzavarian-widgets' ), '--szw-thumb' );
+
+		// same control ids as before the tabs, so saved colours carry over
+		$this->start_controls_tabs( 'filter_states' );
+
+		$this->start_controls_tab( 'filter_normal', [ 'label' => esc_html__( 'Normal', 'samanzavarian-widgets' ) ] );
 		$this->var_color( 'filter_color', esc_html__( 'Text', 'samanzavarian-widgets' ), '--szw-ftext' );
-		$this->var_color( 'filter_color_on', esc_html__( 'Active text', 'samanzavarian-widgets' ), '--szw-ftext-on' );
 		$this->var_color( 'count_bg', esc_html__( 'Count', 'samanzavarian-widgets' ), '--szw-count' );
 		$this->var_color( 'count_color', esc_html__( 'Count text', 'samanzavarian-widgets' ), '--szw-count-text' );
-		$this->var_color( 'count_bg_on', esc_html__( 'Active count', 'samanzavarian-widgets' ), '--szw-count-on' );
-		$this->var_color( 'count_color_on', esc_html__( 'Active count text', 'samanzavarian-widgets' ), '--szw-count-text-on' );
+		$this->end_controls_tab();
+
+		$this->start_controls_tab( 'filter_hover', [ 'label' => esc_html__( 'Hover', 'samanzavarian-widgets' ) ] );
+		$this->var_color( 'filter_hover_bg', esc_html__( 'Background', 'samanzavarian-widgets' ), '--szw-fhover' );
+		$this->var_color( 'filter_press_bg', esc_html__( 'Background while pressed', 'samanzavarian-widgets' ), '--szw-fpress' );
+		$this->var_color( 'filter_color_hover', esc_html__( 'Text', 'samanzavarian-widgets' ), '--szw-ftext-hover' );
+		$this->end_controls_tab();
+
+		$this->start_controls_tab( 'filter_active', [ 'label' => esc_html__( 'Selected', 'samanzavarian-widgets' ) ] );
+		$this->var_color( 'filter_thumb', esc_html__( 'Background (the sliding thumb)', 'samanzavarian-widgets' ), '--szw-thumb' );
+		$this->var_color( 'filter_color_on', esc_html__( 'Text', 'samanzavarian-widgets' ), '--szw-ftext-on' );
+		$this->var_color( 'count_bg_on', esc_html__( 'Count', 'samanzavarian-widgets' ), '--szw-count-on' );
+		$this->var_color( 'count_color_on', esc_html__( 'Count text', 'samanzavarian-widgets' ), '--szw-count-text-on' );
+		$this->end_controls_tab();
+
+		$this->end_controls_tabs();
 
 		$this->var_slider( 'filter_radius', esc_html__( 'Radius', 'samanzavarian-widgets' ), '--szw-fradius', Control_Helpers::ph( 14 ), [ 'min' => 0, 'max' => 30 ], [ 'px', 'custom' ], false, esc_html__( 'Of the track; the active background follows it.', 'samanzavarian-widgets' ) );
 		$this->var_slider( 'filter_height', esc_html__( 'Height', 'samanzavarian-widgets' ), '--szw-fh', Control_Helpers::ph( 36 ), [ 'min' => 24, 'max' => 64 ], [ 'px' ], true );

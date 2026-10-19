@@ -266,7 +266,7 @@
 				this.thumb.style.transition = 'none';
 			}
 			this.thumb.style.width = b.offsetWidth + 'px';
-			this.thumb.style.transform = 'translateX(' + b.offsetLeft + 'px)';
+			this.thumb.style.translate = b.offsetLeft + 'px 0'; // translate, not transform: a press scales it about its own centre
 			if ( instant ) {
 				void this.thumb.offsetWidth;
 				this.thumb.style.transition = '';
