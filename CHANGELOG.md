@@ -4,6 +4,49 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.16.0 — Highlights: "What I bring to a project"
+A new widget, **Highlights**: the design's deck of short cards with story
+segments, rethought before it was built.
+
+- **It moves like a deck, not a carousel.** The design drew sheets under the
+  card but slid it sideways like a scroller. Now:
+  - The leaving card slides away the way you travel.
+  - The next card's icon springs in with a slight turn, and its title and
+    text follow one after the other.
+  - The sheets underneath dip as if the top card was lifted off.
+  - The counter rolls (the old number up and out, the new one in from
+    below).
+  - It all runs on Web Animations, on the compositor.
+  - A first build overlapped the two texts in the middle of a change. Now
+    the new card arrives only once the old one is nearly gone, checked
+    frame by frame.
+- **It never jumps.** Every card sits in one grid cell, so the deck is as
+  tall as its longest card.
+- **Story segments.**
+  - The current one fills with the time left.
+  - On hover a segment thickens and names its card.
+  - Segments are tabs: arrows and Home/End choose a card, and focus follows.
+- **Auto-advance (5.2 s a card) that behaves.**
+  - It pauses under the pointer, while focused, off screen and in a
+    background tab, and runs no frames then.
+  - It stops for good once the visitor picks a card (button, segment,
+    swipe or key).
+  - A pause/play button beside the counter stops or restarts it
+    (WCAG 2.2.2). Its place is kept before it appears, so showing it moves
+    nothing (layout shift 0).
+- **Phones and readers.**
+  - A sideways swipe changes the card; the page still scrolls vertically.
+  - Screen readers hear only the changes the visitor makes.
+  - Reduced motion: nothing advances by itself, and a change is a short
+    crossfade.
+- **Editable:**
+  - Cards: icon, tile, title, text.
+  - Heading and its tag; counter; sheets.
+  - Auto-advance, its time and the pause button.
+  - Labels, width and position, and every colour.
+- In the Elementor editor it never advances by itself, so the card you are
+  editing stays put.
+
 ## 0.15.0 — Stats: the figure cards of Selected Work
 A new widget, **Stats**, from the prototype approved by the site owner.
 

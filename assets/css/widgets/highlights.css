@@ -1,0 +1,101 @@
+/* =====================================================================
+   Highlights — "What I bring to a project". Markup: Widgets/Highlights.php;
+   behaviour: js/highlights.js. Style controls write the custom properties
+   on .sz-hl; the defaults below are the design.
+   ===================================================================== */
+
+.sz-hl{
+  --szh-max:400px; --szh-radius:28px; --szh-tile:44px; --szh-dur:5200ms;
+  --szh-bg:var(--sz-card); --szh-ink:var(--sz-ink); --szh-text:var(--sz-t2); --szh-head:var(--sz-t3);
+  --szh-seg:#E3E6EA; --szh-seg-on:var(--sz-navy); --szh-btn:var(--sz-fill); --szh-btn-hover:#E6E9ED; --szh-btn-icon:var(--sz-ink);
+  width:100%;max-width:var(--szh-max);margin-left:auto;margin-right:auto;min-width:0;
+}
+
+/* ---------- heading row: the title, the counter, pause ---------- */
+.sz-hl__top{display:flex;align-items:center;gap:8px;min-height:36px;padding:0 6px 10px} /* 26px row + 10px: the pause button's height, before it shows */
+.sz-hl .sz-hl__head{flex:1;min-width:0;margin:0;padding:0;font-family:inherit;font-size:13px;font-weight:500;line-height:1.3;letter-spacing:normal;text-transform:none;color:var(--szh-head)}
+.sz-hl__n{flex:none;display:inline-flex;align-items:baseline;gap:.25em;font-size:12px;font-weight:600;line-height:1.3;color:var(--szh-head);font-variant-numeric:tabular-nums}
+/* the current number rolls: out above, in from below */
+.sz-hl__roll{position:relative;display:inline-grid;height:1.3em;overflow:hidden;vertical-align:bottom;text-align:right}
+.sz-hl__roll > span{grid-area:1/1}
+
+/* pause / play: as quiet as the counter until it is wanted */
+.sz-hl .sz-hl__top .sz-hl__pp,.sz-hl .sz-hl__top .sz-hl__pp:is(:hover,:focus,:active){
+  flex:none;display:grid;place-items:center;width:26px;height:26px;min-height:0;margin:0 -4px 0 0;padding:0;border:0;border-radius:50%;
+  background:transparent;box-shadow:none;color:var(--szh-head);cursor:pointer;transition:background-color .2s,color .2s,transform .3s var(--sz-spring)}
+/* its place is kept until the script shows it, so showing it moves nothing */
+.sz-hl .sz-hl__top .sz-hl__pp[hidden]{display:grid;visibility:hidden}
+@media (hover:hover){.sz-hl .sz-hl__top .sz-hl__pp:hover{background:var(--szh-btn);color:var(--szh-ink)}}
+.sz-hl .sz-hl__top .sz-hl__pp:active{transform:scale(.88)}
+.sz-hl__pp svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.sz-hl__pp-play{display:none;fill:currentColor;stroke-width:1.6}
+.sz-hl__pp[aria-pressed="true"] .sz-hl__pp-pause{display:none}
+.sz-hl__pp[aria-pressed="true"] .sz-hl__pp-play{display:inline}
+
+/* ---------- the deck, and the sheets under it ---------- */
+.sz-hl__deck{position:relative}
+.sz-hl.has-sheets .sz-hl__deck{margin-bottom:13px}
+.sz-hl.has-sheets .sz-hl__deck::before,.sz-hl.has-sheets .sz-hl__deck::after{content:"";position:absolute;left:14px;right:14px;bottom:-7px;height:20px;border-radius:0 0 22px 22px;background:var(--szh-bg);box-shadow:var(--sz-s1);opacity:.75;transform-origin:50% 0}
+.sz-hl.has-sheets .sz-hl__deck::after{left:28px;right:28px;bottom:-13px;opacity:.45}
+/* a card lifted off the top: the sheets come up a little, then settle */
+.sz-hl__deck.is-dip::before{animation:szh-dip .55s var(--sz-ease)}
+.sz-hl__deck.is-dip::after{animation:szh-dip .6s var(--sz-ease) .04s}
+@keyframes szh-dip{40%{transform:translateY(-5px) scaleX(1.03)}100%{transform:none}}
+
+.sz-hl__card{position:relative;z-index:1;min-width:0;border-radius:var(--szh-radius);background:var(--szh-bg);box-shadow:var(--sz-s2),inset 0 0 0 1px rgba(13,27,42,.04);overflow:hidden;container-type:inline-size}
+.sz-hl__card:has(.sz-hl__slides:focus-visible){box-shadow:var(--sz-s2),0 0 0 2.5px rgba(255,107,44,.85)}
+
+/* every card in one cell: the deck is as tall as the longest, and never jumps */
+.sz-hl__slides{display:grid;touch-action:pan-y}
+.sz-hl__slides:focus-visible{outline:none}
+.sz-hl__slide{grid-area:1/1;display:flex;align-items:flex-start;gap:14px;min-width:0;min-height:104px;padding:20px 20px 14px;visibility:hidden}
+.sz-hl__slide.is-on,.sz-hl__slide.is-out{visibility:visible}
+.sz-hl__tile{width:var(--szh-tile);height:var(--szh-tile);border-radius:29%;font-size:calc(var(--szh-tile) * .45)}
+.sz-hl__body{min-width:0}
+.sz-hl__title{display:block;font-size:16px;font-weight:600;line-height:1.3;letter-spacing:-.015em;color:var(--szh-ink)}
+.sz-hl .sz-hl__text{margin:4px 0 0;padding:0;font-size:14px;line-height:1.5;color:var(--szh-text)}
+
+/* ---------- progress segments and buttons ---------- */
+.sz-hl__foot{display:flex;align-items:center;gap:6px;padding:0 12px 12px 20px}
+.sz-hl__segs{flex:1;display:flex;gap:4px;min-width:0;margin-right:6px}
+.sz-hl .sz-hl__segs .sz-hl__seg,.sz-hl .sz-hl__segs .sz-hl__seg:is(:hover,:focus,:active){
+  position:relative;flex:1;min-width:0;height:18px;min-height:0;margin:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;cursor:pointer}
+.sz-hl__seg i{position:absolute;left:0;right:0;top:7px;height:4px;border-radius:9px;background:var(--szh-seg);overflow:hidden;transition:top .2s,height .2s}
+.sz-hl__seg i::after{content:"";position:absolute;inset:0;border-radius:inherit;background:var(--szh-seg-on);transform:scaleX(0);transform-origin:left}
+.sz-hl__seg.is-done i::after{transform:scaleX(1)}
+.sz-hl__seg[aria-selected="true"] i::after{transform:scaleX(var(--p,1))}
+.sz-hl .sz-hl__segs .sz-hl__seg:focus-visible{outline:none}
+.sz-hl__seg:focus-visible i{box-shadow:0 0 0 2px rgba(255,107,44,.85)}
+/* a segment names its card */
+.sz-hl__tip{position:absolute;left:50%;bottom:calc(100% + 6px);z-index:3;padding:5px 9px;border-radius:8px;background:var(--sz-navy);font-size:11.5px;font-weight:600;line-height:1.2;white-space:nowrap;color:#fff;
+  opacity:0;transform:translate(-50%,4px);transition:opacity .15s,transform .25s var(--sz-spring);pointer-events:none}
+.sz-hl__seg:first-child .sz-hl__tip{left:0;transform:translate(0,4px)}
+.sz-hl__seg:last-child .sz-hl__tip{left:auto;right:0;transform:translate(0,4px)}
+.sz-hl__seg:focus-visible .sz-hl__tip{opacity:1;transform:translate(-50%,0)}
+.sz-hl__seg:first-child:focus-visible .sz-hl__tip,.sz-hl__seg:last-child:focus-visible .sz-hl__tip{transform:none}
+@media (hover:hover){
+  .sz-hl__seg:hover i{top:6px;height:6px}
+  .sz-hl__seg:hover .sz-hl__tip{opacity:1;transform:translate(-50%,0)}
+  .sz-hl__seg:first-child:hover .sz-hl__tip,.sz-hl__seg:last-child:hover .sz-hl__tip{transform:none}
+}
+
+.sz-hl .sz-hl__foot .sz-hl__btn,.sz-hl .sz-hl__foot .sz-hl__btn:is(:hover,:focus,:active){
+  flex:none;display:grid;place-items:center;width:34px;height:34px;min-height:0;margin:0;padding:0;border:0;border-radius:50%;
+  background:var(--szh-btn);box-shadow:none;color:var(--szh-btn-icon);cursor:pointer;transition:background-color .2s,transform .3s var(--sz-spring)}
+@media (hover:hover){.sz-hl .sz-hl__foot .sz-hl__btn:hover{background:var(--szh-btn-hover)}}
+.sz-hl .sz-hl__foot .sz-hl__btn:active{transform:scale(.9)}
+.sz-hl .sz-hl__foot .sz-hl__btn:focus-visible,.sz-hl .sz-hl__top .sz-hl__pp:focus-visible{outline:2.5px solid rgba(255,107,44,.85);outline-offset:2px}
+.sz-hl__btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+
+/* narrow decks (phones) */
+@container (max-width:360px){
+  .sz-hl__slide{min-height:0;padding:16px 16px 12px;gap:12px}
+  .sz-hl__title{font-size:15px}
+  .sz-hl .sz-hl__text{font-size:13.5px}
+  .sz-hl__foot{padding:0 10px 10px 16px}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .sz-hl__deck.is-dip::before,.sz-hl__deck.is-dip::after{animation:none}
+  .sz-hl__seg i,.sz-hl__tip{transition:none}
+}
