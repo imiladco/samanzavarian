@@ -16,4 +16,5 @@ enum FieldType: string
     case Toggle   = 'toggle';
     case Select   = 'select';
     case Textarea = 'textarea';
+    case Chats    = 'chats';      // Telegram chats: a list, kept in its own option
 }

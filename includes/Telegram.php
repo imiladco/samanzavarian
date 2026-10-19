@@ -8,15 +8,17 @@ defined( 'ABSPATH' ) || exit;
  *
  * A bot of your own (made with @BotFather) sends each request to your chat:
  * who, what they need, timeline and budget, the message, and buttons to
- * open it in WordPress or answer on WhatsApp. Requests → Settings holds the
- * bot's token and your chat; "Find my chat" reads it from the bot after you
- * have sent it a message, and "Send a test" proves the connection.
+ * open it in WordPress or answer on WhatsApp. One bot, as many chats as you
+ * like: yourself, a teammate, a group or a channel, each can be paused.
+ * Settings holds the bot's token and the chats; "Find chats" lists who has
+ * written to the bot, and each chat has its own test.
  *
  * Sending happens after the visitor has their answer (the response is
  * flushed first where the server allows), so a slow Telegram never slows
  * the form. A request is stored before anything is sent; if Telegram does
  * not take it, it is tried again a few times, minutes apart, and the
- * request shows what happened.
+ * request shows what happened, chat by chat. A retry only goes to the chats
+ * that missed it, so nobody gets the same request twice.
  */
 final class Telegram {
 
@@ -41,7 +43,7 @@ final class Telegram {
 	}
 
 	/** Panel setting names for the keys used here. */
-	private const KIT_KEYS = [ 'token' => 'tg_token', 'chat' => 'tg_chat', 'retention' => 'retention', 'spam_days' => 'spam_days' ];
+	private const KIT_KEYS = [ 'token' => 'tg_token', 'retention' => 'retention', 'spam_days' => 'spam_days' ];
 
 	/** @return mixed */
 	public static function option( string $key, $default = '' ) {
@@ -57,7 +59,41 @@ final class Telegram {
 		if ( Leads::kit() && ! Admin\Settings\Settings::bool( 'tg_enabled' ) ) {
 			return false;
 		}
-		return '' !== (string) self::option( 'token' ) && '' !== (string) self::option( 'chat' );
+		return '' !== (string) self::option( 'token' ) && [] !== self::chats();
+	}
+
+	/**
+	 * The chats that get each request (paused ones left out).
+	 *
+	 * @return array<string,string> chat id => name (may be empty)
+	 */
+	public static function chats(): array {
+		$out = [];
+		if ( Leads::kit() ) {
+			foreach ( Admin\Settings\Settings::recipients() as $c ) {
+				if ( $c['on'] ) {
+					$out[ $c['id'] ] = $c['name'];
+				}
+			}
+			return $out;
+		}
+		// the plain settings page: one field, ids separated by commas
+		foreach ( preg_split( '/[\s,]+/', (string) self::option( 'chat' ) ) ?: [] as $c ) {
+			if ( self::valid_chat( $c ) ) {
+				$out[ $c ] = '';
+			}
+		}
+		return $out;
+	}
+
+	/** A numeric id (people, groups: -100…) or a channel's @username. */
+	public static function valid_chat( string $c ): bool {
+		return (bool) preg_match( '/^-?\d{3,20}$|^@[A-Za-z0-9_]{4,32}$/', $c );
+	}
+
+	/** "Saman", or the id when the chat has no name. */
+	public static function chat_label( string $id, string $name = '' ): string {
+		return '' !== $name ? $name : $id;
 	}
 
 	/* =================================================================
@@ -86,39 +122,68 @@ final class Telegram {
 		self::$queue = [];
 	}
 
-	/** Send one request; on failure, try again later (a few times). */
-	public static function send( int $id ): bool {
+	/**
+	 * Send one request to every chat; on failure, try again later (a few
+	 * times), only to the chats that missed it.
+	 *
+	 * @param bool $again from "Send again": every chat, even those that had it
+	 */
+	public static function send( int $id, bool $again = false ): bool {
 		$d = Leads::get( $id );
 		if ( ! $d || ! self::ready() ) {
 			return false;
 		}
-		$tg   = (array) get_post_meta( $id, self::META, true );
-		$try  = (int) ( $tg['tries'] ?? 0 ) + 1;
-		$args = [
-			'chat_id'                  => self::option( 'chat' ),
-			'text'                     => self::message( $id, $d ),
-			'parse_mode'               => 'HTML',
-			'disable_web_page_preview' => true,
-			'reply_markup'             => wp_json_encode( [ 'inline_keyboard' => [ self::buttons( $id, $d ) ] ] ),
-		];
+		$tg    = (array) get_post_meta( $id, self::META, true );
+		$try   = $again ? 1 : (int) ( $tg['tries'] ?? 0 ) + 1;
+		$had   = $again ? [] : (array) ( $tg['chats'] ?? [] );
+		$chats = self::chats();
+		$text  = self::message( $id, $d );
+		$keys  = wp_json_encode( [ 'inline_keyboard' => [ self::buttons( $id, $d ) ] ] );
 
-		$r = self::api( 'sendMessage', $args );
-		// a button Telegram will not take (a local admin address): the message alone still matters
-		if ( ! $r['ok'] && false !== stripos( $r['error'], 'button' ) ) {
-			unset( $args['reply_markup'] );
-			$r = self::api( 'sendMessage', $args );
+		$state = [];
+		foreach ( $chats as $chat => $name ) {
+			$chat = (string) $chat;
+			if ( ! empty( $had[ $chat ]['ok'] ) ) {
+				$state[ $chat ] = $had[ $chat ]; // already has it
+				continue;
+			}
+			$args = [ 'chat_id' => $chat, 'text' => $text, 'parse_mode' => 'HTML', 'disable_web_page_preview' => true, 'reply_markup' => $keys ];
+			$r    = self::api( 'sendMessage', $args );
+			// a button Telegram will not take (a local admin address): the message alone still matters
+			if ( ! $r['ok'] && false !== stripos( $r['error'], 'button' ) ) {
+				unset( $args['reply_markup'] );
+				$r = self::api( 'sendMessage', $args );
+			}
+			$state[ $chat ] = $r['ok'] ? [ 'ok' => true, 'name' => $name, 'at' => time() ] : [ 'ok' => false, 'name' => $name, 'error' => $r['error'], 'at' => time() ];
 		}
 
-		if ( $r['ok'] ) {
-			update_post_meta( $id, self::META, [ 'state' => 'sent', 'tries' => $try, 'at' => time() ] );
-			update_option( 'szw_tg_last', [ 'ok' => true, 'at' => time() ], false );
-			Leads::log( $id, __( 'Announced on Telegram', 'samanzavarian-widgets' ) );
+		$sent   = array_filter( $state, static fn( $c ) => ! empty( $c['ok'] ) );
+		$missed = array_diff_key( $state, $sent );
+		$label  = static fn( array $list ): string => implode( ', ', array_map( static fn( $k, $c ) => self::chat_label( (string) $k, (string) ( $c['name'] ?? '' ) ), array_keys( $list ), $list ) );
+		$error  = $missed ? (string) reset( $missed )['error'] : '';
+
+		update_post_meta(
+			$id,
+			self::META,
+			[
+				'state' => ! $missed ? 'sent' : ( $sent ? 'partial' : 'failed' ),
+				'tries' => $try,
+				'at'    => time(),
+				'error' => $error,
+				'chats' => $state,
+			]
+		);
+		update_option( 'szw_tg_last', ! $missed ? [ 'ok' => true, 'at' => time() ] : [ 'ok' => false, 'at' => time(), 'error' => $error, 'chat' => $label( $missed ) ], false );
+
+		$fresh = array_diff_key( $sent, array_filter( $had, static fn( $c ) => ! empty( $c['ok'] ) ) );
+		if ( ! $missed ) {
+			Leads::log( $id, count( $state ) > 1 && count( $fresh ) === count( $state ) ? sprintf( /* translators: %d: chats */ __( 'Announced on Telegram, in %d chats', 'samanzavarian-widgets' ), count( $state ) ) : ( count( $fresh ) < count( $state ) ? sprintf( /* translators: %s: chat names */ __( 'Announced on Telegram: %s', 'samanzavarian-widgets' ), $label( $fresh ) ) : __( 'Announced on Telegram', 'samanzavarian-widgets' ) ) );
 			return true;
 		}
-
-		update_post_meta( $id, self::META, [ 'state' => 'failed', 'tries' => $try, 'error' => $r['error'], 'at' => time() ] );
-		update_option( 'szw_tg_last', [ 'ok' => false, 'at' => time(), 'error' => $r['error'] ], false );
-		Leads::log( $id, sprintf( /* translators: %s: error */ __( 'Telegram did not take it: %s', 'samanzavarian-widgets' ), $r['error'] ), 'error' );
+		if ( $fresh ) {
+			Leads::log( $id, sprintf( /* translators: %s: chat names */ __( 'Announced on Telegram: %s', 'samanzavarian-widgets' ), $label( $fresh ) ) );
+		}
+		Leads::log( $id, sprintf( /* translators: 1: chat names, 2: error */ __( 'Telegram did not reach %1$s: %2$s', 'samanzavarian-widgets' ), $label( $missed ), $error ), 'error' );
 		if ( $try < self::TRIES && ! wp_next_scheduled( self::RETRY, [ $id ] ) ) {
 			wp_schedule_single_event( time() + 120 * ( 2 ** ( $try - 1 ) ), self::RETRY, [ $id ] ); // 2, 4, 8 minutes
 		}
@@ -156,6 +221,37 @@ final class Telegram {
 			$b[] = [ 'text' => 'WhatsApp', 'url' => 'https://wa.me/' . Leads::wa_digits( (string) $d['phone'] ) ];
 		}
 		return $b;
+	}
+
+	/**
+	 * Telegram's own error, said as what to do about it.
+	 */
+	public static function explain( string $error ): string {
+		$e = strtolower( $error );
+		switch ( true ) {
+			case '' === $e:
+				return '';
+			case 'no token' === $e:
+				return __( 'There is no bot token yet.', 'samanzavarian-widgets' );
+			case false !== strpos( $e, 'unauthorized' ) || false !== strpos( $e, 'not found' ) && false === strpos( $e, 'chat' ):
+				return __( 'Telegram does not know this bot token. Copy it again from @BotFather.', 'samanzavarian-widgets' );
+			case false !== strpos( $e, 'chat not found' ):
+				return __( 'Telegram cannot find this chat. A person has to press Start in the bot first; a group or channel needs the bot added to it.', 'samanzavarian-widgets' );
+			case false !== strpos( $e, 'blocked by the user' ):
+				return __( 'This person blocked the bot; they can unblock it in Telegram.', 'samanzavarian-widgets' );
+			case false !== strpos( $e, 'kicked' ) || false !== strpos( $e, 'not a member' ):
+				return __( 'The bot was removed from this group or channel; add it back.', 'samanzavarian-widgets' );
+			case false !== strpos( $e, 'not enough rights' ) || false !== strpos( $e, 'administrator' ):
+				return __( 'The bot may not post here; make it an admin of the channel or group.', 'samanzavarian-widgets' );
+			case false !== strpos( $e, 'webhook' ):
+				return __( 'This bot is connected to another service (a webhook), so it cannot list its chats. Add the chat by its id instead.', 'samanzavarian-widgets' );
+			case false !== strpos( $e, 'too many requests' ):
+				return __( 'Telegram asked to slow down; it will be tried again in a few minutes.', 'samanzavarian-widgets' );
+			case false !== strpos( $e, 'curl' ) || false !== strpos( $e, 'timed out' ) || false !== strpos( $e, 'resolve' ) || false !== strpos( $e, 'connect' ):
+				return sprintf( /* translators: %s: error */ __( 'Your server could not reach Telegram (%s). If it keeps happening, ask your host.', 'samanzavarian-widgets' ), $error );
+			default:
+				return sprintf( /* translators: %s: error */ __( 'Telegram said: %s', 'samanzavarian-widgets' ), $error );
+		}
 	}
 
 	/**
@@ -200,7 +296,7 @@ final class Telegram {
 		return [
 			// the token is never printed back; an empty field keeps the saved one
 			'token'     => '' === $tok ? (string) ( $old['token'] ?? '' ) : ( preg_match( '/^\d+:[A-Za-z0-9_-]{20,}$/', $tok ) ? $tok : (string) ( $old['token'] ?? '' ) ),
-			'chat'      => preg_match( '/^-?\d+$|^@[A-Za-z0-9_]{4,}$/', trim( (string) ( $in['chat'] ?? '' ) ) ) ? trim( (string) $in['chat'] ) : '',
+			'chat'      => implode( ', ', array_filter( preg_split( '/[\s,]+/', (string) ( $in['chat'] ?? '' ) ) ?: [], [ self::class, 'valid_chat' ] ) ),
 			'retention' => max( 0, min( 3650, (int) ( $in['retention'] ?? 0 ) ) ),
 		];
 	}
@@ -244,7 +340,7 @@ final class Telegram {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_die( esc_html__( 'Not allowed.', 'samanzavarian-widgets' ) );
 		}
-		$r = self::api( 'sendMessage', [ 'chat_id' => self::option( 'chat' ), 'text' => '✅ ' . sprintf( /* translators: %s: site name */ __( '%s is connected. New project requests will arrive here.', 'samanzavarian-widgets' ), get_bloginfo( 'name' ) ) ] );
+		$r = self::api( 'sendMessage', [ 'chat_id' => (string) array_key_first( self::chats() ), 'text' => '✅ ' . sprintf( /* translators: %s: site name */ __( '%s is connected. New project requests will arrive here.', 'samanzavarian-widgets' ), get_bloginfo( 'name' ) ) ] );
 		if ( $r['ok'] ) {
 			self::back( __( 'Sent. Check Telegram.', 'samanzavarian-widgets' ) );
 		}
@@ -282,8 +378,8 @@ final class Telegram {
 						</td>
 					</tr>
 					<tr>
-						<th scope="row"><label for="sz-tg-chat"><?php esc_html_e( 'Chat', 'samanzavarian-widgets' ); ?></label></th>
-						<td><input id="sz-tg-chat" class="regular-text code" name="<?php echo esc_attr( self::OPTION ); ?>[chat]" value="<?php echo esc_attr( $chat ); ?>" placeholder="<?php esc_attr_e( 'Filled by "Find my chat"', 'samanzavarian-widgets' ); ?>"></td>
+						<th scope="row"><label for="sz-tg-chat"><?php esc_html_e( 'Chats', 'samanzavarian-widgets' ); ?></label></th>
+						<td><input id="sz-tg-chat" class="regular-text code" name="<?php echo esc_attr( self::OPTION ); ?>[chat]" value="<?php echo esc_attr( $chat ); ?>" placeholder="<?php esc_attr_e( 'Filled by "Find my chat"', 'samanzavarian-widgets' ); ?>"><p class="description"><?php esc_html_e( 'More than one: separate the ids with commas.', 'samanzavarian-widgets' ); ?></p></td>
 					</tr>
 					<tr>
 						<th scope="row"><label for="sz-retention"><?php esc_html_e( 'Delete archived requests after', 'samanzavarian-widgets' ); ?></label></th>

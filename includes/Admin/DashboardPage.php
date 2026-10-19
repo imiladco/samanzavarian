@@ -120,10 +120,12 @@ final class DashboardPage
             $issues[] = ['warn', 'Telegram notifications are off', 'Requests only wait here; check in so nothing is missed.', $tg, 'Turn on'];
         } elseif (Settings::text('tg_token') === '') {
             $issues[] = ['error', 'Telegram is not connected', 'Until the bot token is added, new requests are not announced on Telegram.', $tg, 'Connect'];
-        } elseif (Settings::text('tg_chat') === '') {
-            $issues[] = ['error', 'No Telegram chat yet', 'Press Start in your bot on Telegram, then "Find my chat" in Settings.', $tg, 'Find my chat'];
+        } elseif (Settings::recipients() === []) {
+            $issues[] = ['error', 'No Telegram chat yet', 'Press Start in your bot on Telegram, then "Find chats" in Settings.', $tg, 'Find chats'];
+        } elseif (!array_filter(Settings::recipients(), static fn ($c) => $c['on'])) {
+            $issues[] = ['warn', 'Every Telegram chat is paused', 'New requests are not sent anywhere; turn a chat back on.', $tg, 'Chats'];
         } elseif (is_array($last) && isset($last['ok']) && !$last['ok']) {
-            $issues[] = ['error', 'The last Telegram message did not arrive', 'Telegram said: ' . ($last['error'] ?? '') . '. The request is saved and will be tried again.', $status, 'System status'];
+            $issues[] = ['error', 'The last Telegram message did not arrive' . (!empty($last['chat']) ? ' in ' . $last['chat'] : ''), \Samanzavarian_Widgets\Telegram::explain((string) ($last['error'] ?? '')) . ' The request is saved and will be tried again.', $status, 'System status'];
         }
 
         if (defined('DISABLE_WP_CRON') && DISABLE_WP_CRON) {

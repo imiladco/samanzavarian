@@ -8,63 +8,154 @@
 .sz-pf fieldset{min-width:0;margin:0;padding:0;border:0}
 
 /* ---------- questions ---------- */
-.sz-pf__lbl{display:flex;align-items:baseline;gap:8px;margin:0 0 10px 4px;padding:0;font-size:13px;font-weight:600;line-height:1.3;color:var(--sz-ink)}
-.sz-pf__lbl span{font-weight:500;color:var(--sz-t3)}
+.sz-pf__lbl{display:flex;align-items:baseline;gap:8px;margin:0 0 10px 4px;padding:0;font-size:14px;font-weight:600;line-height:1.3;color:var(--sz-ink)}
+.sz-pf__lbl > span{font-weight:500;color:var(--sz-t3)}
 
-/* chips: real checkboxes / radios, so they work with a keyboard and without script */
-.sz-pf__chips{display:flex;flex-wrap:wrap;gap:8px}
+/* ---------- what they need: a tray of tiles ----------
+   Each tile is a real checkbox (keyboard, no script needed). Picked, it lifts
+   out of the tray as a white card: the icon warms to orange, a check pops on
+   its corner. Labels sit in a two-line box, so one- and two-line names keep
+   their icons on one line. */
+.sz-pf__lbl.is-needs{width:100%;flex-wrap:wrap;align-items:center;row-gap:6px;margin-bottom:12px}
+.sz-pf__lbl .sz-pf__picked{display:inline-block;margin-left:auto;height:26px;margin-block:-4px;padding:0 10px;border-radius:99px;background:var(--sz-peach);
+  font-size:12.5px;font-weight:600;line-height:26px;color:#B7461A;white-space:pre;font-variant-numeric:tabular-nums;
+  opacity:0;transform:scale(.85);transform-origin:right center;transition:opacity .25s,transform .4s var(--sz-spring)}
+.sz-pf__picked.is-on{opacity:1;transform:none}
+.sz-pf__num{position:relative;display:inline-block;overflow:hidden;height:1.2em;line-height:1.2em;vertical-align:-.2em;text-align:center}
+.sz-pf__num i{display:block;font-style:normal}
+.sz-pf__num.is-up i{animation:szf-roll-up .38s var(--sz-ease) both}
+.sz-pf__num.is-down i{animation:szf-roll-down .38s var(--sz-ease) both}
+@keyframes szf-roll-up{from{transform:translateY(100%);opacity:0}}
+@keyframes szf-roll-down{from{transform:translateY(-100%);opacity:0}}
+
+.sz-pf__tray{display:grid;grid-template-columns:repeat(var(--n,4),minmax(0,1fr));gap:4px;padding:5px;border-radius:22px;background:var(--sz-fill)}
+.sz-pf__tile{position:relative;display:block;min-width:0;margin:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.sz-pf__tile input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer;z-index:1}
+.sz-pf__card{position:relative;display:grid;justify-items:center;align-content:start;gap:10px;height:100%;padding:16px 4px 14px;border-radius:18px;text-align:center;
+  transition:background-color .3s,box-shadow .35s,transform .45s var(--sz-spring)}
+.sz-pf__ico{display:grid;place-items:center;width:46px;height:46px;border-radius:14px;background:#fff;color:var(--sz-t2);font-size:21px;
+  box-shadow:0 1px 1px rgba(13,27,42,.04),0 3px 8px -3px rgba(13,27,42,.12);
+  transition:background-color .3s,color .3s,box-shadow .3s,transform .45s var(--sz-spring)}
+.sz-pf__ico svg,.sz-pf__ico i{width:1em;height:1em}
+.sz-pf__ico svg:not(.szi){fill:currentColor}
+.sz-pf__name{display:grid;align-items:center;min-height:2.5em;max-width:100%;font-size:clamp(12.5px,2.6cqi,14px);font-weight:600;line-height:1.25;color:var(--sz-t2);text-wrap:balance;overflow-wrap:anywhere;transition:color .25s}
+.sz-pf__badge{position:absolute;top:8px;right:8px;width:20px;height:20px;opacity:0;transform:scale(.3);transition:opacity .15s,transform .35s var(--sz-spring)}
+.sz-pf__badge circle{fill:var(--sz-navy)}
+.sz-pf__badge path{fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:12;stroke-dashoffset:12;transition:stroke-dashoffset .3s .12s var(--sz-ease)}
+
+@media (hover:hover){
+  .sz-pf__tile:hover .sz-pf__card{background:rgba(255,255,255,.55)}
+  .sz-pf__tile:hover .sz-pf__ico{transform:translateY(-2px);color:var(--sz-ink)}
+}
+.sz-pf__tile:active .sz-pf__card{transform:scale(.96)}
+.sz-pf__tile input:focus-visible + .sz-pf__card{outline:2.5px solid rgba(255,107,44,.85);outline-offset:-2px}
+
+.sz-pf__tile input:checked + .sz-pf__card{background:#fff;box-shadow:0 1px 2px rgba(13,27,42,.05),0 10px 22px -8px rgba(13,27,42,.2)}
+.sz-pf__tile input:checked + .sz-pf__card .sz-pf__ico{background:var(--sz-peach);color:var(--sz-orange);box-shadow:none}
+.sz-pf__tile input:checked + .sz-pf__card .sz-pf__name{color:var(--sz-ink)}
+.sz-pf__tile input:checked + .sz-pf__card .sz-pf__badge{opacity:1;transform:none}
+.sz-pf__tile input:checked + .sz-pf__card .sz-pf__badge path{stroke-dashoffset:0}
+/* the moment of picking: the card settles, the icon gives a little nod */
+.sz-pf__tile.is-pop .sz-pf__card{animation:szf-lift .5s var(--sz-spring)}
+.sz-pf__tile.is-pop .sz-pf__ico svg,.sz-pf__tile.is-pop .sz-pf__ico i{animation:szf-nod .55s var(--sz-ease)}
+@keyframes szf-lift{0%{transform:scale(.94)}}
+@keyframes szf-nod{30%{transform:rotate(-14deg) scale(1.15)}65%{transform:rotate(6deg)}}
+
+/* narrow: two by two, the icon beside the words */
+@container (max-width:520px){
+  .sz-pf__tray{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sz-pf__card{grid-template-columns:auto minmax(0,1fr);justify-items:start;align-items:center;gap:9px;padding:10px 7px 10px 9px;text-align:left}
+  .sz-pf__ico{width:38px;height:38px;border-radius:11px;font-size:18px}
+  .sz-pf__name{font-size:13px;letter-spacing:-.01em}
+  .sz-pf__badge{top:5px;right:5px;width:17px;height:17px}
+}
+@container (max-width:280px){.sz-pf__tray{grid-template-columns:minmax(0,1fr)}}
+
+/* ---------- small chips: timing and budget ---------- */
+.sz-pf__chips{display:flex;flex-wrap:wrap;gap:6px}
 .sz-pf__chip{position:relative;display:inline-flex;margin:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .sz-pf__chip input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
-.sz-pf__chip span{display:inline-flex;align-items:center;gap:0;height:42px;padding:0 16px;border-radius:99px;background:var(--sz-fill);
-  font-size:14px;font-weight:600;line-height:1;color:var(--sz-t2);white-space:nowrap;
-  transition:background-color .2s,color .2s,box-shadow .25s,transform .35s var(--sz-spring),gap .3s var(--sz-spring),padding .3s var(--sz-spring)}
-.sz-pf__chip svg{width:0;height:15px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:22;stroke-dashoffset:22;transition:width .3s var(--sz-spring),stroke-dashoffset .35s .05s var(--sz-ease)}
-@media (hover:hover){.sz-pf__chip:hover span{background:#E8EBEE;color:var(--sz-ink)}}
-.sz-pf__chip:active span{transform:scale(.96)}
-.sz-pf__chip input:checked + span{background:var(--sz-navy);color:#fff;gap:7px;padding-left:13px;box-shadow:0 6px 14px -6px rgba(13,27,42,.5)}
-.sz-pf__chip input:checked + span svg{width:15px;stroke-dashoffset:0;color:var(--sz-orange)}
+.sz-pf__chip span{display:inline-flex;align-items:center;height:36px;padding:0 14px;border-radius:99px;background:#fff;box-shadow:inset 0 0 0 1px #E2E5E9;
+  font-size:13.5px;font-weight:500;line-height:1;color:var(--sz-t2);white-space:nowrap;
+  transition:background-color .2s,color .2s,box-shadow .25s,transform .35s var(--sz-spring)}
+@media (hover:hover){.sz-pf__chip:hover span{color:var(--sz-ink);box-shadow:inset 0 0 0 1px #C9CED5}}
+.sz-pf__chip:active span{transform:scale(.95)}
+.sz-pf__chip input:checked + span{background:var(--sz-navy);color:#fff;box-shadow:0 6px 14px -6px rgba(13,27,42,.5);font-weight:600}
 .sz-pf__chip input:focus-visible + span{outline:2.5px solid rgba(255,107,44,.85);outline-offset:2px}
-/* timeline and budget: lighter, a ring when picked */
-.sz-pf__chips.is-small{gap:6px}
-.sz-pf__chips.is-small .sz-pf__chip span{height:34px;padding:0 13px;font-size:13px;font-weight:500}
-.sz-pf__chips.is-small .sz-pf__chip input:checked + span{background:#fff;color:var(--sz-ink);padding-left:13px;box-shadow:inset 0 0 0 1.5px var(--sz-navy),0 4px 10px -6px rgba(13,27,42,.4)}
-.sz-pf__plan{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:16px 20px;margin-top:2px}
-@container (max-width:560px){.sz-pf__plan{grid-template-columns:minmax(0,1fr)}}
-/* narrow: the needs in two even columns. Tidier, and a late web font cannot re-wrap them (a layout shift) */
-@container (max-width:480px){
-  .sz-pf__chips:not(.is-small){display:grid;grid-template-columns:1fr 1fr}
-  .sz-pf__chips:not(.is-small) .sz-pf__chip span{width:100%;justify-content:center}
-}
 
 /* ---------- fields (the design's grouped, floating-label inputs) ---------- */
-.sz-pf__set{border-radius:18px;background:var(--sz-fill);overflow:hidden}
+.sz-pf__set{border-radius:20px;background:var(--sz-fill);overflow:hidden}
+.sz-pf__set.is-white{background:#fff;box-shadow:inset 0 0 0 1px #E2E5E9}
 .sz-pf__f{position:relative;display:block;margin:0;transition:background-color .2s,box-shadow .2s}
 .sz-pf__f + .sz-pf__f{border-top:1px solid #E2E5E9}
-.sz-pf .sz-pf__f input,.sz-pf .sz-pf__f textarea{display:block;width:100%;min-height:0;margin:0;padding:26px 16px 10px;border:0;border-radius:0;background:transparent;box-shadow:none;
+.sz-pf .sz-pf__f input,.sz-pf .sz-pf__f textarea{display:block;width:100%;min-height:0;margin:0;padding:28px 44px 12px 18px;border:0;border-radius:0;background:transparent;box-shadow:none;
   font:inherit;font-size:16px;line-height:1.4;color:var(--sz-ink);outline:none}
-.sz-pf .sz-pf__f textarea{min-height:132px;resize:vertical;line-height:1.5;padding-bottom:26px}
-.sz-pf__f > span{position:absolute;left:16px;right:16px;top:17px;font-size:16px;line-height:1.3;color:var(--sz-t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;
+.sz-pf .sz-pf__f textarea{min-height:148px;resize:vertical;line-height:1.5;padding:30px 18px 30px}
+.sz-pf__f > span{position:absolute;left:18px;right:44px;top:20px;font-size:16px;line-height:1.3;color:var(--sz-t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;
   transition:top .2s var(--sz-ease),font-size .2s var(--sz-ease),color .2s}
 .sz-pf__f > span em{font-style:normal;color:#9AA1AA}
-.sz-pf__f :is(input,textarea):is(:focus,:not(:placeholder-shown)) + span{top:8px;font-size:12px;color:var(--sz-t2)}
+.sz-pf__f :is(input,textarea):is(:focus,:not(:placeholder-shown)) + span{top:9px;font-size:12px;color:var(--sz-t2)}
 .sz-pf__f:focus-within{background:#fff;box-shadow:inset 0 0 0 1.5px var(--sz-navy)}
-.sz-pf__set .sz-pf__f:first-child:focus-within{border-radius:18px 18px 0 0}
-.sz-pf__set .sz-pf__f:last-child:focus-within{border-radius:0 0 18px 18px}
-.sz-pf__set .sz-pf__f:only-child:focus-within{border-radius:18px}
+.sz-pf__set .sz-pf__f:first-child:focus-within{border-radius:20px 20px 0 0}
+.sz-pf__set .sz-pf__f:last-child:focus-within{border-radius:0 0 20px 20px}
+.sz-pf__set .sz-pf__f:only-child:focus-within{border-radius:20px}
 .sz-pf__f.is-bad{background:#FFF8F5;box-shadow:inset 0 0 0 1.5px #D4380D}
 
+/* right: a small green tick, drawn when the field is left filled in right */
+.sz-pf__ok-i{position:absolute;right:16px;top:50%;width:20px;height:20px;margin-top:-10px;pointer-events:none;opacity:0;transform:scale(.5);transition:opacity .2s,transform .4s var(--sz-spring)}
+.sz-pf__ok-i circle{fill:#E9F7EF}
+.sz-pf__ok-i path{fill:none;stroke:#1E9E5A;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:12;stroke-dashoffset:12;transition:stroke-dashoffset .3s .1s var(--sz-ease)}
+.sz-pf__f.is-good:not(:focus-within) .sz-pf__ok-i{opacity:1;transform:none}
+.sz-pf__f.is-good:not(:focus-within) .sz-pf__ok-i path{stroke-dashoffset:0}
+
 /* examples, taking turns while the box is empty and in focus */
-.sz-pf__ex{position:absolute;left:16px;right:16px;top:32px;font-style:normal;font-size:15px;line-height:1.5;color:#A3A9B1;pointer-events:none;opacity:0;transition:opacity .35s}
+.sz-pf__ex{position:absolute;left:18px;right:18px;top:36px;font-style:normal;font-size:15px;line-height:1.5;color:#A3A9B1;pointer-events:none;opacity:0;transition:opacity .35s}
 .sz-pf__f.is-area:focus-within textarea:placeholder-shown ~ .sz-pf__ex{opacity:1}
 .sz-pf__ex.is-swap{opacity:0 !important}
-/* the counter only near the limit */
-.sz-pf__count{position:absolute;right:14px;bottom:8px;font-size:12px;font-weight:500;color:var(--sz-t3);font-variant-numeric:tabular-nums;pointer-events:none;opacity:0;transition:opacity .25s,color .2s}
-.sz-pf__count.is-on{opacity:1}
+/* the counter: quiet always, says more near the limit */
+.sz-pf__count{position:absolute;right:16px;bottom:10px;font-size:12px;font-weight:500;color:#A3A9B1;font-variant-numeric:tabular-nums;pointer-events:none;transition:color .2s}
+.sz-pf__count.is-on{color:var(--sz-t2)}
 .sz-pf__count.is-max{color:#B42C08}
 
 .sz-pf__err{display:flex;align-items:center;gap:6px;margin:-6px 0 0 4px;font-size:13px;line-height:1.4;color:#B42C08}
 .sz-pf__err:empty{display:none}
 .sz-pf__err::before{content:"";flex:none;width:6px;height:6px;border-radius:50%;background:currentColor}
+
+/* ---------- more details ----------
+   One row while closed (saying what was picked inside, once something is);
+   opens in place by animating the row track from 0fr to 1fr. */
+.sz-pf__more{border-radius:20px;background:var(--sz-fill);transition:background-color .3s}
+.sz-pf .sz-pf__more .sz-pf__mbtn,.sz-pf .sz-pf__more .sz-pf__mbtn:is(:hover,:focus,:active){
+  display:flex;align-items:center;gap:14px;width:100%;min-height:0;margin:0;padding:14px 18px 14px 14px;border:0;border-radius:20px;background:none;box-shadow:none;
+  font:inherit;color:var(--sz-ink);text-align:left;text-transform:none;letter-spacing:normal;cursor:pointer}
+.sz-pf .sz-pf__more .sz-pf__mbtn:focus-visible{outline:2.5px solid rgba(255,107,44,.85);outline-offset:-2px}
+.sz-pf__mico{position:relative;flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:14px;background:#fff;color:var(--sz-t2);font-size:19px;
+  box-shadow:0 1px 1px rgba(13,27,42,.04),0 3px 8px -3px rgba(13,27,42,.12);transition:color .3s,transform .45s var(--sz-spring)}
+.sz-pf__mico svg{width:1em;height:1em}
+.sz-pf__mico svg circle{transition:transform .45s var(--sz-spring)}
+@media (hover:hover){.sz-pf__mbtn:hover .sz-pf__mico{color:var(--sz-ink)}.sz-pf__mbtn:hover .sz-pf__mico svg circle:first-of-type{transform:translateX(-3px)}.sz-pf__mbtn:hover .sz-pf__mico svg circle:last-of-type{transform:translateX(3px)}}
+.sz-pf__mdot{position:absolute;top:-3px;right:-3px;width:12px;height:12px;border:2px solid var(--sz-fill);border-radius:50%;background:var(--sz-orange);opacity:0;transform:scale(0);transition:opacity .2s,transform .4s var(--sz-spring)}
+.sz-pf__more.has-picks .sz-pf__mdot{opacity:1;transform:none}
+.sz-pf__more.has-picks .sz-pf__mico{color:var(--sz-orange)}
+.sz-pf__mtxt{flex:1;min-width:0;display:grid;gap:2px}
+.sz-pf__mtxt b{font-size:16px;font-weight:600;line-height:1.3}
+.sz-pf__msub{display:block;font-size:14px;line-height:1.4;color:var(--sz-t2);transition:opacity .2s}
+.sz-pf__msub.is-swap{opacity:0}
+.sz-pf__more.has-picks .sz-pf__msub{color:var(--sz-ink);font-weight:500}
+.sz-pf__mchev{flex:none;width:20px;height:20px;fill:none;stroke:#9AA1AA;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .45s var(--sz-spring),stroke .2s}
+.sz-pf__mbtn[aria-expanded="true"] .sz-pf__mchev{transform:rotate(180deg);stroke:var(--sz-ink)}
+.sz-pf__mpanel{display:grid;grid-template-rows:0fr;transition:grid-template-rows .45s var(--sz-ease)}
+.sz-pf__mpanel > .sz-pf__minner{min-height:0;overflow:hidden}
+.sz-pf__more.is-open .sz-pf__mpanel{grid-template-rows:1fr}
+.sz-pf__minner{display:grid;gap:18px;padding:0 16px}
+.sz-pf__more.is-open .sz-pf__minner{padding-bottom:16px}
+/* the contents follow the opening, one after the other */
+.sz-pf__minner > *{opacity:0;transform:translateY(-6px);transition:opacity .2s,transform .3s var(--sz-ease)}
+.sz-pf__more.is-open .sz-pf__minner > *{opacity:1;transform:none;transition:opacity .35s .1s,transform .45s .1s var(--sz-ease)}
+.sz-pf__more.is-open .sz-pf__minner > :nth-child(2){transition-delay:.16s}
+.sz-pf__more.is-open .sz-pf__minner > :nth-child(3){transition-delay:.22s}
+.sz-pf__minner .sz-pf__lbl{margin:2px 0 8px 2px;font-size:13px}
+.sz-pf__minner .sz-pf__err{margin-top:-12px}
 
 .sz-pf__trap{display:none}
 
@@ -75,17 +166,17 @@
 .sz-pf__toast[hidden]{display:none}
 
 /* ---------- send ---------- */
-.sz-pf__send{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-top:4px}
-.sz-pf__send small{display:inline-flex;align-items:center;gap:6px;font-size:13px;line-height:1.3;color:var(--sz-t2)}
+.sz-pf__send{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-top:6px}
+.sz-pf__send small{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;line-height:1.3;color:var(--sz-t2)}
 .sz-pf__lock{width:14px;height:14px}
 .sz-pf .sz-pf__send .sz-pf__btn,.sz-pf .sz-pf__send .sz-pf__btn:is(:hover,:focus,:active){
-  display:inline-flex;align-items:center;justify-content:center;gap:12px;height:52px;min-height:0;margin:0;padding:0 24px 0 12px;border:0;border-radius:99px;
-  background:var(--sz-navy);box-shadow:0 14px 28px -12px rgba(13,27,42,.6);color:#fff;font:inherit;font-size:16px;font-weight:600;line-height:1;text-transform:none;letter-spacing:normal;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:12px;height:56px;min-height:0;margin:0;padding:0 26px 0 13px;border:0;border-radius:99px;
+  background:var(--sz-navy);box-shadow:0 14px 28px -12px rgba(13,27,42,.6);color:#fff;font:inherit;font-size:17px;font-weight:600;line-height:1;text-transform:none;letter-spacing:normal;cursor:pointer;
   transition:transform .35s var(--sz-spring),box-shadow .3s,background-color .2s}
 @media (hover:hover){.sz-pf .sz-pf__send .sz-pf__btn:hover{background:#17293D;box-shadow:0 18px 32px -12px rgba(13,27,42,.7)}}
 .sz-pf .sz-pf__send .sz-pf__btn:active{transform:scale(.97)}
 .sz-pf .sz-pf__send .sz-pf__btn:focus-visible{outline:2.5px solid rgba(255,107,44,.85);outline-offset:3px}
-.sz-pf__go{width:30px;height:30px;border-radius:50%;font-size:15px;transition:transform .5s var(--sz-spring)}
+.sz-pf__go{width:32px;height:32px;border-radius:10px;font-size:15px;transition:transform .5s var(--sz-spring)}
 @media (hover:hover){.sz-pf__btn:hover .sz-pf__go{transform:translate(2px,-2px) rotate(-8deg)}}
 .sz-pf__btn[aria-busy="true"]{cursor:progress}
 .sz-pf__btn[aria-busy="true"] .sz-pf__go{animation:szf-fly .9s var(--sz-ease) infinite}
@@ -116,7 +207,8 @@
 @keyframes szf-up{from{opacity:0;transform:translateY(8px)}}
 
 @media (prefers-reduced-motion:reduce){
-  .sz-pf__chip span,.sz-pf__chip svg,.sz-pf__f > span,.sz-pf__go{transition:none}
+  .sz-pf__card,.sz-pf__ico,.sz-pf__badge,.sz-pf__badge path,.sz-pf__chip span,.sz-pf__f > span,.sz-pf__go,.sz-pf__ok-i,.sz-pf__ok-i path,.sz-pf__mpanel,.sz-pf__minner > *,.sz-pf__mchev,.sz-pf__picked,.sz-pf__mdot{transition:none !important}
+  .sz-pf__tile.is-pop .sz-pf__card,.sz-pf__tile.is-pop .sz-pf__ico svg,.sz-pf__num i{animation:none !important}
   .sz-pf__done > *,.sz-pf__tick circle,.sz-pf__tick path{animation:none;stroke-dashoffset:0}
   .sz-pf__btn[aria-busy="true"] .sz-pf__go{animation:none}
 }

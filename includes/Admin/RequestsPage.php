@@ -108,11 +108,12 @@ final class RequestsPage
                 return false;
 
             case 'telegram':
-                $ok = $own && Telegram::ready() && Telegram::send($id);
+                // all of it again after a full delivery; otherwise only where it is missing
+                $ok = $own && Telegram::ready() && Telegram::send($id, (string) (((array) get_post_meta($id, Telegram::META, true))['state'] ?? '') === 'sent');
                 $this->notices[] = match (true) {
                     !Telegram::ready() => ['ok' => false, 'text' => 'Telegram is not connected; connect it in Settings → Telegram.'],
                     $ok                => ['ok' => true, 'text' => 'Sent to Telegram again.'],
-                    default            => ['ok' => false, 'text' => 'Telegram did not take it: ' . (string) (get_post_meta($id, Telegram::META, true)['error'] ?? '')],
+                    default            => ['ok' => false, 'text' => Telegram::explain((string) (get_post_meta($id, Telegram::META, true)['error'] ?? ''))],
                 };
                 Leads::forget();
                 return false;
@@ -440,16 +441,31 @@ final class RequestsPage
         $tg    = is_array($tg) ? $tg : [];
         $state = (string) ($tg['state'] ?? '');
         $resend = Telegram::ready()
-            ? Ui::postButton(self::NONCE, ['szw_action' => 'telegram', 'item' => $id], $state === 'sent' ? 'Send again' : 'Send', 'sm', 'telegram')
+            ? Ui::postButton(self::NONCE, ['szw_action' => 'telegram', 'item' => $id], match ($state) { 'sent' => 'Send again', 'partial', 'failed' => 'Send the missing', default => 'Send' }, 'sm', 'telegram')
             : Ui::button('Connect', Ui::url(SettingsPage::SLUG, ['tab' => 'telegram']), 'sm');
 
         Ui::cardOpen('Telegram', 'telegram', $resend);
-        echo match ($state) {
-            'sent'    => Ui::state('ok', 'Announced on Telegram' . (!empty($tg['at']) ? ' — ' . Fmt::ago((int) $tg['at']) : '')),
-            'failed'  => Ui::state('error', 'Not delivered: ' . (string) ($tg['error'] ?? '')) . '<p class="za-hint">' . esc_html((int) ($tg['tries'] ?? 0) < Telegram::TRIES ? 'It will be tried again by itself.' : 'No more automatic tries; press Send.') . '</p>',
-            'pending' => Ui::state('warn', 'Waiting to be sent'),
-            default   => Ui::state('muted', Leads::status($id) === 'spam' ? 'Spam is never sent to Telegram' : 'Not sent (Telegram was not connected then)'),
-        };
+        $chats = (array) ($tg['chats'] ?? []);
+        $retry = '<p class="za-hint">' . esc_html((int) ($tg['tries'] ?? 0) < Telegram::TRIES ? 'It will be tried again by itself, only where it is missing.' : 'No more automatic tries; press Send again.') . '</p>';
+
+        if (count($chats) > 1 || ($chats && $state !== 'sent')) {
+            // chat by chat
+            echo '<ul class="za-deliveries">';
+            foreach ($chats as $chat => $c) {
+                $who = Telegram::chat_label((string) $chat, (string) ($c['name'] ?? ''));
+                echo '<li>' . (!empty($c['ok'])
+                    ? Ui::state('ok', $who . (!empty($c['at']) ? ' — ' . Fmt::ago((int) $c['at']) : ''))
+                    : Ui::state('error', $who . ': not delivered') . '<p class="za-hint">' . esc_html(Telegram::explain((string) ($c['error'] ?? ''))) . '</p>') . '</li>';
+            }
+            echo '</ul>' . ($state !== 'sent' ? $retry : '');
+        } else {
+            echo match ($state) {
+                'sent'    => Ui::state('ok', 'Announced on Telegram' . (!empty($tg['at']) ? ' — ' . Fmt::ago((int) $tg['at']) : '')),
+                'failed'  => Ui::state('error', 'Not delivered') . '<p class="za-hint">' . esc_html(Telegram::explain((string) ($tg['error'] ?? ''))) . '</p>' . $retry,
+                'pending' => Ui::state('warn', 'Waiting to be sent'),
+                default   => Ui::state('muted', Leads::status($id) === 'spam' ? 'Spam is never sent to Telegram' : 'Not sent (Telegram was not connected then)'),
+            };
+        }
         Ui::cardClose();
     }
 

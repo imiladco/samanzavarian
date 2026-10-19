@@ -2688,3 +2688,187 @@ body.szw-screen {
 .szw-admin .za-step code { padding: 1px 6px; border-radius: 6px; background: var(--field); }
 .szw-admin .za-steps__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
 .szw-admin .za-btn.is-disabled { opacity: .45; pointer-events: none; }
+
+/* =====================================================================
+   Telegram chats (Settings → Telegram)
+   ===================================================================== */
+
+.szw-admin .za-chats { display: grid; gap: 12px; }
+.szw-admin .za-chats__list { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; border-radius: 14px; box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; }
+.szw-admin .za-chats__list:empty { display: none; }
+
+.szw-admin .za-chat {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr) auto auto auto auto;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    padding: 10px 10px 10px 14px;
+    background: var(--surface);
+    transition: background-color .2s, opacity .2s, transform .22s;
+}
+.szw-admin .za-chat + .za-chat { border-top: 1px solid var(--line); }
+.szw-admin .za-chat__ava {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+    background: #e8f3fc;
+    color: #1f7ac4;
+    transition: background-color .2s, color .2s;
+}
+.szw-admin .za-chat__text { display: grid; min-width: 0; gap: 1px; }
+.szw-admin .za-chat__text small { color: var(--muted); font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.szw-admin .za-chat__text code { padding: 0; background: none; font-size: 11.5px; color: var(--muted); }
+.szw-admin .za-chat__name {
+    width: 100%;
+    min-height: 0;
+    margin: 0 0 0 -6px;
+    padding: 2px 6px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    box-shadow: none;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink);
+    transition: background-color .15s, box-shadow .15s;
+}
+.szw-admin .za-chat__name::placeholder { color: var(--faint); font-weight: 600; }
+.szw-admin .za-chat__name:hover { background: var(--field); }
+.szw-admin .za-chat__name:focus { outline: none; background: var(--surface); box-shadow: 0 0 0 3px var(--ring), inset 0 0 0 1.5px var(--primary); }
+.szw-admin .za-chat__state { font-size: 12px; font-weight: 700; color: var(--muted); max-width: 260px; line-height: 1.4; }
+.szw-admin .za-chat__state:empty { display: none; }
+.szw-admin .za-chat__state.is-ok { color: var(--ok); }
+.szw-admin .za-chat__state.is-ok::before { content: "✓ "; }
+.szw-admin .za-chat__state.is-error { color: var(--error); font-weight: 600; }
+.szw-admin .za-chat.is-error { background: var(--error-soft); }
+
+/* paused: still there, clearly not getting anything */
+.szw-admin .za-chat.is-off .za-chat__ava { background: var(--field); color: var(--faint); }
+.szw-admin .za-chat.is-off .za-chat__name { color: var(--muted); }
+.szw-admin .za-chat.is-off .za-chat__text small::after { content: " · paused"; color: var(--warn); font-weight: 700; }
+
+.szw-admin .za-switch--sm .za-switch__track { width: 38px; height: 22px; }
+.szw-admin .za-switch--sm .za-switch__track::after { width: 16px; height: 16px; }
+.szw-admin .za-switch--sm input:checked + .za-switch__track::after { transform: translateX(16px); }
+
+.szw-admin .za-chat.is-new { animation: za-chat-in .5s cubic-bezier(.2, .8, .2, 1) both; }
+.szw-admin .za-chat.is-leaving { opacity: 0; transform: translateX(12px); }
+.szw-admin .za-chat.is-flash { animation: za-chat-flash 1.2s ease-out; }
+@keyframes za-chat-in {
+    from { opacity: 0; transform: translateY(-6px); background: var(--alt-soft); }
+    60% { background: var(--alt-soft); }
+}
+@keyframes za-chat-flash { 0%, 40% { background: var(--alt-soft); } }
+
+.szw-admin .za-chats__empty {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    border-radius: 14px;
+    background: var(--field);
+    box-shadow: inset 0 0 0 1px var(--line);
+    color: var(--muted);
+}
+.szw-admin .za-chats__empty[hidden] { display: none; }
+.szw-admin .za-chats__empty .za-ico { flex: none; color: #1f7ac4; }
+.szw-admin .za-chats__empty b { color: var(--ink); }
+
+.szw-admin .za-chats__bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.szw-admin .za-chats__count { margin-left: auto; font-size: 12.5px; font-weight: 700; color: var(--muted); }
+.szw-admin .za-chats__manual { display: flex; gap: 8px; }
+.szw-admin .za-chats__manual[hidden] { display: none; }
+.szw-admin .za-chats__manual .za-text { flex: 1; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+
+/* what "Find chats" turned up */
+.szw-admin .za-chats__found { padding: 14px; border-radius: 14px; background: var(--primary-soft); }
+.szw-admin .za-chats__found[hidden] { display: none; }
+.szw-admin .za-found__head { margin: 0 0 10px; font-size: 13px; color: var(--text); }
+.szw-admin .za-found__head:last-child { margin: 0; }
+.szw-admin .za-found__head.is-error { color: var(--error); font-weight: 600; }
+.szw-admin .za-found { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.szw-admin .za-found li {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    margin: 0;
+    padding: 8px 8px 8px 10px;
+    border-radius: 12px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    animation: za-chat-in .4s cubic-bezier(.2, .8, .2, 1) both;
+}
+.szw-admin .za-found b { color: var(--ink); font-size: 14px; }
+.szw-admin .za-found .za-btn.is-added { opacity: 1; background: var(--ok-soft); box-shadow: none; color: var(--ok); }
+.szw-admin .za-found .za-btn.is-added span::before { content: "✓ "; }
+
+/* the bot the token belongs to */
+.szw-admin .za-bot {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 11px 0 9px;
+    border-radius: 99px;
+    background: var(--ok-soft);
+    color: var(--ok);
+    font-size: 12.5px;
+}
+.szw-admin .za-bot small { color: var(--ok); opacity: .75; font-size: 12px; }
+
+@media (max-width: 782px) {
+    .szw-admin .za-chat { grid-template-columns: 36px minmax(0, 1fr) auto auto; row-gap: 6px; }
+    .szw-admin .za-chat__state { grid-column: 2 / -1; grid-row: 2; max-width: none; }
+    .szw-admin .za-chat [data-chat-test] { grid-column: 2; grid-row: 3; justify-self: start; }
+    .szw-admin .za-chats__count { margin-left: 0; width: 100%; }
+}
+
+/* ways to add someone, and the guide once set up */
+.szw-admin .za-ways { display: grid; gap: 8px; margin: 10px 0 12px; padding: 0; list-style: none; }
+.szw-admin .za-ways li { display: grid; grid-template-columns: 28px minmax(0, 1fr); align-items: start; gap: 10px; margin: 0; color: var(--text); }
+.szw-admin .za-ways .za-ico { width: 28px; height: 28px; padding: 6px; border-radius: 9px; background: #e8f3fc; color: #1f7ac4; }
+.szw-admin .za-ways b { color: var(--ink); }
+.szw-admin .za-guide { margin-top: var(--gap); }
+.szw-admin .za-guide > summary { cursor: pointer; list-style: none; border-bottom: 0; }
+.szw-admin .za-guide > summary::-webkit-details-marker { display: none; }
+.szw-admin .za-guide > summary > .za-ico:last-child { margin-left: auto; color: var(--muted); transition: transform .25s; }
+.szw-admin .za-guide[open] > summary { border-bottom: 1px solid var(--line); }
+.szw-admin .za-guide[open] > summary > .za-ico:last-child { transform: rotate(180deg); }
+
+/* =====================================================================
+   Reply previews (Settings → Reply buttons)
+   ===================================================================== */
+
+.szw-admin .za-preview { display: grid; gap: 8px; margin-top: 12px; }
+.szw-admin .za-preview__label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--muted); }
+.szw-admin .za-preview__bubble { max-width: 560px; white-space: pre-wrap; font-size: 13.5px; line-height: 1.6; color: var(--ink); }
+.szw-admin .za-preview__bubble p { margin: 0; }
+.szw-admin .za-preview__bubble .is-empty { color: var(--faint); font-style: italic; }
+
+/* an email: subject line, the text, their message quoted */
+.szw-admin .za-preview--mail .za-preview__bubble { padding: 14px 16px; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line), var(--shadow); }
+.szw-admin .za-preview__subject { margin: -2px 0 10px !important; padding-bottom: 10px; border-bottom: 1px solid var(--line); font-weight: 800; }
+.szw-admin .za-preview--mail blockquote { margin: 12px 0 0; padding: 2px 0 2px 12px; border-left: 3px solid var(--line-strong); color: var(--muted); font-size: 12.5px; }
+
+/* WhatsApp: the typed message, as their bubble */
+.szw-admin .za-preview--wa .za-preview__bubble {
+    justify-self: start;
+    position: relative;
+    padding: 9px 12px;
+    border-radius: 12px 12px 12px 4px;
+    background: #e7fbe0;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, .06);
+}
+.szw-admin .za-preview--wa .za-preview__label .za-ico { color: #25a366; }
+
+/* delivery chat by chat (a request's Telegram card) */
+.szw-admin .za-deliveries { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.szw-admin .za-deliveries li { margin: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+    .szw-admin .za-chat, .szw-admin .za-found li { animation: none !important; transition: none; }
+}

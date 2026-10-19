@@ -5,6 +5,8 @@
  *   every few minutes while the page is open.
  * - Copy: the button, and on a computer the whole email row (a mail app is
  *   often missing there); the button and the address line confirm.
+ * - First view: the rows come in one after another, only if the list starts
+ *   out of view (no flash on a list already on screen, nothing in the editor).
  */
 ( function () {
 	'use strict';
@@ -45,11 +47,30 @@
 		}
 	}
 
+	function arrive( root ) {
+		const edit = window.elementorFrontend && window.elementorFrontend.isEditMode && window.elementorFrontend.isEditMode();
+		const calm = window.matchMedia && window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
+		if ( edit || calm || ! ( 'IntersectionObserver' in window ) || root.getBoundingClientRect().top < window.innerHeight ) {
+			return;
+		}
+		root.querySelectorAll( '.sz-reach__row' ).forEach( ( r, i ) => r.style.setProperty( '--i', i ) );
+		root.classList.add( 'is-armed' );
+		const io = new IntersectionObserver( ( es ) => {
+			if ( es.some( ( e ) => e.isIntersecting ) ) {
+				io.disconnect();
+				root.classList.add( 'is-in' );
+				setTimeout( () => root.classList.remove( 'is-armed', 'is-in' ), 1200 );
+			}
+		}, { threshold: 0.2 } );
+		io.observe( root );
+	}
+
 	function mount( root ) {
 		if ( ! root || done.has( root ) ) {
 			return;
 		}
 		done.add( root );
+		arrive( root );
 		const h = JSON.parse( root.dataset.hours || '{}' ), on = [ ...root.querySelectorAll( '.sz-reach__on' ) ];
 		const tick = () => {
 			const n = nowIn( h.tz || 'Asia/Tehran' ), a = mins( h.from ), b = mins( h.to );

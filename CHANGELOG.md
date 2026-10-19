@@ -4,6 +4,44 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.25.0 — Telegram to several chats, clearer settings, a new form and Reach
+**Telegram: as many chats as you like.** One bot, sent to you, a teammate,
+a group or a channel. Settings → Telegram is now one list:
+
+- **Find chats** lists everyone who has written to the bot (newest first,
+  with person / group / channel) and adds one with a click. A chat already
+  listed without a name gets its name; **Add by id** covers the rest.
+- Each chat has its own **Test**, an on/off switch (pause without losing it)
+  and a name only you see. Find and Test work before saving, with the token
+  as typed.
+- The token is checked with Telegram before it is saved; a wrong one is
+  refused with the reason, a right one shows the bot's @name.
+- Sending goes to every chat that is on. If one refuses, the others still
+  get it; the retry only goes to the chat that missed it (nobody gets the
+  same request twice), and the request shows delivery chat by chat.
+- Telegram's errors are said as what to do ("A person has to press Start in
+  the bot first", "make it an admin of the channel").
+- The single chat of earlier versions becomes the first in the list.
+
+**Reply buttons (was "Reply templates").** Says plainly that these are
+shortcuts, not connections: "Reply by email" opens your own mail app,
+"WhatsApp" opens your own WhatsApp on their number; nothing is sent from the
+site. Each text has a live preview of how it opens, on a sample request.
+
+**Project Form, redesigned.** Needs are a tray of icon tiles: a picked tile
+lifts out as a white card, its icon warms to orange with a little nod, a
+check pops on its corner, and "2 selected" rolls beside the question. On a
+phone the tray is two by two, icon beside the words. Each tile has an icon
+control (older tiles get one by their name). Timing, budget and the link
+wait behind **More details**, which opens in place and, closed, says what
+was picked inside; a wrong link on sending opens it. A field filled in right
+gets a small green tick. The message counter is always there, quietly.
+
+**Reach, in the same language.** A soft tray; icons in white tiles in each
+channel's colour; a row lifts out as a white card under the pointer, its
+tile takes the channel's tint and the arrow moves on. The rows come in one
+after another the first time the list scrolls into view.
+
 ## 0.24.0 — Requests panel in English
 The whole panel now reads in English, left to right, whatever the admin
 language: menu **Requests**, Overview / Requests / Settings, statuses New,

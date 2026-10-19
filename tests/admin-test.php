@@ -60,7 +60,7 @@ $found = Leads::search( 'lost', 'panel@test', 1, 10, [ 'service' => 'AI visuals'
 szw_ok( 1 === $found['total'] && $id === $found['rows'][0]['id'] && 0 === Leads::search( 'won', 'panel@test', 1, 10 )['total'] && 0 === Leads::search( 'lost', 'panel@test', 1, 10, [ 'budget' => '$10k+' ] )['total'], 'search, status views and filters find it, and only where they should' );
 
 // retention: closed long ago goes, open stays
-$saved = [ get_option( Settings::OPTION, null ), get_option( Settings::SECRETS, null ) ];
+$saved = [ get_option( Settings::OPTION, null ), get_option( Settings::SECRETS, null ), get_option( Settings::CHATS, null ) ];
 Settings::save( [ 'retention' => '5', 'spam_days' => '30' ], 'data' );
 update_post_meta( $id, Leads::CLOSED, time() - 6 * DAY_IN_SECONDS );
 $open = Leads::store( [ 'name' => 'Still Open', 'email' => 'open@test.co', 'phone' => '', 'services' => [], 'timeline' => '', 'budget' => '', 'message' => 'Still open, should stay.', 'link' => '', 'page' => '' ] );
@@ -72,17 +72,24 @@ wp_delete_post( $open, true );
 // settings before the panel move in once
 delete_option( Settings::OPTION );
 delete_option( Settings::SECRETS );
+delete_option( Settings::CHATS );
 $old = get_option( Telegram::OPTION, null );
 update_option( Telegram::OPTION, [ 'token' => '111:BBBBBBBBBBBBBBBBBBBBBBBBBBBB', 'chat' => '777', 'retention' => 14 ] );
 $r = new ReflectionProperty( Settings::class, 'cache' );
 $r->setAccessible( true );
 $r->setValue( null, null );
-szw_ok( '777' === Settings::text( 'tg_chat' ) && 14 === Settings::int( 'retention' ) && '111:BBBBBBBBBBBBBBBBBBBBBBBBBBBB' === Settings::text( 'tg_token' ) && '777' === Telegram::option( 'chat' ), 'Telegram settings from before the panel move in, and Telegram reads them' );
+szw_ok( 14 === Settings::int( 'retention' ) && '111:BBBBBBBBBBBBBBBBBBBBBBBBBBBB' === Settings::text( 'tg_token' ) && [ '777' => '' ] === Telegram::chats(), 'Telegram settings from before the panel move in (the one chat becomes the first of the list), and Telegram reads them' );
 szw_ok( false === strpos( (string) wp_json_encode( get_option( Settings::OPTION ) ), '111:' ), 'the token is kept apart from the other settings' );
 null === $old ? delete_option( Telegram::OPTION ) : update_option( Telegram::OPTION, $old );
 null === $saved[0] ? delete_option( Settings::OPTION ) : update_option( Settings::OPTION, $saved[0] );
 null === $saved[1] ? delete_option( Settings::SECRETS ) : update_option( Settings::SECRETS, $saved[1] );
+null === $saved[2] ? delete_option( Settings::CHATS ) : update_option( Settings::CHATS, $saved[2] );
 $r->setValue( null, null );
+
+// the form's tiles: icons, and one guessed for a tile saved before tiles had icons
+$html = szw_render( [ 'services' => [ [ 'label' => 'Video editing', 'value' => 'Editing' ] ] ], 'sz-form' );
+szw_ok( false !== strpos( $html, 'sz-pf__tile' ) && false !== strpos( $html, 'szi-sliders' ) && false !== strpos( $html, 'sz-pf__more' ), 'needs as tiles with icons (an old tile gets one by its name); More details holds the rest' );
+szw_ok( false === strpos( szw_render( [ 'timeline' => '', 'budget' => '', 'link' => '' ], 'sz-form' ), 'sz-pf__more' ), 'nothing optional to ask: no More details row' );
 
 szw_ok( 'Hi Sara, about ai visuals and post-production' === Kit::fill( 'Hi {first}, about {needs}', [ 'name' => 'Sara Ahmadi', 'services' => [ 'AI visuals', 'Post-production' ] ] ), 'reply templates fill in the first name and the needs' );
 

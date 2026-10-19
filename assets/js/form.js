@@ -4,9 +4,15 @@
  * - Validation in words beside the fields: on leaving a field once it has
  *   something (or was wrong), and on sending; the first wrong field gets
  *   focus. The server checks again.
+ * - The needs tray: picking a tile gives it a little lift (a class for the
+ *   length of the animation) and "N selected" rolls to the new number.
+ * - A field that is right gets a tick once it is left.
+ * - "More details" opens in place; closed, its second line says what was
+ *   picked inside ("Within a month · $3k–10k · link added"). A wrong link
+ *   on sending opens it.
  * - Timeline and budget are radios that clear when tapped again.
  * - The message box: examples take turns while it is empty and in focus;
- *   the counter shows from 80% of the limit.
+ *   the counter is always there, quiet, and speaks up from 80% of the limit.
  * - A draft of everything typed is kept in this browser until it is sent
  *   ("Your draft is back · Clear").
  * - Sending: JSON to the REST route, with the time spent on the form (a
@@ -91,7 +97,17 @@
 			message: () => val( 'message' ).length >= 10,
 			link: () => ! val( 'link' ) || /^https?:\/\/[^\s/]+\.\S+/i.test( val( 'link' ) ),
 		};
-		const groups = [ [ 'name', 'email', 'phone' ], [ 'message', 'link' ] ];
+		const groups = [ [ 'name', 'email', 'phone' ], [ 'message' ], [ 'link' ] ];
+
+		/* ---------- right: a tick ---------- */
+
+		const good = ( n ) => {
+			const el = form.elements[ n ];
+			if ( el && el.closest( '.sz-pf__f' ) ) {
+				el.closest( '.sz-pf__f' ).classList.toggle( 'is-good', !! val( n ) && rules[ n ]() );
+			}
+		};
+		const goodAll = () => Object.keys( rules ).forEach( good );
 
 		function check( only ) {
 			let first = null;
@@ -131,9 +147,103 @@
 				if ( el.value || el.getAttribute( 'aria-invalid' ) === 'true' ) {
 					check( [ n ] );
 				}
+				good( n );
 			} );
-			el.addEventListener( 'input', () => el.getAttribute( 'aria-invalid' ) === 'true' && check( [ n ] ) );
+			el.addEventListener( 'input', () => {
+				if ( el.getAttribute( 'aria-invalid' ) === 'true' ) {
+					check( [ n ] );
+				}
+				good( n );
+			} );
 		} );
+
+		/* ---------- the needs tray ---------- */
+
+		const picked = root.querySelector( '.sz-pf__picked' );
+		let shown = 0;
+		if ( picked ) {
+			// "%d selected" → before, the rolling number, after
+			const parts = String( L.selected || '%d selected' ).split( '%d' );
+			picked.textContent = '';
+			picked.append( parts[ 0 ] || '' );
+			const num = document.createElement( 'span' );
+			num.className = 'sz-pf__num';
+			num.innerHTML = '<i>0</i>';
+			picked.append( num, parts.slice( 1 ).join( '%d' ) );
+		}
+		const countNeeds = () => {
+			if ( ! picked ) {
+				return;
+			}
+			const n = form.querySelectorAll( 'input[name="services[]"]:checked' ).length;
+			picked.classList.toggle( 'is-on', n > 0 );
+			if ( n === shown || ! n ) {
+				shown = n || shown;
+				return;
+			}
+			const num = picked.querySelector( '.sz-pf__num' );
+			num.className = 'sz-pf__num ' + ( n > shown ? 'is-up' : 'is-down' );
+			num.innerHTML = '<i>' + n + '</i>';
+			shown = n;
+		};
+		form.querySelectorAll( 'input[name="services[]"]' ).forEach( ( box ) => box.addEventListener( 'change', () => {
+			const tile = box.closest( '.sz-pf__tile' );
+			tile.classList.remove( 'is-pop' );
+			if ( box.checked && ! reduce ) {
+				void tile.offsetWidth;
+				tile.classList.add( 'is-pop' );
+				setTimeout( () => tile.classList.remove( 'is-pop' ), 600 );
+			}
+			countNeeds();
+		} ) );
+
+		/* ---------- more details ---------- */
+
+		const more = root.querySelector( '.sz-pf__more' );
+		const mbtn = more && more.querySelector( '.sz-pf__mbtn' ), mpanel = more && more.querySelector( '.sz-pf__mpanel' ), msub = more && more.querySelector( '.sz-pf__msub' );
+		const openMore = ( on ) => {
+			if ( ! more ) {
+				return;
+			}
+			more.classList.toggle( 'is-open', on );
+			mbtn.setAttribute( 'aria-expanded', on ? 'true' : 'false' );
+			mpanel.inert = ! on;
+			if ( on ) {
+				track( 'sz_form_more', {} );
+			}
+		};
+		const summary = () => {
+			if ( ! more ) {
+				return;
+			}
+			const bits = [ 'timeline', 'budget' ].map( ( n ) => {
+				const c = form.querySelector( `input[name="${ n }"]:checked` );
+				return c ? c.value : '';
+			} );
+			if ( val( 'link' ) ) {
+				bits.push( L.link_set || 'link added' );
+			}
+			const picks = bits.filter( Boolean );
+			const text = picks.length ? picks.join( ' · ' ) : msub.dataset.sub;
+			more.classList.toggle( 'has-picks', picks.length > 0 );
+			if ( msub.textContent !== text ) {
+				if ( reduce ) {
+					msub.textContent = text;
+					return;
+				}
+				msub.classList.add( 'is-swap' );
+				clearTimeout( msub.szT );
+				msub.szT = setTimeout( () => {
+					msub.textContent = text;
+					msub.classList.remove( 'is-swap' );
+				}, 180 );
+			}
+		};
+		if ( more ) {
+			mbtn.addEventListener( 'click', () => openMore( ! more.classList.contains( 'is-open' ) ) );
+			more.addEventListener( 'change', summary );
+			more.addEventListener( 'input', summary );
+		}
 
 		/* ---------- radios that clear when tapped again ---------- */
 
@@ -157,7 +267,7 @@
 				return;
 			}
 			const n = msg.value.length;
-			count.textContent = `${ n } / ${ max }`;
+			count.textContent = `${ n.toLocaleString( 'en' ) } / ${ max.toLocaleString( 'en' ) }`;
 			count.classList.toggle( 'is-on', n >= max * 0.8 );
 			count.classList.toggle( 'is-max', n >= max );
 		};
@@ -214,8 +324,15 @@
 			fields.forEach( ( n ) => form.elements[ n ] && d[ n ] && ( form.elements[ n ].value = d[ n ] ) );
 			form.querySelectorAll( 'input[name="services[]"]' ).forEach( ( i ) => ( i.checked = ( d.services || [] ).indexOf( i.value ) > -1 ) );
 			[ 'timeline', 'budget' ].forEach( ( n ) => form.querySelectorAll( `input[name="${ n }"]` ).forEach( ( i ) => ( i.checked = i.value === d[ n ] ) ) );
-			counter();
+			refresh();
 		};
+		// everything that shows the form's state, after a restore or a reset
+		function refresh() {
+			counter();
+			countNeeds();
+			summary();
+			goodAll();
+		}
 		const saved = ! editor && store.get( KEY );
 		if ( saved && ! empty( saved ) ) {
 			restore( saved );
@@ -224,7 +341,8 @@
 		draftBar.querySelector( '.sz-pf__clear' ).addEventListener( 'click', () => {
 			store.drop( KEY );
 			form.reset();
-			counter();
+			refresh();
+			form.querySelectorAll( '.is-good' ).forEach( ( f ) => f.classList.remove( 'is-good' ) );
 			showDraft( false );
 			form.querySelectorAll( '[aria-invalid]' ).forEach( ( el ) => {
 				el.removeAttribute( 'aria-invalid' );
@@ -251,6 +369,9 @@
 			toast.hidden = true;
 			const wrong = check();
 			if ( wrong ) {
+				if ( more && more.contains( wrong ) ) {
+					openMore( true );
+				}
 				wrong.focus();
 				return;
 			}
@@ -273,6 +394,9 @@
 					// the server disagreed about a field: show it as the browser would have
 					if ( j.errors && j.errors.length && j.errors.every( ( x ) => rules[ x ] ) ) {
 						j.errors.forEach( ( x ) => form.elements[ x ] && form.elements[ x ].setAttribute( 'aria-invalid', 'true' ) );
+						if ( j.errors.indexOf( 'link' ) > -1 ) {
+							openMore( true );
+						}
 					}
 					throw new Error( 'not sent' );
 				}
@@ -323,7 +447,8 @@
 
 		doneCard.querySelector( '.sz-pf__again' ).addEventListener( 'click', () => {
 			form.reset();
-			counter();
+			refresh();
+			openMore( false );
 			showDraft( false );
 			doneCard.hidden = true;
 			doneCard.style.transition = '';
@@ -331,7 +456,7 @@
 			( form.elements.name || msg ).focus();
 		} );
 
-		counter();
+		refresh();
 	}
 
 	const all = () => document.querySelectorAll( '[data-sz-pf]' ).forEach( mount );

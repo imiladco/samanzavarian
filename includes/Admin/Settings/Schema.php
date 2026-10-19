@@ -63,7 +63,7 @@ final class Schema
     {
         $out = [];
         foreach (self::fields() as $key => $field) {
-            if (!$field->isSecret()) {
+            if (!$field->isSecret() && $field->type !== FieldType::Chats) {
                 $out[$key] = $field->default;
             }
         }
@@ -79,28 +79,27 @@ final class Schema
             id: 'telegram',
             title: 'Telegram',
             icon: 'telegram',
-            description: 'Every new Project Form request arrives in your Telegram: name, needs, timeline, budget and the message. The request is always saved here first; Telegram only tells you.',
+            description: 'Every new Project Form request is sent to Telegram the moment it arrives: who, what they need, timeline, budget, the message, and a button back to it here. One bot of your own sends it, to as many chats as you like: you, a teammate, a group or a channel. Requests are always saved here first; Telegram only tells you.',
             fields: [
                 new Field(
                     key: 'tg_enabled',
                     type: FieldType::Toggle,
-                    label: 'Tell me on Telegram',
-                    help: 'Off: requests stay in this panel only and nothing is sent to Telegram.',
+                    label: 'Send new requests to Telegram',
+                    help: 'Off pauses every chat at once; requests then only wait in this panel.',
                     default: true,
                 ),
                 new Field(
                     key: 'tg_token',
                     type: FieldType::Secret,
                     label: 'Bot token',
-                    help: 'What BotFather gives you after you create the bot (looks like 123456789:AA…). For extra safety it can live in wp-config.php instead, as SZW_TELEGRAM_TOKEN.',
+                    help: 'From @BotFather when you create the bot; it looks like 123456789:AAF… It is checked with Telegram before it is saved. It can also live in wp-config.php as SZW_TELEGRAM_TOKEN.',
                     constant: 'SZW_TELEGRAM_TOKEN',
                 ),
                 new Field(
-                    key: 'tg_chat',
-                    type: FieldType::Text,
-                    label: 'Chat ID',
-                    help: 'Where messages arrive. No need to type it: press Start in your bot on Telegram, then "Find my chat" below.',
-                    placeholder: '123456789',
+                    key: 'tg_chats',
+                    type: FieldType::Chats,
+                    label: 'Chats',
+                    help: 'Who gets each request. Pause a chat to stop it for a while without losing it.',
                 ),
             ],
         );
@@ -110,29 +109,30 @@ final class Schema
     {
         return new Section(
             id: 'replies',
-            title: 'Reply templates',
+            title: 'Reply buttons',
             icon: 'reply',
-            description: 'The ready text behind "Reply by email" and "WhatsApp" on each request. You can always edit it before sending.',
+            description: 'Each request has two reply buttons. They are shortcuts, not connections: nothing is sent from the site. "Reply by email" opens your own mail app with the text below; "WhatsApp" opens your own WhatsApp on a chat with their number. You read it, change it if you like, and send it yourself.',
             fields: [
                 new Field(
                     key: 'reply_subject',
                     type: FieldType::Text,
                     label: 'Email subject',
-                    help: 'Empty: "Re: your project request".',
+                    help: 'The subject line of "Reply by email".',
                     default: 'Re: your project request',
+                    placeholder: 'Re: your project request',
                 ),
                 new Field(
                     key: 'reply_email',
                     type: FieldType::Textarea,
-                    label: 'Email',
-                    help: 'Placeholders: {first} their first name, {needs} what they picked. Their message is quoted below your text.',
+                    label: 'Email opening',
+                    help: 'The start of the email; their message is quoted below it. {first} becomes their first name, {needs} what they picked.',
                     default: "Hi {first},\n\nThanks for your message about {needs}. ",
                 ),
                 new Field(
                     key: 'reply_wa',
                     type: FieldType::Textarea,
-                    label: 'WhatsApp',
-                    help: 'Placeholders: {first} and {needs}.',
+                    label: 'WhatsApp opening',
+                    help: 'Only on requests that left a phone number. Opens WhatsApp (the app, or WhatsApp Web on a computer) with this already typed. {first} and {needs} work here too.',
                     default: 'Hi {first}, this is Saman. Thanks for your message about {needs}.',
                 ),
             ],

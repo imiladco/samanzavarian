@@ -3,9 +3,10 @@
 /**
  * Reading, checking and saving the settings.
  *
- * Two options:
+ * Three options:
  *   szw_settings  ordinary settings (autoloaded)
  *   szw_secrets   keys and tokens (not autoloaded; read only when calling the service)
+ *   szw_tg_chats  the Telegram chats, a list (id, name, kind, on)
  *
  * Apart on purpose: secrets do not show up in debugging dumps of the settings.
  * They could be encrypted before saving too (sodium, with a key derived from
@@ -26,6 +27,10 @@ final class Settings
 {
     public const OPTION  = 'szw_settings';
     public const SECRETS = 'szw_secrets';
+    public const CHATS   = 'szw_tg_chats';
+
+    /** More would be a broadcast, not a notification */
+    public const MAX_CHATS = 20;
 
     /** @var array<string,string|int|bool>|null */
     private static ?array $cache = null;
@@ -47,6 +52,10 @@ final class Settings
         if ($field->isSecret()) {
             $secrets = get_option(self::SECRETS, []);
             return is_array($secrets) ? (string) ($secrets[$key] ?? '') : '';
+        }
+
+        if ($field->type === FieldType::Chats) {
+            return count(self::recipients());
         }
 
         return self::all()[$key] ?? $field->default;
@@ -97,6 +106,36 @@ final class Settings
         }
     }
 
+    /**
+     * The Telegram chats, in the order they were added.
+     *
+     * The single chat of earlier versions (tg_chat) becomes the first entry,
+     * once.
+     *
+     * @return list<array{id:string,name:string,kind:string,on:bool}>
+     */
+    public static function recipients(): array
+    {
+        $list = get_option(self::CHATS, null);
+
+        if (!is_array($list)) {
+            $old  = (string) (self::all()['tg_chat'] ?? '');
+            $list = $old !== '' ? [['id' => $old, 'name' => '', 'kind' => '', 'on' => true]] : [];
+            if ($list !== []) {
+                update_option(self::CHATS, $list, true);
+            }
+        }
+
+        $out = [];
+        foreach ($list as $c) {
+            if (is_array($c) && isset($c['id']) && (string) $c['id'] !== '') {
+                $out[] = ['id' => (string) $c['id'], 'name' => (string) ($c['name'] ?? ''), 'kind' => (string) ($c['kind'] ?? ''), 'on' => !empty($c['on'])];
+            }
+        }
+
+        return $out;
+    }
+
     /** @return array<string,string|int|bool> */
     public static function all(): array
     {
@@ -132,9 +171,16 @@ final class Settings
         $secrets = get_option(self::SECRETS, []);
         $secrets = is_array($secrets) ? $secrets : [];
         $errors  = [];
+        $chats   = null;
 
         foreach ($section->fields as $field) {
             if ($field->isLocked()) {
+                continue;
+            }
+
+            if ($field->type === FieldType::Chats) {
+                [$chats, $chatErrors] = self::sanitizeChats($input[$field->key] ?? []);
+                array_push($errors, ...$chatErrors);
                 continue;
             }
 
@@ -165,11 +211,50 @@ final class Settings
 
         update_option(self::OPTION, $values, true);
         update_option(self::SECRETS, $secrets, false);
+        if ($chats !== null) {
+            update_option(self::CHATS, $chats, true);
+        }
         self::$cache = null;
 
         do_action('szw_settings_saved');
 
         return [];
+    }
+
+    /**
+     * The chats as posted: tg_chats[n][id|name|kind|on]. A row with no id is
+     * dropped (an unfinished "Add"); a second row with the same id too.
+     *
+     * @return array{0:list<array{id:string,name:string,kind:string,on:bool}>,1:list<string>}
+     */
+    private static function sanitizeChats(mixed $raw): array
+    {
+        $out    = [];
+        $errors = [];
+        $seen   = [];
+
+        foreach (is_array($raw) ? $raw : [] as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $id = preg_replace('/\s+/', '', (string) ($row['id'] ?? '')) ?? '';
+            if ($id === '' || isset($seen[$id])) {
+                continue;
+            }
+            $name = trim(sanitize_text_field((string) ($row['name'] ?? '')));
+            if (!\Samanzavarian_Widgets\Telegram::valid_chat($id)) {
+                $errors[] = '"' . ($name !== '' ? $name : $id) . '": a chat id is a number (groups and channels start with -100) or a channel\'s @username.';
+                continue;
+            }
+            $seen[$id] = true;
+            $out[]     = ['id' => $id, 'name' => mb_substr($name, 0, 60), 'kind' => sanitize_key((string) ($row['kind'] ?? '')), 'on' => !empty($row['on'])];
+        }
+
+        if (count($out) > self::MAX_CHATS) {
+            $errors[] = 'At most ' . self::MAX_CHATS . ' chats.';
+        }
+
+        return [$out, $errors];
     }
 
     /** @return array{0:string|int|bool,1:?string} [value, error] */

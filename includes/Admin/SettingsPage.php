@@ -5,6 +5,12 @@
  * form card built from the Schema, a sticky save bar ("Unsaved changes",
  * Ctrl+S, a warning on leaving), and System status with health cards and a
  * connection test.
+ *
+ * Telegram: the token is checked with Telegram before it is saved (a typo is
+ * caught here, not on the first request); the chats are a list edited in
+ * place, filled by "Find chats" (who has written to the bot) or by id, each
+ * with its own test. Find and test run through admin-ajax, so a chat can be
+ * found and tested before anything is saved.
  */
 
 declare(strict_types=1);
@@ -29,6 +35,10 @@ final class SettingsPage
 
     private const NONCE  = 'szw_settings';
     private const STATUS = 'status';
+    private const AJAX   = 'szw_tg';
+
+    /** What the bot is called, from getMe: [username, name] */
+    public const BOT = 'szw_tg_bot';
 
     /** @var list<array{ok:bool,text:string}> */
     private array $notices = [];
@@ -40,6 +50,8 @@ final class SettingsPage
         add_action('admin_menu', static function () use ($page): void {
             add_submenu_page(DashboardPage::SLUG, 'Settings', 'Settings', Kit::CAPABILITY, self::SLUG, [$page, 'render'], 2);
         }, 30);
+
+        add_action('wp_ajax_' . self::AJAX, [self::class, 'ajax']);
     }
 
     public function render(): void
@@ -50,7 +62,6 @@ final class SettingsPage
 
         $this->maybeSave();
         $this->maybeTest();
-        $this->maybeTelegram();
 
         $current = $this->current();
 
@@ -78,8 +89,16 @@ final class SettingsPage
         check_admin_referer(self::NONCE);
 
         // WordPress slashes all input; without wp_unslash every quote would gain a backslash on each save
-        $input  = wp_unslash($_POST);
-        $errors = Settings::save(is_array($input) ? $input : [], sanitize_key((string) ($_POST['szw_section'] ?? '')));
+        $input   = wp_unslash($_POST);
+        $input   = is_array($input) ? $input : [];
+        $section = sanitize_key((string) ($_POST['szw_section'] ?? ''));
+
+        if ($section === 'telegram' && !$this->checkToken($input)) {
+            $this->notices[] = ['ok' => false, 'text' => 'Nothing was saved. Fix the token first.'];
+            return;
+        }
+
+        $errors = Settings::save($input, $section);
 
         if ($errors === []) {
             $this->notices[] = ['ok' => true, 'text' => 'Settings saved.'];
@@ -92,7 +111,52 @@ final class SettingsPage
         $this->notices[] = ['ok' => false, 'text' => 'Nothing was saved. Fix the points above first.'];
     }
 
-    /** "Test connection": only asks Telegram who the bot is (getMe); sends no message */
+    /**
+     * A new token is asked about before it is saved: a wrong one is refused
+     * with the reason, a right one leaves the bot's name for the page. If
+     * Telegram cannot be reached at all, the token is saved anyway (the host
+     * may only block it for now) and a warning says so.
+     *
+     * @param array<string,mixed> $input
+     */
+    private function checkToken(array $input): bool
+    {
+        $token = trim((string) ($input['tg_token'] ?? ''));
+
+        if ($token === '__clear__') {
+            delete_option(self::BOT);
+            return true;
+        }
+        if ($token === '') {
+            return true;
+        }
+        if (!preg_match('/^\d{5,}:[A-Za-z0-9_-]{30,}$/', $token)) {
+            $this->notices[] = ['ok' => false, 'text' => 'That does not look like a bot token: it is a number, a colon, then about 35 letters and digits (123456789:AAF…). Copy it again from @BotFather.'];
+            return false;
+        }
+
+        $r = Telegram::api('getMe', [], $token);
+        if ($r['ok']) {
+            self::rememberBot((array) $r['result']);
+            return true;
+        }
+        if (stripos($r['error'], 'unauthorized') !== false || stripos($r['error'], 'not found') !== false) {
+            $this->notices[] = ['ok' => false, 'text' => Telegram::explain($r['error'])];
+            return false;
+        }
+
+        delete_option(self::BOT);
+        $this->notices[] = ['ok' => false, 'text' => 'Saved, but not checked: ' . Telegram::explain($r['error'])];
+        return true;
+    }
+
+    /** @param array<string,mixed> $me getMe's result */
+    private static function rememberBot(array $me): void
+    {
+        update_option(self::BOT, ['username' => (string) ($me['username'] ?? ''), 'name' => (string) ($me['first_name'] ?? '')], false);
+    }
+
+    /** "Test connection" on System status: only asks Telegram who the bot is (getMe); sends no message */
     private function maybeTest(): void
     {
         if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST' || !isset($_POST['szw_test'])) {
@@ -107,60 +171,86 @@ final class SettingsPage
         }
 
         $r = Telegram::api('getMe', [], Settings::text('tg_token'));
+        if ($r['ok']) {
+            self::rememberBot((array) $r['result']);
+        }
         $this->notices[] = $r['ok']
             ? ['ok' => true, 'text' => 'Connected: the bot @' . (string) ($r['result']['username'] ?? '') . ' answered.']
-            : ['ok' => false, 'text' => 'Telegram did not answer: ' . $r['error'] . '. Check the token; if your host cannot reach Telegram, ask your host.'];
+            : ['ok' => false, 'text' => Telegram::explain($r['error'])];
     }
 
-    /** "Find my chat" and "Test message" in the Telegram section */
-    private function maybeTelegram(): void
+    /**
+     * admin-ajax: find (the chats that have written to the bot) and test (a
+     * message to one chat). The token typed in the field is used when there
+     * is one, so both work before saving.
+     */
+    public static function ajax(): void
     {
-        if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST' || !isset($_POST['szw_tg'])) {
-            return;
+        check_ajax_referer(self::AJAX);
+
+        if (!current_user_can(Kit::CAPABILITY)) {
+            wp_send_json_error(['text' => 'You are not allowed to do this.'], 403);
         }
 
-        check_admin_referer(self::NONCE);
-        $what = sanitize_key((string) $_POST['szw_tg']);
+        $typed = trim(wp_unslash((string) ($_POST['token'] ?? '')));
+        $token = $typed !== '' ? $typed : Settings::text('tg_token');
 
-        if (Settings::text('tg_token') === '') {
-            $this->notices[] = ['ok' => false, 'text' => 'Add and save the bot token first.'];
-            return;
+        if ($token === '') {
+            wp_send_json_error(['text' => 'Paste the bot token first.']);
         }
 
-        if ($what === 'detect') {
-            $r = Telegram::api('getUpdates', ['limit' => 50], Settings::text('tg_token'));
+        if (($_POST['do'] ?? '') === 'test') {
+            $chat = preg_replace('/\s+/', '', wp_unslash((string) ($_POST['chat'] ?? ''))) ?? '';
+            if (!Telegram::valid_chat($chat)) {
+                wp_send_json_error(['text' => 'A chat id is a number (groups and channels start with -100) or a channel\'s @username.']);
+            }
+            $name = trim(sanitize_text_field(wp_unslash((string) ($_POST['name'] ?? ''))));
+            $r    = Telegram::api('sendMessage', ['chat_id' => $chat, 'text' => '✅ ' . get_bloginfo('name') . ': this chat is connected. New project requests will arrive here.'], $token);
             if (!$r['ok']) {
-                $this->notices[] = ['ok' => false, 'text' => 'Telegram said: ' . $r['error']];
-                return;
+                wp_send_json_error(['text' => Telegram::explain($r['error'])]);
             }
-            $chat = null;
-            foreach (array_reverse((array) $r['result']) as $u) {
-                $chat = $u['message']['chat'] ?? $u['my_chat_member']['chat'] ?? $u['channel_post']['chat'] ?? null;
-                if ($chat) {
-                    break;
-                }
-            }
-            if (!$chat) {
-                $this->notices[] = ['ok' => false, 'text' => 'Your bot has had no message yet. Open it in Telegram, press Start (or send it anything), then try again.'];
-                return;
-            }
-            $errors = Settings::save(['tg_chat' => (string) $chat['id'], 'tg_enabled' => Settings::bool('tg_enabled') ? '1' : ''], 'telegram');
-            $who    = trim(($chat['title'] ?? '') . ' ' . ($chat['first_name'] ?? '') . ' ' . ($chat['last_name'] ?? ''));
-            $this->notices[] = $errors === []
-                ? ['ok' => true, 'text' => 'Found and saved: ' . ($who !== '' ? $who : (string) $chat['id']) . '. Now press "Test message".']
-                : ['ok' => false, 'text' => implode(' ', $errors)];
-            return;
+            update_option('szw_tg_last', ['ok' => true, 'at' => time()], false);
+            wp_send_json_success(['text' => 'Sent to ' . ($name !== '' ? $name : $chat) . '. Check Telegram.']);
         }
 
-        if ($what === 'test') {
-            if (Settings::text('tg_chat') === '') {
-                $this->notices[] = ['ok' => false, 'text' => 'No chat ID yet; press "Find my chat" first.'];
-                return;
-            }
-            $r = Telegram::api('sendMessage', ['chat_id' => Settings::text('tg_chat'), 'text' => '✅ ' . get_bloginfo('name') . ' is connected. New project requests will arrive here.'], Settings::text('tg_token'));
-            update_option('szw_tg_last', $r['ok'] ? ['ok' => true, 'at' => time()] : ['ok' => false, 'at' => time(), 'error' => $r['error']], false);
-            $this->notices[] = $r['ok'] ? ['ok' => true, 'text' => 'Sent. Check Telegram.'] : ['ok' => false, 'text' => 'Telegram did not take it: ' . $r['error']];
+        $me = Telegram::api('getMe', [], $token);
+        if (!$me['ok']) {
+            wp_send_json_error(['text' => Telegram::explain($me['error'])]);
         }
+        if ($typed === '' || $typed === Settings::text('tg_token')) {
+            self::rememberBot((array) $me['result']);
+        }
+
+        $r = Telegram::api('getUpdates', ['limit' => 100], $token);
+        if (!$r['ok']) {
+            wp_send_json_error(['text' => Telegram::explain($r['error'])]);
+        }
+
+        // newest first, each chat once
+        $chats = [];
+        foreach (array_reverse((array) $r['result']) as $u) {
+            $c = $u['message']['chat'] ?? $u['channel_post']['chat'] ?? $u['my_chat_member']['chat'] ?? null;
+            if (!is_array($c) || !isset($c['id']) || isset($chats[(string) $c['id']])) {
+                continue;
+            }
+            // the bot was removed from a group: no use offering it
+            if (isset($u['my_chat_member']) && in_array($u['my_chat_member']['new_chat_member']['status'] ?? '', ['left', 'kicked'], true)) {
+                $chats[(string) $c['id']] = null;
+                continue;
+            }
+            $kind = match ((string) ($c['type'] ?? 'private')) {
+                'group', 'supergroup' => 'group',
+                'channel'             => 'channel',
+                default               => 'person',
+            };
+            $name = trim((string) ($c['title'] ?? (($c['first_name'] ?? '') . ' ' . ($c['last_name'] ?? ''))));
+            $chats[(string) $c['id']] = ['id' => (string) $c['id'], 'name' => $name, 'kind' => $kind, 'handle' => isset($c['username']) ? '@' . $c['username'] : ''];
+        }
+
+        wp_send_json_success([
+            'bot'   => '@' . (string) ($me['result']['username'] ?? ''),
+            'chats' => array_values(array_filter($chats)),
+        ]);
     }
 
     /* ---- Navigation and form ---------------------------------------------- */
@@ -219,34 +309,43 @@ final class SettingsPage
         echo '</form>';
 
         if ($section->id === 'telegram') {
-            $this->renderTelegramSteps();
+            $this->renderTelegramGuide();
         }
     }
 
-    /** Telegram in four steps, with the two buttons that finish the job */
-    private function renderTelegramSteps(): void
+    /**
+     * How to connect: the steps while something is missing (each ticks
+     * itself off), and afterwards only how to add someone else.
+     */
+    private function renderTelegramGuide(): void
     {
         $token = Settings::text('tg_token') !== '';
-        $chat  = Settings::text('tg_chat') !== '';
-        $step  = static fn (bool $done, string $text): string => '<li class="za-step' . ($done ? ' is-done' : '') . '"><i>' . ($done ? Ui::icon('check', 13) : '') . '</i><span>' . $text . '</span></li>';
-        $btn   = static fn (string $what, string $label, string $icon, bool $on): string => '<button type="submit" name="szw_tg" value="' . $what . '" class="za-btn za-btn--sm' . ($on ? '' : ' is-disabled') . '"' . ($on ? '' : ' disabled') . '>' . Ui::icon($icon, 14) . '<span>' . $label . '</span></button>';
+        $chats = Settings::recipients() !== [];
+        $step  = static fn (bool $done, string $title, string $text): string => '<li class="za-step' . ($done ? ' is-done' : '') . '"><i>' . ($done ? Ui::icon('check', 13) : '') . '</i><span><b>' . $title . '</b> ' . $text . '</span></li>';
 
-        echo '<section class="za-card za-card--steps"><header class="za-card__head"><h3>' . Ui::icon('telegram', 18) . 'Set up in four steps</h3></header><div class="za-card__body"><ol class="za-steps">'
-            . $step($token, 'In Telegram, open <b>@BotFather</b>, send <code>/newbot</code> and give it a name. Paste the token it gives you into "Bot token" above and save.')
-            . $step($chat, 'Open your new bot in Telegram and press <b>Start</b>, then press "Find my chat".')
-            . $step($chat && !empty(get_option('szw_tg_last', [])['ok']), 'Press "Test message"; it should arrive in Telegram.')
-            . $step(false, 'Done. From then on every new request arrives in Telegram, with "Open in WordPress" and "WhatsApp" buttons.')
-            . '</ol><form method="post" class="za-steps__actions" action="' . esc_url($this->url('telegram')) . '">' . wp_nonce_field(self::NONCE, '_wpnonce', true, false)
-            . $btn('detect', 'Find my chat', 'search', $token)
-            . $btn('test', 'Test message', 'send', $token && $chat)
-            . '</form></div></section>';
+        $ways = '<ul class="za-ways">'
+            . '<li>' . Ui::icon('user', 16) . '<span><b>A person</b> opens the bot in Telegram and presses <b>Start</b>.</span></li>'
+            . '<li>' . Ui::icon('users', 16) . '<span><b>A group:</b> add the bot to the group, then send any message in it.</span></li>'
+            . '<li>' . Ui::icon('megaphone', 16) . '<span><b>A channel:</b> add the bot as an admin that can post, then post something.</span></li>'
+            . '</ul><p class="za-hint">Then press <b>Find chats</b> above and add them.</p>';
+
+        if ($token && $chats) {
+            echo '<details class="za-card za-guide"><summary class="za-card__head"><h3>' . Ui::icon('plus', 18) . 'Adding someone else</h3>' . Ui::icon('chevron', 16) . '</summary><div class="za-card__body">' . $ways . '</div></details>';
+            return;
+        }
+
+        echo '<section class="za-card za-card--steps"><header class="za-card__head"><h3>' . Ui::icon('telegram', 18) . 'Connect in three steps</h3></header><div class="za-card__body"><ol class="za-steps">'
+            . $step($token, 'Make a bot.', 'In Telegram, open <b>@BotFather</b>, send <code>/newbot</code> and pick a name. Paste the token it answers with into "Bot token" and save.')
+            . $step($chats, 'Say hello to it.', 'Open your new bot and press <b>Start</b>. Then press <b>Find chats</b> and add yourself.')
+            . $step(false, 'Test and save.', 'Press <b>Test</b> beside the chat; the message should arrive in a second. Save, and every new request arrives there.')
+            . '</ol><p class="za-hint">More people, a group or a channel can be added at any time:</p>' . $ways . '</div></section>';
     }
 
     /** One row: the label and help on one side, the input on the other */
     private function renderRow(Field $field): void
     {
         $id   = 'szw-' . $field->key;
-        $wide = $field->type === FieldType::Textarea;
+        $wide = in_array($field->type, [FieldType::Textarea, FieldType::Chats], true);
 
         echo '<div class="za-field' . ($wide ? ' za-field--wide' : '') . ($field->type === FieldType::Toggle ? ' za-field--toggle' : '') . '">';
         printf('<div class="za-field__label"><label for="%s">%s</label>', esc_attr($id), esc_html($field->label));
@@ -294,16 +393,24 @@ final class SettingsPage
                 return;
 
             case FieldType::Textarea:
-                printf('<textarea class="za-textarea" id="%s" name="%s" rows="6" dir="auto">%s</textarea>', esc_attr($id), $name, esc_textarea(Settings::text($field->key)));
+                printf('<textarea class="za-textarea" id="%s" name="%s" rows="%d" dir="auto">%s</textarea>', esc_attr($id), $name, $field->key === 'reply_wa' ? 3 : 5, esc_textarea(Settings::text($field->key)));
+                $this->renderPreview($field->key);
+                return;
+
+            case FieldType::Chats:
+                $this->renderChats($field, $id);
                 return;
 
             case FieldType::Secret:
                 // the real value is never in the HTML; left empty means "leave it", cleared only by the tick
                 $set = Settings::hasSecret($field->key);
+                $bot = get_option(self::BOT, []);
+                $bot = is_array($bot) && !empty($bot['username']) ? $bot : null;
                 printf('<div class="za-secret"><input type="password" class="za-text" id="%s" name="%s" value="" autocomplete="new-password" placeholder="%s" dir="ltr">',
                     esc_attr($id), $name, esc_attr($set ? 'Type a new one to replace it' : 'Paste it here'));
                 echo '<div class="za-secret__state">' . ($set
-                    ? Ui::pill('Saved', 'ok', 'lock') . '<code>' . esc_html(Settings::mask($field->key)) . '</code>'
+                    ? ($bot ? '<span class="za-bot">' . Ui::icon('telegram', 14) . '<b>@' . esc_html($bot['username']) . '</b>' . ($bot['name'] !== '' ? '<small>' . esc_html($bot['name']) . '</small>' : '') . '</span>' : Ui::pill('Saved', 'ok', 'lock'))
+                        . '<code>' . esc_html(Settings::mask($field->key)) . '</code>'
                         . sprintf('<label class="za-check"><input type="checkbox" name="%s" value="__clear__"> Remove it</label>', $name)
                     : Ui::pill('Not set', 'warn')) . '</div></div>';
                 return;
@@ -312,6 +419,78 @@ final class SettingsPage
                 printf('<input type="text" class="za-text" id="%s" name="%s" value="%s" placeholder="%s" dir="auto">',
                     esc_attr($id), $name, esc_attr(Settings::text($field->key)), esc_attr($field->placeholder));
         }
+    }
+
+    /**
+     * The chats: one row each (kind, name you can change, id, on/off, test,
+     * remove), "Find chats" and "Add by id". Rows are form fields like any
+     * other; they are kept on Save.
+     */
+    private function renderChats(Field $field, string $id): void
+    {
+        $name  = esc_attr($field->key);
+        $chats = Settings::recipients();
+
+        printf('<div class="za-chats" id="%s" data-chats data-name="%s" data-ajax="%s" data-nonce="%s">', esc_attr($id), $name, esc_url(admin_url('admin-ajax.php')), esc_attr(wp_create_nonce(self::AJAX)));
+        echo '<ul class="za-chats__list">';
+        foreach ($chats as $i => $c) {
+            echo self::chatRow($field->key, (string) $i, $c);
+        }
+        echo '</ul>';
+
+        echo '<div class="za-chats__empty"' . ($chats !== [] ? ' hidden' : '') . '>' . Ui::icon('telegram', 22) . '<p><b>No chats yet.</b> Press Start in your bot, then Find chats.</p></div>';
+
+        echo '<div class="za-chats__bar">'
+            . '<button type="button" class="za-btn za-btn--sm" data-chats-find>' . Ui::icon('search', 14) . '<span>Find chats</span></button>'
+            . '<button type="button" class="za-btn za-btn--sm za-btn--ghost" data-chats-manual>' . Ui::icon('plus', 14) . '<span>Add by id</span></button>'
+            . '<span class="za-chats__count" aria-live="polite"></span></div>';
+
+        echo '<div class="za-chats__manual" hidden><input type="text" class="za-text" inputmode="text" dir="ltr" placeholder="Chat id, like 123456789 or -1001234567890, or @channel" aria-label="Chat id">'
+            . '<button type="button" class="za-btn za-btn--sm za-btn--primary" data-chats-add-manual>' . Ui::icon('plus', 14) . '<span>Add</span></button></div>';
+
+        echo '<div class="za-chats__found" hidden aria-live="polite"></div>';
+
+        echo '<span data-chats-icons hidden><i data-k="person">' . Ui::icon('user', 16) . '</i><i data-k="group">' . Ui::icon('users', 16) . '</i><i data-k="channel">' . Ui::icon('megaphone', 16) . '</i></span>';
+        echo '<template data-chats-row>' . self::chatRow($field->key, '__i__', ['id' => '', 'name' => '', 'kind' => '', 'on' => true]) . '</template>';
+        echo '</div>';
+    }
+
+    /** @param array{id:string,name:string,kind:string,on:bool} $c */
+    private static function chatRow(string $key, string $i, array $c): string
+    {
+        $n    = $key . '[' . $i . ']';
+        $kind = ['person' => ['user', 'Person'], 'group' => ['users', 'Group'], 'channel' => ['megaphone', 'Channel']][$c['kind']] ?? (str_starts_with($c['id'], '-') ? ['users', 'Group or channel'] : (str_starts_with($c['id'], '@') ? ['megaphone', 'Channel'] : ['user', 'Person']));
+
+        return '<li class="za-chat' . ($c['on'] ? '' : ' is-off') . '" data-chat>'
+            . '<span class="za-chat__ava" aria-hidden="true">' . Ui::icon($kind[0], 16) . '</span>'
+            . '<span class="za-chat__text">'
+            . '<input type="text" class="za-chat__name" name="' . esc_attr($n . '[name]') . '" value="' . esc_attr($c['name']) . '" placeholder="Name it (only you see this)" aria-label="Name" maxlength="60">'
+            . '<small><span data-chat-kind>' . esc_html($kind[1]) . '</span> · <code data-chat-id>' . esc_html($c['id']) . '</code></small>'
+            . '<input type="hidden" name="' . esc_attr($n . '[id]') . '" value="' . esc_attr($c['id']) . '">'
+            . '<input type="hidden" name="' . esc_attr($n . '[kind]') . '" value="' . esc_attr($c['kind']) . '">'
+            . '</span>'
+            . '<span class="za-chat__state" aria-live="polite"></span>'
+            . '<button type="button" class="za-btn za-btn--sm za-btn--ghost" data-chat-test>' . Ui::icon('send', 14) . '<span>Test</span></button>'
+            . '<label class="za-switch za-switch--sm" title="Gets new requests"><input type="checkbox" name="' . esc_attr($n . '[on]') . '" value="1"' . ($c['on'] ? ' checked' : '') . ' aria-label="Gets new requests"><span class="za-switch__track"></span></label>'
+            . '<button type="button" class="za-btn za-btn--icon" data-chat-remove aria-label="Remove" title="Remove">' . Ui::icon('x', 16) . '</button>'
+            . '</li>';
+    }
+
+    /** Under a reply text: how it reads on a real request, as you type */
+    private function renderPreview(string $key): void
+    {
+        if (!in_array($key, ['reply_email', 'reply_wa'], true)) {
+            return;
+        }
+
+        $sample = ['first' => 'Mina', 'name' => 'Mina Karimi', 'needs' => 'ai visuals and post-production'];
+        printf(
+            '<div class="za-preview za-preview--%s" data-preview="%s" data-sample="%s" aria-live="polite"><span class="za-preview__label">%s</span><div class="za-preview__bubble"></div></div>',
+            $key === 'reply_wa' ? 'wa' : 'mail',
+            esc_attr($key),
+            esc_attr((string) wp_json_encode($sample)),
+            $key === 'reply_wa' ? Ui::icon('whatsapp', 13) . 'How it opens in WhatsApp, for Mina Karimi' : Ui::icon('mail', 13) . 'How it opens in your mail app, for Mina Karimi'
+        );
     }
 
     /* ---- System status ---------------------------------------------------- */
@@ -328,11 +507,14 @@ final class SettingsPage
 
         $last = get_option('szw_tg_last', []);
         $last = is_array($last) ? $last : [];
+        $bot   = get_option(self::BOT, []);
+        $all   = Settings::recipients();
+        $on    = count(array_filter($all, static fn ($c) => $c['on']));
         $this->statusCard('Telegram', 'telegram', [
             'Notifications' => Settings::bool('tg_enabled') ? ['ok', 'On'] : ['warn', 'Off: requests only wait in this panel'],
-            'Bot token'     => Settings::text('tg_token') !== '' ? ['ok', 'Saved'] : ['error', 'Not set: add it under Telegram'],
-            'Chat'          => Settings::text('tg_chat') !== '' ? ['ok', Settings::text('tg_chat')] : ['error', 'Unknown: press "Find my chat"'],
-            'Last message'  => $last === [] ? ['muted', 'Nothing sent yet'] : (!empty($last['ok']) ? ['ok', 'Delivered ' . Fmt::ago((int) $last['at'])] : ['error', 'Not delivered: ' . (string) ($last['error'] ?? '') . ' (' . Fmt::ago((int) ($last['at'] ?? 0)) . ')']),
+            'Bot'           => Settings::text('tg_token') === '' ? ['error', 'No token: add it under Telegram'] : (is_array($bot) && !empty($bot['username']) ? ['ok', '@' . $bot['username']] : ['ok', 'Token saved']),
+            'Chats'         => $all === [] ? ['error', 'None: press "Find chats" under Telegram'] : ($on === 0 ? ['warn', 'All ' . count($all) . ' paused'] : ['ok', Fmt::plural($on, 'chat') . ($on < count($all) ? ', ' . (count($all) - $on) . ' paused' : '')]),
+            'Last message'  => $last === [] ? ['muted', 'Nothing sent yet'] : (!empty($last['ok']) ? ['ok', 'Delivered ' . Fmt::ago((int) $last['at'])] : ['error', 'Not delivered' . (!empty($last['chat']) ? ' to ' . $last['chat'] : '') . ': ' . Telegram::explain((string) ($last['error'] ?? '')) . ' (' . Fmt::ago((int) ($last['at'] ?? 0)) . ')']),
         ], $test);
 
         $pages  = DashboardPage::formPages();

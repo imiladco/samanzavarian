@@ -25,6 +25,7 @@ szw_group( 'Requests: receiving' );
 // Telegram answered here, and every call recorded
 $GLOBALS['szw_tg_calls'] = [];
 $GLOBALS['szw_tg_fail']  = '';
+$GLOBALS['szw_tg_fail_chat'] = '';
 add_filter(
 	'pre_http_request',
 	static function ( $pre, $args, $url ) {
@@ -32,17 +33,17 @@ add_filter(
 			return $pre;
 		}
 		$GLOBALS['szw_tg_calls'][] = $args['body'];
-		$fail                      = $GLOBALS['szw_tg_fail'];
+		$fail                      = $GLOBALS['szw_tg_fail'] ?: ( '' !== $GLOBALS['szw_tg_fail_chat'] && (string) ( $args['body']['chat_id'] ?? '' ) === $GLOBALS['szw_tg_fail_chat'] ? 'Bad Request: chat not found' : '' );
 		return [ 'headers' => [], 'body' => wp_json_encode( $fail ? [ 'ok' => false, 'description' => $fail ] : [ 'ok' => true, 'result' => [] ] ), 'response' => [ 'code' => $fail ? 400 : 200, 'message' => '' ], 'cookies' => [], 'filename' => null ];
 	},
 	10,
 	3
 );
 $saved_opt = get_option( Telegram::OPTION );
-$saved_kit = [ get_option( 'szw_settings', null ), get_option( 'szw_secrets', null ) ];
+$saved_kit = [ get_option( 'szw_settings', null ), get_option( 'szw_secrets', null ), get_option( 'szw_tg_chats', null ) ];
 update_option( Telegram::OPTION, [ 'token' => '123456789:AAAAAAAAAAAAAAAAAAAAAAAAAAAA', 'chat' => '555', 'retention' => 0 ] );
 if ( Leads::kit() ) {
-	\Samanzavarian_Widgets\Admin\Settings\Settings::save( [ 'tg_enabled' => '1', 'tg_token' => '123456789:AAAAAAAAAAAAAAAAAAAAAAAAAAAA', 'tg_chat' => '555' ], 'telegram' );
+	\Samanzavarian_Widgets\Admin\Settings\Settings::save( [ 'tg_enabled' => '1', 'tg_token' => '123456789:AAAAAAAAAAAAAAAAAAAAAAAAAAAA', 'tg_chats' => [ [ 'id' => '555', 'name' => 'Me', 'on' => '1' ] ] ], 'telegram' );
 }
 $_SERVER['REMOTE_ADDR'] = '203.0.113.' . wp_rand( 1, 250 );
 delete_transient( Leads::ip_key() );
@@ -89,6 +90,31 @@ wp_clear_scheduled_hook( Telegram::RETRY, [ $id2 ] );
 Telegram::send( $id2 );
 szw_ok( 'sent' === get_post_meta( $id2, Telegram::META, true )['state'], 'the retry gets through' );
 
+if ( Leads::kit() ) {
+	// several chats: one refuses; the others still get it, and the retry only goes where it is missing
+	$S = \Samanzavarian_Widgets\Admin\Settings\Settings::class;
+	$e = $S::save( [ 'tg_enabled' => '1', 'tg_chats' => [ [ 'id' => '555', 'name' => 'Me', 'on' => '1' ], [ 'id' => '-1001234567890', 'name' => 'Team', 'on' => '1' ], [ 'id' => '@leads_ch', 'name' => 'Channel' ], [ 'id' => '555', 'name' => 'twice' ] ] ], 'telegram' );
+	szw_ok( [] === $e && 3 === count( $S::recipients() ) && [ '555' => 'Me', '-1001234567890' => 'Team' ] === Telegram::chats(), 'chats: a list, the same id once, a paused one left out' );
+	szw_ok( [] !== $S::save( [ 'tg_chats' => [ [ 'id' => 'hello', 'name' => 'x', 'on' => '1' ] ] ], 'telegram' ), 'a chat id that is not one is refused, by name' );
+	$GLOBALS['szw_tg_fail_chat'] = '-1001234567890';
+	$id3 = Leads::store( [ 'name' => 'Multi Chat', 'email' => 'multi@brand.com', 'phone' => '', 'services' => [], 'timeline' => '', 'budget' => '', 'message' => 'A message for many chats.', 'link' => '', 'page' => '' ] );
+	$GLOBALS['szw_tg_calls'] = [];
+	Telegram::send( $id3 );
+	$tg3 = get_post_meta( $id3, Telegram::META, true );
+	szw_ok( 'partial' === $tg3['state'] && ! empty( $tg3['chats']['555']['ok'] ) && empty( $tg3['chats']['-1001234567890']['ok'] ) && 2 === count( $GLOBALS['szw_tg_calls'] ), 'one chat refuses: the others still get it, and the request says who did not' );
+	$GLOBALS['szw_tg_fail_chat'] = '';
+	$GLOBALS['szw_tg_calls'] = [];
+	wp_clear_scheduled_hook( Telegram::RETRY, [ $id3 ] );
+	Telegram::send( $id3 );
+	szw_ok( 'sent' === get_post_meta( $id3, Telegram::META, true )['state'] && 1 === count( $GLOBALS['szw_tg_calls'] ) && '-1001234567890' === (string) $GLOBALS['szw_tg_calls'][0]['chat_id'], 'the retry goes only to the chat that missed it' );
+	$GLOBALS['szw_tg_calls'] = [];
+	Telegram::send( $id3, true );
+	szw_ok( 2 === count( $GLOBALS['szw_tg_calls'] ), '"Send again" goes to every chat' );
+	szw_ok( false !== strpos( Telegram::explain( 'Bad Request: chat not found' ), 'press Start' ) && false !== strpos( Telegram::explain( 'Unauthorized' ), 'BotFather' ), 'Telegram errors are said as what to do' );
+	wp_delete_post( $id3, true );
+	$S::save( [ 'tg_enabled' => '1', 'tg_chats' => [ [ 'id' => '555', 'name' => 'Me', 'on' => '1' ] ] ], 'telegram' );
+}
+
 $post( array_merge( $good, [ 'message' => 'buy http://a.co http://b.co http://c.co http://d.co now ' . wp_rand(), 'email' => 'spam@x.co' ] ) );
 $calls = count( $GLOBALS['szw_tg_calls'] );
 Telegram::flush_queue();
@@ -116,10 +142,12 @@ delete_transient( Leads::ip_key() );
 false === $saved_opt ? delete_option( Telegram::OPTION ) : update_option( Telegram::OPTION, $saved_opt );
 null === $saved_kit[0] ? delete_option( 'szw_settings' ) : update_option( 'szw_settings', $saved_kit[0] );
 null === $saved_kit[1] ? delete_option( 'szw_secrets' ) : update_option( 'szw_secrets', $saved_kit[1] );
+null === $saved_kit[2] ? delete_option( 'szw_tg_chats' ) : update_option( 'szw_tg_chats', $saved_kit[2] );
 
 szw_group( 'Telegram settings' );
 $s = Telegram::sanitize( [ 'token' => 'not a token', 'chat' => 'abc', 'retention' => '99999' ] );
 szw_ok( '' === $s['chat'] && 3650 === $s['retention'], 'a chat must be an id or @name; retention at most ten years' );
+szw_ok( '555, -1001234567890' === Telegram::sanitize( [ 'chat' => '555, nope -1001234567890' ] )['chat'], 'the plain settings page takes several chats, separated by commas' );
 szw_ok( '123456789:BBBBBBBBBBBBBBBBBBBBBBBBBBBB' === Telegram::sanitize( [ 'token' => '123456789:BBBBBBBBBBBBBBBBBBBBBBBBBBBB' ] )['token'], 'a token in the right shape is kept' );
 
 szw_group( 'Project Form and Reach' );

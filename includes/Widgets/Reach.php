@@ -21,6 +21,12 @@ defined( 'ABSPATH' ) || exit;
  * pages stay right). Email has Copy: on a computer, where a mail app is
  * often missing, the whole row copies the address; on a phone it opens the
  * mail app.
+ *
+ * Drawn like the Project Form's needs: a soft tray of rows, each icon in a
+ * white tile in its channel's colour. A row lifts out as a white card under
+ * the pointer (or keyboard focus); the tile warms to the channel's tint and
+ * the arrow moves on. The rows come in one after another the first time
+ * the list scrolls into view.
  */
 class Reach extends Widget_Base {
 
@@ -194,12 +200,12 @@ class Reach extends Widget_Base {
 				?>
 				<li class="sz-reach__row<?php echo ! empty( $r['_id'] ) ? ' elementor-repeater-item-' . esc_attr( $r['_id'] ) : ''; ?>" data-type="<?php echo esc_attr( $type ); ?>">
 					<a class="sz-reach__a" href="<?php echo esc_url( $href, [ 'mailto', 'tel', 'http', 'https' ] ); ?>"<?php echo $out ? ' target="_blank" rel="noopener"' : ''; ?><?php echo $copy ? ' data-copy="' . esc_attr( trim( (string) $r['value'] ) ) . '"' : ''; ?>>
-						<span class="sz-reach__tile sz-app" aria-hidden="true"><?php echo Icon_Library::svg( self::ICONS[ $type ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static svg ?></span>
+						<span class="sz-reach__tile" aria-hidden="true"><?php echo Icon_Library::svg( self::ICONS[ $type ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static svg ?></span>
 						<span class="sz-reach__t">
 							<span class="sz-reach__name"><?php echo esc_html( trim( (string) ( $r['label'] ?? '' ) ) ); ?><?php if ( $online ) : ?><span class="sz-reach__on" hidden><?php echo esc_html( (string) ( $s['l_online'] ?? 'Online' ) ); ?></span><?php endif; ?></span>
 							<small class="sz-reach__sub"><?php echo esc_html( $shown ); ?></small>
 						</span>
-						<?php if ( ! $copy ) : ?><svg class="sz-reach__chev" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 6 6 6-6 6"/></svg><?php endif; ?>
+						<?php if ( ! $copy ) : ?><span class="sz-reach__go" aria-hidden="true"><svg class="sz-reach__chev" viewBox="0 0 24 24" focusable="false"><path d="M5 12h13M13 6l6 6-6 6"/></svg></span><?php endif; ?>
 					</a>
 					<?php if ( $copy ) : ?>
 						<button type="button" class="sz-reach__copy" data-copy="<?php echo esc_attr( trim( (string) $r['value'] ) ); ?>" aria-label="<?php echo esc_attr( ( $s['l_copy'] ?? 'Copy' ) . ' ' . trim( (string) $r['value'] ) ); ?>"><span><?php echo esc_html( (string) ( $s['l_copy'] ?? 'Copy' ) ); ?></span></button>
