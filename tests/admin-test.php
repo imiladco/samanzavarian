@@ -29,19 +29,20 @@ if ( ! Leads::kit() ) {
 	return;
 }
 
-use Samanzavarian_Widgets\Admin\Fa;
+use Samanzavarian_Widgets\Admin\Fmt;
 use Samanzavarian_Widgets\Admin\Kit;
 use Samanzavarian_Widgets\Admin\Settings\Settings;
 
-szw_ok( '۱۲٬۳۴۵' !== Fa::num( 12345 ) && '۱۲,۳۴۵' === Fa::num( 12345 ) && '90' === Fa::only( '۹۰' ), 'Persian digits out, Latin digits in' );
-szw_ok( [ 1405, 7, 27 ] === Fa::jalali( strtotime( '2026-10-19 12:00:00 UTC' ) ), 'Jalali date: 19 October 2026 is 27 Mehr 1405' );
+szw_ok( '12,345' === Fmt::num( 12345 ) && '90' === Fmt::only( '۹۰' ) && '1 request' === Fmt::plural( 1, 'request' ) && '3 requests' === Fmt::plural( 3, 'request' ), 'English numbers; digits typed in any script are read' );
+$t = Fmt::local( strtotime( '2026-10-19 12:00:00 UTC' ) )->getTimestamp();
+szw_ok( (bool) preg_match( '/^\d{1,2} Oct 2026, \d\d:\d\d$/', Fmt::date( $t, true ) ) && '5 hours' === Fmt::duration( 5 * 3600 ) && '45 min ago' === Fmt::ago( time() - 45 * 60 ), 'English dates, durations and "ago", in the site\'s time zone' );
 
 $id = Leads::store( [ 'name' => 'Panel Test', 'email' => 'panel@test.co', 'phone' => '', 'services' => [ 'AI visuals' ], 'timeline' => 'Flexible', 'budget' => '$1k–3k', 'message' => 'A test request for the panel.', 'link' => '', 'page' => '' ] );
 szw_ok( 'new' === Leads::status( $id ) && 'Received from the form' === ( Leads::events( $id )[0]['message'] ?? '' ), 'a stored request starts new, with its arrival in the events' );
 
 Leads::set_status( $id, 'talking', 'Tester', Kit::statusText( 'talking' ) );
 $first = (int) get_post_meta( $id, Leads::FIRST, true );
-szw_ok( $first > 0 && 'talking' === Leads::status( $id ) && 'Tester' === end( Leads::events( $id ) )['by'], 'out of "new": the first reply is timed, and who did it is in the events' );
+szw_ok( $first > 0 && 'talking' === Leads::status( $id ) && 'Tester' === end( Leads::events( $id ) )['by'] && 'Status: Talking' === end( Leads::events( $id ) )['message'], 'out of "new": the first reply is timed, and who did it is in the events' );
 Leads::set_status( $id, 'won', 'Tester' );
 Leads::set_status( $id, 'new', 'Tester' );
 Leads::set_status( $id, 'talking', 'Tester' );

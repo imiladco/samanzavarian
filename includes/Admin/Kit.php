@@ -1,14 +1,14 @@
 <?php
 
 /**
- * پیشخوان درخواست‌ها — ساخته‌شده از روی «کیت پیشخوان».
+ * The Requests panel, built on the admin kit.
  *
- * سه صفحه زیر یک منو: نمای کلی، درخواست‌ها (فهرست و جزئیات)، تنظیمات (و
- * وضعیت سیستم). داده همان درخواست‌های فرم پروژه است (Leads)؛ این‌جا فقط
- * دیدن و رسیدگی به آن‌هاست.
+ * Three pages under one menu: Overview, Requests (list and detail), Settings
+ * (and System status). The data is the Project Form's requests (Leads); this
+ * is where they are read and handled.
  *
- * به PHP 8.1 نیاز دارد (enum، match، readonly)؛ Leads::kit() پیش از بار شدن
- * این کلاس‌ها بررسی می‌کند و روی نسخه‌های پایین‌تر فهرست ساده وردپرس می‌ماند.
+ * Needs PHP 8.1 (enum, match, readonly): Leads::kit() checks before any of
+ * these classes load, and older PHP keeps the plain WordPress list.
  */
 
 declare(strict_types=1);
@@ -23,27 +23,27 @@ if (!defined('ABSPATH')) {
 
 final class Kit
 {
-    /** پیشوند نامک همه صفحه‌ها؛ admin.js و Ui با همین صفحه‌های پیشخوان را می‌شناسند */
+    /** Every page slug starts with this; admin.js and Ui recognise the panel's pages by it */
     public const SLUG_PREFIX = 'szw';
 
     public const CAPABILITY = 'manage_options';
 
-    /** وضعیت ← [برچسب، لحن نشان] */
+    /** status → [label, pill tone] */
     public const STATUSES = [
-        'new'     => ['تازه', 'info'],
-        'talking' => ['در گفتگو', 'warn'],
-        'won'     => ['قرارداد', 'ok'],
-        'lost'    => ['منتفی', 'muted'],
-        'spam'    => ['اسپم', 'error'],
+        'new'     => ['New', 'info'],
+        'talking' => ['Talking', 'warn'],
+        'won'     => ['Won', 'ok'],
+        'lost'    => ['Lost', 'muted'],
+        'spam'    => ['Spam', 'error'],
     ];
 
-    /** نماهای فهرست ← برچسب */
-    public const VIEWS = ['all' => 'همه', 'new' => 'تازه', 'talking' => 'در گفتگو', 'won' => 'قرارداد', 'lost' => 'منتفی', 'spam' => 'اسپم'];
+    /** list views → label */
+    public const VIEWS = ['all' => 'All', 'new' => 'New', 'talking' => 'Talking', 'won' => 'Won', 'lost' => 'Lost', 'spam' => 'Spam'];
 
-    /** نام وضعیت در رویدادها: «وضعیت: در گفتگو» */
+    /** A status in the events: "Status: Talking" */
     public static function statusText(string $status): string
     {
-        return 'وضعیت: ' . (self::STATUSES[$status][0] ?? $status);
+        return 'Status: ' . (self::STATUSES[$status][0] ?? $status);
     }
 
     public static function boot(): void
@@ -57,7 +57,7 @@ final class Kit
         RequestsPage::register();
         SettingsPage::register();
 
-        // نشانی‌های قدیمی فهرست وردپرس (پیوندهای تلگرام پیش از این نسخه) به پیشخوان تازه می‌روند
+        // the old WordPress list URLs (Telegram links from before the panel) land in the panel
         add_action('load-edit.php', static function (): void {
             if (($_GET['post_type'] ?? '') === Leads::TYPE) {
                 wp_safe_redirect(Ui::url(RequestsPage::SLUG));
@@ -73,13 +73,13 @@ final class Kit
         });
     }
 
-    /** نشانی صفحه یک درخواست؛ همان که در پیام تلگرام می‌رود */
+    /** One request's page; the link Telegram messages carry */
     public static function requestUrl(int $id): string
     {
         return Ui::url(RequestsPage::SLUG, ['item' => $id]);
     }
 
-    /** «Hi {first}» ← متن آماده با نام و نیازهای همین درخواست */
+    /** "Hi {first}" → a ready reply with this request's name and needs */
     public static function fill(string $template, array $r): string
     {
         $first = strtok((string) $r['name'], ' ') ?: (string) $r['name'];

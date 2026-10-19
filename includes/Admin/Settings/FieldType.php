@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) {
 enum FieldType: string
 {
     case Text     = 'text';
-    case Secret   = 'secret';     // در HTML هرگز نمایش داده نمی‌شود و جدا ذخیره می‌شود
+    case Secret   = 'secret';     // never printed in HTML, and stored apart
     case Number   = 'number';
     case Toggle   = 'toggle';
     case Select   = 'select';

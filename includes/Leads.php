@@ -711,7 +711,7 @@ final class Leads {
 		$b     = $blank;
 		$spam  = 0;
 		$day   = [];
-		$tz    = new \DateTimeZone( 'Asia/Tehran' );
+		$tz    = wp_timezone();
 		for ( $i = $days - 1; $i >= 0; $i-- ) {
 			$k         = ( new \DateTimeImmutable( '@' . ( $now - $i * DAY_IN_SECONDS ) ) )->setTimezone( $tz )->format( 'Y-m-d' );
 			$day[ $k ] = [ 'ts' => $now - $i * DAY_IN_SECONDS, 'a' => 0, 'b' => 0 ];

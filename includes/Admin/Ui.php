@@ -1,19 +1,19 @@
 <?php
 
 /**
- * اجزای مشترک پیشخوان (همه با admin.css): پوسته و سربرگ، عنوان صفحه، کارت،
- * دکمه، فرم یک‌دکمه‌ای، نشان، هشدار، حالت خالی، آواتار، فهرست کلید-مقدار،
- * کاشی آمار، پنجره، اعلان نتیجه اقدام.
+ * The Requests panel's shared parts (all styled by assets/admin/admin.css, from
+ * the admin kit): shell and header, page title, card, button, one-button
+ * form, pill, alert, empty state, avatar, key-value list, stat tile, dialog,
+ * action notices.
  *
- * قاعده: همه خروجی‌ها escape شده‌اند، مگر پارامترهایی که نامشان با Html
- * تمام می‌شود (HTML آماده از همین کلاس).
+ * Rule: every output is escaped, except parameters whose name ends in Html
+ * (markup already built by this class).
  */
 
 declare(strict_types=1);
 
 namespace Samanzavarian_Widgets\Admin;
 
-use Samanzavarian_Widgets\Admin\Fa;
 
 
 if (!defined('ABSPATH')) {
@@ -22,14 +22,14 @@ if (!defined('ABSPATH')) {
 
 final class Ui
 {
-    /** ناوبری بالای همه صفحه‌ها: نامک ← [برچسب، آیکن] */
+    /** The navigation on every page: slug → [label, icon] */
     private const TABS = [
-        DashboardPage::SLUG => ['نمای کلی', 'home'],
-        RequestsPage::SLUG  => ['درخواست‌ها', 'inbox'],
-        SettingsPage::SLUG  => ['تنظیمات', 'settings'],
+        DashboardPage::SLUG => ['Overview', 'home'],
+        RequestsPage::SLUG  => ['Requests', 'inbox'],
+        SettingsPage::SLUG  => ['Settings', 'settings'],
     ];
 
-    /** آیکن‌های خطی ۲۴×۲۴ (stroke 1.8)؛ آیکن تازه = یک مسیر SVG تازه */
+    /** 24×24 line icons (stroke 1.8); a new icon is one more SVG path */
     private const ICONS = [
         'home'     => 'M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1v-9.5Z',
         'list'     => 'M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01',
@@ -89,7 +89,7 @@ final class Ui
             $base = SZW_URL . 'assets/admin/';
             $dir  = SZW_PATH . 'assets/admin/';
 
-            // filemtime: هر تغییر فایل، کش مرورگر را می‌شکند
+            // filemtime: any change to the file breaks the browser cache
             wp_enqueue_style('szw-admin', $base . 'admin.css', [], SZW_VERSION . '.' . (int) @filemtime($dir . 'admin.css'));
             wp_enqueue_script('szw-admin', $base . 'admin.js', [], SZW_VERSION . '.' . (int) @filemtime($dir . 'admin.js'), ['in_footer' => true]);
         });
@@ -97,7 +97,7 @@ final class Ui
         add_filter('admin_body_class', static fn (string $c): string => self::ours() ? $c . ' szw-screen' : $c);
     }
 
-    /** صفحه فعلی از همین افزونه است؟ */
+    /** Is the current screen one of the panel's? */
     public static function ours(): bool
     {
         return str_starts_with((string) ($_GET['page'] ?? ''), Kit::SLUG_PREFIX);
@@ -112,15 +112,15 @@ final class Ui
         );
     }
 
-    /** آغاز صفحه: پوسته، سربرگ و ناوبری */
+    /** Page start: shell, header and navigation */
     public static function open(string $current): void
     {
-        $brand = 'سامان زواریان';
+        $brand = 'Saman Zavarian';
 
-        echo '<div class="wrap szw-admin" dir="rtl"><h1 class="screen-reader-text">' . esc_html($brand) . '</h1>';
+        echo '<div class="wrap szw-admin" dir="ltr"><h1 class="screen-reader-text">' . esc_html($brand) . '</h1>';
         echo '<header class="za-top"><a class="za-brand" href="' . esc_url(self::url(DashboardPage::SLUG)) . '">'
-            . '<span class="za-brand__mark">' . esc_html(mb_substr($brand, 0, 1)) . '</span><span><strong>' . esc_html($brand) . '</strong><small>پیشخوان درخواست‌ها</small></span></a>';
-        echo '<nav class="za-nav" aria-label="بخش‌ها">';
+            . '<span class="za-brand__mark">' . esc_html(mb_substr($brand, 0, 1)) . '</span><span><strong>' . esc_html($brand) . '</strong><small>Project requests</small></span></a>';
+        echo '<nav class="za-nav" aria-label="Sections">';
 
         foreach (self::TABS as $slug => [$label, $icon]) {
             printf(
@@ -134,7 +134,7 @@ final class Ui
         }
 
         echo '</nav></header>';
-        // اعلان‌های وردپرس و افزونه‌های دیگر این‌جا جا می‌گیرند، نه وسط کارت‌ها
+        // WordPress and other plugins' notices land here, not among the cards
         echo '<hr class="wp-header-end">';
     }
 
@@ -143,7 +143,7 @@ final class Ui
         echo '</div>';
     }
 
-    /** عنوان صفحه + یک خط توضیح + دکمه‌ها */
+    /** Page title + one line of explanation + buttons */
     public static function head(string $title, string $sub = '', string $actionsHtml = '', string $beforeHtml = ''): void
     {
         echo '<div class="za-head"><div class="za-head__text">' . $beforeHtml . '<h2 class="za-title">' . esc_html($title) . '</h2>'
@@ -160,7 +160,7 @@ final class Ui
     }
 
     /**
-     * دکمه-پیوند. گونه‌ها: '' (عادی)، primary، ghost، warn، danger، sm، link، icon
+     * A link styled as a button. Variants: '' (plain), primary, ghost, warn, danger, sm, link, icon
      *
      * @param array<string,string> $attrs
      */
@@ -175,7 +175,7 @@ final class Ui
             . ($icon !== '' ? self::icon($icon, 16) : '') . '<span>' . esc_html($label) . '</span></a>';
     }
 
-    /** دکمه‌ای که پنجره (dialog) را باز می‌کند */
+    /** A button that opens a dialog */
     public static function dialogButton(string $label, string $dialogId, string $variant = '', string $icon = ''): string
     {
         return '<button type="button" class="za-btn' . self::variants($variant) . '" data-dialog="' . esc_attr($dialogId) . '">'
@@ -183,7 +183,7 @@ final class Ui
     }
 
     /**
-     * فرم POST یک‌دکمه‌ای با nonce؛ $confirm = پرسش تأیید پیش از ارسال
+     * A one-button POST form with a nonce; $confirm = a question asked before sending
      *
      * @param array<string,string|int> $fields
      */
@@ -219,7 +219,7 @@ final class Ui
     }
 
     /**
-     * فهرست کلید-مقدار؛ مقدار رشته (escape می‌شود) یا ['html' => …]؛ خالی‌ها نمایش داده نمی‌شوند
+     * Key-value list; a value is a string (escaped) or ['html' => …]; empty ones are left out
      *
      * @param array<string,string|array{html:string}> $rows
      */
@@ -238,20 +238,20 @@ final class Ui
         return $html . '</dl>';
     }
 
-    /** @param 'ok'|'warn'|'error'|'muted'|'info' $tone نقطه رنگی + متن (ردیف‌های وضعیت) */
+    /** @param 'ok'|'warn'|'error'|'muted'|'info' $tone a coloured dot + text (status rows) */
     public static function state(string $tone, string $text): string
     {
         return '<span class="za-state za-state--' . esc_attr($tone) . '"><i></i><span>' . esc_html($text) . '</span></span>';
     }
 
-    /** حالت خالی: همیشه بگو چرا خالی است و چه کاری پرش می‌کند */
+    /** Empty state: always say why it is empty and what fills it */
     public static function empty(string $icon, string $title, string $text = ''): string
     {
         return '<div class="za-empty">' . self::icon($icon, 28) . '<strong>' . esc_html($title) . '</strong>'
             . ($text !== '' ? '<p>' . esc_html($text) . '</p>' : '') . '</div>';
     }
 
-    /** @param 'ok'|'info'|'warn'|'error' $tone هشدار: عنوان کوتاه + علت/راه رفع + دکمه اقدام */
+    /** @param 'ok'|'info'|'warn'|'error' $tone alert: short title + cause/fix + action button */
     public static function alert(string $tone, string $text, string $title = '', string $actionsHtml = ''): string
     {
         $icon = match ($tone) {
@@ -267,7 +267,7 @@ final class Ui
             . ($actionsHtml !== '' ? '<div class="za-alert__actions">' . $actionsHtml . '</div>' : '') . '</div>';
     }
 
-    /** آواتار حرف اول نام؛ $tone = 'alt' برای رنگ دوم */
+    /** The name's first letter as an avatar; $tone = 'alt' for the second colour */
     public static function avatar(string $name, string $tone = ''): string
     {
         $name    = trim($name);
@@ -278,17 +278,17 @@ final class Ui
     }
 
     /**
-     * کاشی آمار: برچسب و بازه، عدد درشت، زیرنویس و درصد تغییر
+     * Stat tile: label and period, big number, a sub line and the change in percent
      */
     public static function tile(string $label, string $icon, string $value, string $period, string $sub, int $now = 0, int $before = -1): string
     {
         $delta = '';
         if ($before >= 0 && !($before === 0 && $now === 0)) {
             if ($before === 0) {
-                $delta = '<span class="za-delta za-delta--up">تازه</span>';
+                $delta = '<span class="za-delta za-delta--up">new</span>';
             } else {
                 $pct   = (int) round(($now - $before) / $before * 100);
-                $delta = '<span class="za-delta za-delta--' . ($pct >= 0 ? 'up' : 'down') . '">' . ($pct >= 0 ? '▲ ' : '▼ ') . esc_html(Fa::digits(abs($pct))) . '٪</span>';
+                $delta = '<span class="za-delta za-delta--' . ($pct >= 0 ? 'up' : 'down') . '">' . ($pct >= 0 ? '▲ ' : '▼ ') . esc_html((string) abs($pct)) . '%</span>';
             }
         }
 
@@ -299,7 +299,7 @@ final class Ui
     }
 
     /**
-     * آغاز پنجره بومی <dialog> با فرم POST؛ بدنه را بین dialogOpen و dialogClose بنویسید
+     * Opens a native <dialog> holding a POST form; write the body between dialogOpen and dialogClose
      */
     public static function dialogOpen(string $id, string $title, string $sub, string $nonce, string $action, string $avatarName = ''): void
     {
@@ -307,13 +307,13 @@ final class Ui
         echo '<form method="post" action="' . esc_url($action) . '" class="za-dialog__form">' . wp_nonce_field($nonce, '_wpnonce', true, false);
         echo '<header class="za-dialog__head">' . ($avatarName !== '' ? self::avatar($avatarName) : '')
             . '<span><h2 id="' . esc_attr($id . '-title') . '">' . esc_html($title) . '</h2>' . ($sub !== '' ? '<small>' . esc_html($sub) . '</small>' : '') . '</span>'
-            . '<button type="button" class="za-btn za-btn--icon" data-dialog-close aria-label="بستن">' . self::icon('x', 18) . '</button></header>';
+            . '<button type="button" class="za-btn za-btn--icon" data-dialog-close aria-label="Close">' . self::icon('x', 18) . '</button></header>';
         echo '<div class="za-dialog__body">';
     }
 
     public static function dialogClose(string $submitLabel, string $submitName, string $submitValue = '1'): void
     {
-        echo '</div><footer class="za-dialog__foot"><button type="button" class="za-btn" data-dialog-close>انصراف</button>'
+        echo '</div><footer class="za-dialog__foot"><button type="button" class="za-btn" data-dialog-close>Cancel</button>'
             . '<button type="submit" name="' . esc_attr($submitName) . '" value="' . esc_attr($submitValue) . '" class="za-btn za-btn--primary">' . self::icon('check', 16) . '<span>' . esc_html($submitLabel) . '</span></button></footer>';
         echo '</form></dialog>';
     }
@@ -325,7 +325,7 @@ final class Ui
     }
 
     /**
-     * نتیجه اقدام بالای صفحه؛ admin.js همین را به‌صورت پیام کوتاه هم نشان می‌دهد
+     * An action's result at the top of the page; admin.js also shows it as a toast
      *
      * @param list<array{ok:bool,text:string}> $notices
      */

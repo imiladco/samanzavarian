@@ -8,7 +8,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-/** یک بخش (زبانه) تنظیمات؛ هر بخش جدا ذخیره می‌شود */
+/** One settings section (tab); each section is saved on its own */
 final class Section
 {
     /** @param list<Field> $fields */

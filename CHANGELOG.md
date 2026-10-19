@@ -4,6 +4,20 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.24.0 — Requests panel in English
+The whole panel now reads in English, left to right, whatever the admin
+language: menu **Requests**, Overview / Requests / Settings, statuses New,
+Talking, Won, Lost, Spam.
+
+- Inter instead of Vazirmatn (the Persian font files are gone, the zip is lighter).
+- Dates and numbers in English ("19 Oct 2026, 14:32", "5 min ago"), in the
+  site's own time zone.
+- Every physical side flipped: switch knob, input units, unread marker,
+  select arrows and padding (selects now draw their own chevron); the header
+  no longer scrolls sideways; the Delete card keeps its button by its text.
+- Events logged before this version in Persian are shown in English.
+- Reply templates, errors and Telegram's "Open in WordPress" link in English.
+
 ## 0.23.0 — Requests panel, built on the admin kit
 The admin side of the project form, rebuilt from the "admin kit" (Persian,
 right to left, Vazirmatn) in the site's own colours: navy for actions,

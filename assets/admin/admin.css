@@ -1,13 +1,13 @@
 /*
- * پیشخوان درخواست‌ها — بر پایه «کیت پیشخوان»، با رنگ‌های خود سایت.
- * کیت پیشخوان — زبان طراحی مشترک همه صفحه‌های مدیریت افزونه.
- * همه قواعد زیر .szw-admin هستند؛ صفحه‌های دیگر وردپرس دست نمی‌خورند.
+ * The Requests panel: the admin kit's design language, in the site's own
+ * colours and its font (Inter). Every rule lives under .szw-admin; no other
+ * WordPress screen is touched.
  */
 
 @font-face {
-    font-family: "Vazirmatn";
-    src: url("fonts/Vazirmatn-wght.woff2") format("woff2-variations"),
-         url("fonts/Vazirmatn-wght.woff2") format("woff2");
+    font-family: "Inter";
+    src: url("../fonts/inter-latin-var.woff2") format("woff2-variations"),
+         url("../fonts/inter-latin-var.woff2") format("woff2");
     font-weight: 100 900;
     font-display: swap;
 }
@@ -50,12 +50,12 @@ body.szw-screen {
     max-width: var(--page);
     margin: 0 auto;
     padding: 18px 20px 56px;
-    font-family: "Vazirmatn", Tahoma, sans-serif;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size: 14px;
     line-height: 1.75;
     color: var(--text);
-    direction: rtl;
-    text-align: right;
+    direction: ltr;
+    text-align: left;
 }
 
 .szw-admin *,
@@ -102,7 +102,7 @@ body.szw-screen {
     line-height: 1.9;
 }
 
-/* ---- سربرگ و ناوبری ------------------------------------------------- */
+/* ---- Header and navigation ------------------------------------------- */
 
 .szw-admin .za-top {
     position: sticky;
@@ -120,8 +120,7 @@ body.szw-screen {
     backdrop-filter: saturate(1.6) blur(14px);
     border-radius: 20px;
     box-shadow: var(--shadow);
-    /* Chrome counts a phantom width in this right-to-left wrapping flex row and
-       the whole admin scrolled sideways by a few pixels; clip keeps the shadow */
+    /* nothing in the header may push the admin sideways; clip keeps the shadow */
     overflow-x: clip;
 }
 
@@ -203,7 +202,7 @@ body.szw-screen {
     visibility: hidden;
 }
 
-/* اعلان افزونه‌های دیگر، همسو با کارت‌ها */
+/* other plugins' notices, lined up with the cards */
 .szw-admin > .notice,
 .szw-admin > .update-nag {
     margin: 0 0 14px;
@@ -240,7 +239,7 @@ body.szw-screen {
     align-items: center;
 }
 
-/* ---- دکمه‌ها --------------------------------------------------------- */
+/* ---- Buttons --------------------------------------------------------- */
 
 .szw-admin .za-inline {
     display: inline-flex;
@@ -344,7 +343,7 @@ body.szw-screen {
     color: var(--primary-deep);
 }
 
-/* فقط آیکن: حذف در ردیف فهرست */
+/* icon only: delete in a list row */
 .szw-admin .za-btn--icon {
     width: 34px;
     height: 34px;
@@ -382,7 +381,7 @@ body.szw-screen {
     color: var(--primary-strong);
 }
 
-/* ---- نشان‌ها --------------------------------------------------------- */
+/* ---- Pills ----------------------------------------------------------- */
 
 .szw-admin .za-pill {
     display: inline-flex;
@@ -412,7 +411,7 @@ body.szw-screen {
 .szw-admin .za-pill--error { background: var(--error-soft); color: var(--error); }
 .szw-admin .za-pill--brand { background: var(--alt-soft); color: #c2410c; }
 
-/* رنگ میله‌ها با لحن وضعیت: za-bars__fill--ok | info | warn | error | muted */
+/* bar colours by tone: za-bars__fill--ok | info | warn | error | muted */
 .szw-admin .za-bars__fill--ok { background: var(--ok); }
 .szw-admin .za-bars__fill--info { background: var(--info); }
 .szw-admin .za-bars__fill--warn { background: #d69e00; }
@@ -474,7 +473,7 @@ body.szw-screen {
     color: var(--primary-strong);
 }
 
-/* ---- اعلان ---------------------------------------------------------- */
+/* ---- Alerts ---------------------------------------------------------- */
 
 .szw-admin .za-alert {
     display: flex;
@@ -552,7 +551,7 @@ body.szw-screen {
     color: var(--text);
 }
 
-/* ---- کارت و چیدمان -------------------------------------------------- */
+/* ---- Cards and layout ------------------------------------------------ */
 
 .szw-admin .za-card {
     background: var(--surface);
@@ -607,6 +606,7 @@ body.szw-screen {
     display: grid;
     gap: 12px;
     justify-items: start;
+    align-content: start;
 }
 
 .szw-admin .za-grid {
@@ -616,7 +616,7 @@ body.szw-screen {
     align-items: start;
 }
 
-/* یک نسبت برای همه صفحه‌ها: ستون اصلی و ستون کناری ۳۶۰ پیکسلی */
+/* one proportion for every page: a main column and a 360px side column */
 .szw-admin .za-grid--main,
 .szw-admin .za-grid--detail {
     grid-template-columns: minmax(0, 1fr) 380px;
@@ -629,9 +629,9 @@ body.szw-screen {
 }
 
 /*
- * دو ستون هم‌قد: هیچ ستونی زودتر تمام نشود و کنارش جای خالی بماند.
- * ستون کوتاه‌تر با کش آمدن آخرین کارتش (یا کارت --fill) هم‌قد می‌شود؛
- * حالت خالیِ کارت کش‌آمده وسط می‌ایستد.
+ * Two columns of equal height: neither ends early leaving a gap beside it.
+ * The shorter column stretches its last card (or a --fill card) to match;
+ * a stretched card's empty state sits in the middle.
  */
 .szw-admin .za-grid--main,
 .szw-admin .za-grid--detail {
@@ -700,7 +700,7 @@ body.szw-screen {
     font-size: 13px;
 }
 
-/* ---- کاشی‌ها --------------------------------------------------------- */
+/* ---- Tiles ----------------------------------------------------------- */
 
 .szw-admin .za-tiles {
     display: grid;
@@ -799,7 +799,7 @@ body.szw-screen {
     color: var(--error);
 }
 
-/* ---- نمودار ستونی ۱۴ روزه ---------------------------------------------- */
+/* ---- Column chart ---------------------------------------------------- */
 
 .szw-admin .za-legend {
     display: flex;
@@ -924,8 +924,8 @@ body.szw-screen {
     white-space: nowrap;
     box-shadow: 0 8px 20px -8px rgba(0, 0, 0, .4);
     transform: translate(50%, calc(-100% - 10px));
-    font-family: "Vazirmatn", Tahoma, sans-serif;
-    direction: rtl;
+    font-family: "Inter", -apple-system, "Segoe UI", sans-serif;
+    direction: ltr;
 }
 
 .szw-admin .za-tableview {
@@ -943,7 +943,7 @@ body.szw-screen {
     margin-top: 8px;
 }
 
-/* ---- میله‌های افقی (رتبه) ---------------------------------------------- */
+/* ---- Horizontal bars (ranking) --------------------------------------- */
 
 .szw-admin .za-bars {
     list-style: none;
@@ -970,7 +970,7 @@ body.szw-screen {
 
 .szw-admin .za-bars__track {
     height: 10px;
-    border-radius: 0 99px 99px 0;
+    border-radius: 99px;
     background: var(--field);
 }
 
@@ -983,10 +983,10 @@ body.szw-screen {
 .szw-admin .za-bars__n {
     font-weight: 800;
     color: var(--ink);
-    text-align: left;
+    text-align: right;
 }
 
-/* ---- فهرست افراد و فید ---------------------------------------------- */
+/* ---- People list and feed -------------------------------------------- */
 
 .szw-admin .za-people {
     list-style: none;
@@ -1075,7 +1075,7 @@ body.szw-screen {
     justify-content: flex-end;
 }
 
-/* ---- نوار ابزار فهرست -------------------------------------------------- */
+/* ---- List toolbar ---------------------------------------------------- */
 
 .szw-admin .za-toolbar {
     display: flex;
@@ -1182,7 +1182,7 @@ body.szw-screen {
     color: var(--muted);
 }
 
-/* ---- جدول ----------------------------------------------------------- */
+/* ---- Table ----------------------------------------------------------- */
 
 .szw-admin .za-table-wrap {
     overflow-x: auto;
@@ -1200,7 +1200,7 @@ body.szw-screen {
     color: var(--muted);
     font-size: 12px;
     font-weight: 700;
-    text-align: right;
+    text-align: left;
     white-space: nowrap;
     border-bottom: 1px solid var(--line);
 }
@@ -1255,7 +1255,7 @@ body.szw-screen {
 .szw-admin .za-who small {
     color: var(--muted);
     font-size: 12px;
-    text-align: right;
+    text-align: left;
 }
 
 .szw-admin .za-cell-sub {
@@ -1271,7 +1271,7 @@ body.szw-screen {
 .szw-admin .za-row-actions {
     width: 1%;
     white-space: nowrap;
-    text-align: left;
+    text-align: right;
 }
 
 .szw-admin .za-table tr:not(:hover):not(:focus-within) .za-row-actions:not(.za-row-actions--show) .za-btn {
@@ -1315,7 +1315,7 @@ body.szw-screen {
     color: #fff;
 }
 
-/* ---- صفحه جزئیات یک مورد ------------------------------------------------- */
+/* ---- One item's page ------------------------------------------------- */
 
 .szw-admin .za-profile {
     display: flex;
@@ -1475,7 +1475,7 @@ body.szw-screen {
     text-align: left;
 }
 
-/* ---- تنظیمات --------------------------------------------------------- */
+/* ---- Settings -------------------------------------------------------- */
 
 .szw-admin .za-settings {
     display: grid;
@@ -1621,8 +1621,8 @@ body.szw-screen {
 }
 
 .szw-admin .za-select {
-    padding-left: 34px;
-    padding-right: 14px;
+    padding-right: 34px;
+    padding-left: 14px;
 }
 
 .szw-admin .za-textarea {
@@ -1655,12 +1655,12 @@ body.szw-screen {
 }
 
 .szw-admin .za-input:has(.za-input__unit) input {
-    padding-left: 70px;
+    padding-right: 70px;
 }
 
 .szw-admin .za-input__unit {
     position: absolute;
-    left: 12px;
+    right: 12px;
     color: var(--muted);
     font-size: 12.5px;
     pointer-events: none;
@@ -1696,7 +1696,7 @@ body.szw-screen {
     content: "";
     position: absolute;
     top: 3px;
-    right: 3px;
+    left: 3px;
     width: 20px;
     height: 20px;
     border-radius: 50%;
@@ -1710,7 +1710,7 @@ body.szw-screen {
 }
 
 .szw-admin .za-switch input:checked + .za-switch__track::after {
-    transform: translateX(-20px);
+    transform: translateX(20px);
 }
 
 .szw-admin .za-switch input:focus-visible + .za-switch__track {
@@ -1792,11 +1792,11 @@ body.szw-screen {
     font-weight: 700;
 }
 
-/* ---- وضعیت سیستم ---------------------------------------------------- */
+/* ---- System status --------------------------------------------------- */
 
 /*
- * کارت‌های وضعیت قدهای متفاوت دارند؛ چیدمان ستونی (masonry) هر دو ستون را
- * پر و هم‌قد نگه می‌دارد، بدون ردیفی که یک طرفش خالی بماند.
+ * Status cards differ in height; a masonry layout keeps both columns full
+ * and even, with no row left half empty.
  */
 .szw-admin .za-status {
     columns: 2;
@@ -1817,7 +1817,7 @@ body.szw-screen {
     }
 }
 
-/* با جاوااسکریپت: دو ستون واقعی، هم‌تراز در پایین (admin.js ← masonry) */
+/* with script: two real columns, level at the bottom (admin.js, masonry) */
 .szw-admin .za-status.is-masonry {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1852,7 +1852,7 @@ body.szw-screen {
     flex: none;
 }
 
-/* ---- پیام کوتاه «کپی شد» --------------------------------------------- */
+/* ---- Toast ("Copied") ------------------------------------------------- */
 
 .za-toast {
     position: fixed;
@@ -1863,7 +1863,7 @@ body.szw-screen {
     border-radius: 12px;
     background: #0d1b2a;
     color: #fff;
-    font: 600 13px/1.6 "Vazirmatn", Tahoma, sans-serif;
+    font: 600 13px/1.6 "Inter", -apple-system, "Segoe UI", sans-serif;
     transform: translate(-50%, 12px);
     opacity: 0;
     transition: opacity .2s, transform .2s;
@@ -1883,7 +1883,7 @@ body.szw-screen {
     }
 }
 
-/* ---- دور دوم: فیلتر، انتخاب گروهی، زنده، پیمایش ------------------------ */
+/* ---- Filters, bulk selection, live notice, paging -------------------- */
 
 .szw-admin .za-toolbar--range {
     margin-top: 4px;
@@ -1901,7 +1901,7 @@ body.szw-screen {
 .szw-admin .za-filter select {
     height: 36px;
     min-height: 36px;
-    padding: 0 12px 0 30px;
+    padding: 0 30px 0 12px;
     border: 0;
     border-radius: 10px;
     background-color: var(--surface);
@@ -1914,7 +1914,11 @@ body.szw-screen {
 
 .szw-admin .za-filter select,
 .szw-admin .za-select {
-    background-position: left 9px top 55% !important;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 11px top 52% !important;
     background-size: 14px 14px !important;
 }
 
@@ -2091,7 +2095,7 @@ body.szw-screen {
 .szw-admin .za-feed--compact .za-feed__who strong {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 12.5px;
-    text-align: right;
+    text-align: left;
 }
 
 .szw-admin .za-test input {
@@ -2111,12 +2115,12 @@ body.szw-screen {
     align-items: center;
 }
 
-/* نمودار با ستون‌های زیاد (۳۰ روز به بالا): ستون‌های باریک‌تر */
+/* a chart with many columns (30 days and more): narrower columns */
 .szw-admin .za-chart--30 .za-chart__bars {
     max-width: 14px;
 }
 
-/* دکمه در حال ارسال */
+/* a button while sending */
 .szw-admin .za-btn.is-loading {
     position: relative;
     color: transparent !important;
@@ -2144,7 +2148,7 @@ body.szw-screen {
     to { transform: rotate(360deg); }
 }
 
-/* ---- موبایل ---------------------------------------------------------- */
+/* ---- Phones ---------------------------------------------------------- */
 
 @media (max-width: 782px) {
     .szw-admin {
@@ -2155,9 +2159,13 @@ body.szw-screen {
         font-size: 21px;
     }
 
-    /* جدول اصلی در موبایل: فقط ستون‌های مهم؛ بقیه در صفحه جزئیات (شماره ستون‌ها را با جدول خودتان تطبیق دهید) */
-    .szw-admin .za-table--main :is(th, td):is(:nth-child(1), :nth-child(3), :nth-child(6), :nth-child(7)) {
+    /* the list on a phone: From, Status, Received; the rest is one tap away (checkbox, needs, budget, delete hidden) */
+    .szw-admin .za-table--main :is(th, td):is(:nth-child(1), :nth-child(3), :nth-child(4), :nth-child(7)) {
         display: none;
+    }
+
+    .szw-admin .za-table--main tr.is-unread td:nth-child(2) {
+        box-shadow: inset 3px 0 0 var(--alt);
     }
 
     .szw-admin .za-table--main :is(th, td) {
@@ -2228,7 +2236,7 @@ body.szw-screen {
     margin-bottom: 8px;
 }
 
-/* ---- ناوبری بی‌بارگذاری ------------------------------------------------ */
+/* ---- Navigation without reloads -------------------------------------- */
 
 .za-progress {
     position: fixed;
@@ -2246,7 +2254,6 @@ body.szw-screen {
     display: block;
     height: 100%;
     width: 0;
-    margin-inline-start: auto;
     background: linear-gradient(90deg, #ff8a55, #ff6b2c);
     box-shadow: 0 0 10px rgba(255, 107, 44, .6);
     border-radius: 0 3px 3px 0;
@@ -2305,7 +2312,7 @@ body.szw-screen {
     max-width: min(560px, calc(100vw - 32px));
     white-space: normal;
     text-align: center;
-    direction: rtl;
+    direction: ltr;
 }
 
 .szw-admin .za-alert.is-fading {
@@ -2339,7 +2346,7 @@ body.szw-screen {
     }
 }
 
-/* فاصله بالای نوار چسبان با رنگ پس‌زمینه پر شود تا محتوای زیرش دیده نشود */
+/* fill the gap above the sticky header with the background, so nothing shows through */
 .szw-admin .za-top::before {
     content: "";
     position: absolute;
@@ -2350,7 +2357,7 @@ body.szw-screen {
     background: #f6f6f7;
 }
 
-/* ---- زبانه‌های درون صفحه --------------------------------------------- */
+/* ---- In-page tabs ---------------------------------------------------- */
 
 .szw-admin .za-tabs {
     display: flex;
@@ -2394,7 +2401,7 @@ body.szw-screen {
     color: #fff;
 }
 
-/* پنجره قواعد */
+/* dialog */
 .szw-admin .za-dialog {
     width: min(760px, calc(100vw - 32px));
     max-height: calc(100vh - 48px);
@@ -2575,7 +2582,7 @@ body.szw-screen {
     }
 }
 
-/* ---- فرم کوچک درون کارت (نمونه: تغییر وضعیت در صفحه جزئیات) ------------ */
+/* ---- A small form in a card (e.g. the status on a request's page) ---- */
 
 .szw-admin .za-status-form {
     display: flex;
@@ -2589,17 +2596,17 @@ body.szw-screen {
 }
 
 /* =====================================================================
-   پیشخوان درخواست‌ها — اجزای افزوده به کیت (همان سبک، همان پیشوند)
+   The Requests panel: parts added to the kit (same style, same prefix)
    ===================================================================== */
 
-/* میله‌های ساده (نیاز، بودجه، زمان‌بندی) */
+/* plain bars (needs, budget, timeline) */
 .szw-admin .za-bars__fill--brand { background: linear-gradient(90deg, #ff8a55, var(--alt)); }
 .szw-admin .za-bars--plain .za-bars__k { font-size: 13px; font-weight: 600; color: var(--ink); }
 .szw-admin .za-bars__k a { color: inherit; text-decoration: none; }
 .szw-admin .za-bars__k a:hover { color: var(--alt); }
 .szw-admin .za-chart--90 .za-chart__bars { max-width: 6px; }
 
-/* نیازها به‌صورت نشان */
+/* needs as chips */
 .szw-admin .za-needs { display: inline-flex; flex-wrap: wrap; gap: 4px; }
 .szw-admin .za-need {
     display: inline-flex;
@@ -2616,11 +2623,11 @@ body.szw-screen {
 }
 .szw-admin .za-need--more { background: var(--alt-soft); box-shadow: none; color: #c2410c; }
 
-/* ردیف تازه در فهرست: هنوز پاسخی نگرفته */
-.szw-admin .za-table--main tr.is-unread td:first-child { box-shadow: inset -3px 0 0 var(--alt); }
+/* a new row in the list: no answer yet */
+.szw-admin .za-table--main tr.is-unread td:first-child { box-shadow: inset 3px 0 0 var(--alt); }
 .szw-admin .za-table--main tr.is-unread .za-who strong { font-weight: 800; }
 
-/* پیام: درشت و خوانا، مثل یک نقل‌قول */
+/* the message: large and readable, like a quote */
 .szw-admin .za-quote {
     position: relative;
     margin: 0;
@@ -2658,7 +2665,7 @@ body.szw-screen {
 .szw-admin .za-fact .za-ico { color: var(--alt); }
 .szw-admin .za-note { padding: 12px 14px; border-radius: 12px; background: #fffaf0; box-shadow: inset 0 0 0 1px #f6e3b4; color: var(--ink); }
 
-/* راه‌اندازی تلگرام در چند قدم */
+/* Telegram set-up in steps */
 .szw-admin .za-card--steps { margin-top: var(--gap); }
 .szw-admin .za-steps { list-style: none; display: grid; gap: 12px; counter-reset: step; }
 .szw-admin .za-step { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 12px; align-items: start; counter-increment: step; color: var(--text); }

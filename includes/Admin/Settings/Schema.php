@@ -1,13 +1,13 @@
 <?php
 
 /**
- * شِمای تنظیمات — تنها جایی که «چه تنظیمی وجود دارد» تعریف می‌شود.
+ * The settings schema: the one place that says which settings exist.
  *
- * صفحه تنظیمات، مقادیر پیش‌فرض، اعتبارسنجی و ذخیره همه از همین ساخته
- * می‌شوند؛ تنظیم تازه یعنی یک ردیف تازه این‌جا، نه دست زدن به چند جا.
+ * The settings page, the defaults, the checks and saving all come from here;
+ * a new setting is one more entry here, not edits in several places.
  *
- * قاعده نوشتن label و help: برای مدیری که تازه آمده. بگو این گزینه دقیقاً
- * چه می‌کند و کجا اثر دارد، «۰ / خالی یعنی چه»، و اصطلاح داخلی ننویس.
+ * Labels and help are written for someone new: what the option does, where
+ * it shows, and what 0 or empty means.
  */
 
 declare(strict_types=1);
@@ -58,7 +58,7 @@ final class Schema
         return self::fields()[$key] ?? null;
     }
 
-    /** @return array<string,string|int|bool> پیش‌فرض فیلدهای عادی (کلیدهای محرمانه عمداً نیستند) */
+    /** @return array<string,string|int|bool> defaults of the ordinary fields (secrets deliberately not) */
     public static function defaults(): array
     {
         $out = [];
@@ -71,35 +71,35 @@ final class Schema
         return $out;
     }
 
-     /* ---- بخش‌ها ---------------------------------------------------------- */
+     /* ---- Sections ------------------------------------------------------- */
 
     private static function telegram(): Section
     {
         return new Section(
             id: 'telegram',
-            title: 'تلگرام',
+            title: 'Telegram',
             icon: 'telegram',
-            description: 'هر درخواست تازه فرم پروژه، با نام، نیاز، زمان‌بندی، بودجه و متن پیام، در تلگرام خودتان می‌رسد. درخواست همیشه اول در همین پیشخوان ذخیره می‌شود؛ تلگرام فقط خبر می‌دهد.',
+            description: 'Every new Project Form request arrives in your Telegram: name, needs, timeline, budget and the message. The request is always saved here first; Telegram only tells you.',
             fields: [
                 new Field(
                     key: 'tg_enabled',
                     type: FieldType::Toggle,
-                    label: 'خبر دادن در تلگرام',
-                    help: 'خاموش = درخواست‌ها فقط در همین پیشخوان می‌مانند و پیامی به تلگرام نمی‌رود.',
+                    label: 'Tell me on Telegram',
+                    help: 'Off: requests stay in this panel only and nothing is sent to Telegram.',
                     default: true,
                 ),
                 new Field(
                     key: 'tg_token',
                     type: FieldType::Secret,
-                    label: 'توکن ربات',
-                    help: 'همان متنی که BotFather بعد از ساختن ربات می‌دهد (شبیه 123456789:AA…). برای امنیت بیشتر می‌توانید آن را با ثابت SZW_TELEGRAM_TOKEN در wp-config.php تعریف کنید.',
+                    label: 'Bot token',
+                    help: 'What BotFather gives you after you create the bot (looks like 123456789:AA…). For extra safety it can live in wp-config.php instead, as SZW_TELEGRAM_TOKEN.',
                     constant: 'SZW_TELEGRAM_TOKEN',
                 ),
                 new Field(
                     key: 'tg_chat',
                     type: FieldType::Text,
-                    label: 'شناسه چت',
-                    help: 'جایی که پیام‌ها می‌رسند. لازم نیست دستی بنویسید: ربات را در تلگرام Start کنید و دکمه «پیدا کردن چت» را بزنید.',
+                    label: 'Chat ID',
+                    help: 'Where messages arrive. No need to type it: press Start in your bot on Telegram, then "Find my chat" below.',
                     placeholder: '123456789',
                 ),
             ],
@@ -110,29 +110,29 @@ final class Schema
     {
         return new Section(
             id: 'replies',
-            title: 'متن پاسخ‌ها',
+            title: 'Reply templates',
             icon: 'reply',
-            description: 'متن آماده دکمه‌های «پاسخ با ایمیل» و «پاسخ در واتس‌اپ» در صفحه هر درخواست. قبل از فرستادن همیشه قابل ویرایش است.',
+            description: 'The ready text behind "Reply by email" and "WhatsApp" on each request. You can always edit it before sending.',
             fields: [
                 new Field(
                     key: 'reply_subject',
                     type: FieldType::Text,
-                    label: 'موضوع ایمیل',
-                    help: 'خالی = «Re: your project request».',
+                    label: 'Email subject',
+                    help: 'Empty: "Re: your project request".',
                     default: 'Re: your project request',
                 ),
                 new Field(
                     key: 'reply_email',
                     type: FieldType::Textarea,
-                    label: 'متن ایمیل',
-                    help: 'جای‌گذاری‌ها: {first} نام کوچک، {needs} نیازهایی که انتخاب کرده. پیام خودش زیر متن نقل می‌شود.',
+                    label: 'Email',
+                    help: 'Placeholders: {first} their first name, {needs} what they picked. Their message is quoted below your text.',
                     default: "Hi {first},\n\nThanks for your message about {needs}. ",
                 ),
                 new Field(
                     key: 'reply_wa',
                     type: FieldType::Textarea,
-                    label: 'متن واتس‌اپ',
-                    help: 'جای‌گذاری‌ها: {first} و {needs}.',
+                    label: 'WhatsApp',
+                    help: 'Placeholders: {first} and {needs}.',
                     default: 'Hi {first}, this is Saman. Thanks for your message about {needs}.',
                 ),
             ],
@@ -143,27 +143,27 @@ final class Schema
     {
         return new Section(
             id: 'data',
-            title: 'نگه‌داری داده',
+            title: 'Data',
             icon: 'shield',
-            description: 'فرم به بازدیدکننده قول می‌دهد اطلاعاتش «فقط برای پاسخ» است. این‌جا تعیین می‌کنید درخواست‌های تمام‌شده تا کی بمانند.',
+            description: 'The form promises visitors their details are "only used to reply". Here you decide how long finished requests stay.',
             fields: [
                 new Field(
                     key: 'retention',
                     type: FieldType::Number,
-                    label: 'حذف درخواست‌های بسته‌شده بعد از',
-                    help: 'درخواست‌هایی که «قرارداد» یا «منتفی» شده‌اند، این مدت بعد از بسته شدن خودکار پاک می‌شوند. ۰ = هیچ‌وقت پاک نشوند.',
+                    label: 'Delete closed requests after',
+                    help: 'Requests marked Won or Lost are deleted this long after they were closed. 0 keeps them forever.',
                     default: 0,
-                    unit: 'روز',
+                    unit: 'days',
                     min: 0,
                     max: 3650,
                 ),
                 new Field(
                     key: 'spam_days',
                     type: FieldType::Number,
-                    label: 'حذف اسپم بعد از',
-                    help: 'پیام‌هایی که پر از لینک بودند و کنار گذاشته شدند. ۰ = هیچ‌وقت.',
+                    label: 'Delete spam after',
+                    help: 'Messages that were full of links and kept aside. 0 keeps them forever.',
                     default: 30,
-                    unit: 'روز',
+                    unit: 'days',
                     min: 0,
                     max: 365,
                 ),

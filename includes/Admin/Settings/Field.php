@@ -9,11 +9,11 @@ if (!defined('ABSPATH')) {
 }
 
 /**
- * یک تنظیم.
+ * One setting.
  *
- * $constant: اگر ثابتی با این نام در wp-config.php تعریف شده باشد، همان
- * مقدار استفاده می‌شود و فیلد در صفحه فقط‌خواندنی است (راه درست نگه‌داشتن
- * کلیدهای API بیرون از دیتابیس).
+ * $constant: if a constant of this name is defined in wp-config.php, its
+ * value is used and the field is read-only on the page (the right way to
+ * keep API keys out of the database).
  */
 final class Field
 {

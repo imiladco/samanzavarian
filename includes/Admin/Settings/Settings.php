@@ -1,22 +1,22 @@
 <?php
 
 /**
- * خواندن، اعتبارسنجی و ذخیره تنظیمات.
+ * Reading, checking and saving the settings.
  *
- * دو ردیف option:
- *   szw_settings  تنظیمات عادی (autoload)
- *   szw_secrets   کلیدهای API (autoload نه — فقط هنگام تماس با سرویس خوانده می‌شود)
+ * Two options:
+ *   szw_settings  ordinary settings (autoloaded)
+ *   szw_secrets   keys and tokens (not autoloaded; read only when calling the service)
  *
- * جدا بودنشان عمدی است: کلیدها در خروجی‌های عیب‌یابی ظاهر نمی‌شوند. برای
- * امنیت بیشتر می‌توانید پیش از ذخیره رمزنگاری‌شان کنید (مثلاً sodium با
- * کلیدی مشتق از نمک‌های wp-config).
+ * Apart on purpose: secrets do not show up in debugging dumps of the settings.
+ * They could be encrypted before saving too (sodium, with a key derived from
+ * the wp-config salts).
  */
 
 declare(strict_types=1);
 
 namespace Samanzavarian_Widgets\Admin\Settings;
 
-use Samanzavarian_Widgets\Admin\Fa;
+use Samanzavarian_Widgets\Admin\Fmt;
 
 if (!defined('ABSPATH')) {
     exit;
@@ -73,7 +73,7 @@ final class Settings
         return self::text($key) !== '';
     }
 
-    /** «sk_l…9f2c» — فقط برای اینکه مدیر بفهمد کدام کلید ذخیره است */
+    /** "1234…AAAA": just enough to tell which key is saved */
     public static function mask(string $key): string
     {
         $value = self::text($key);
@@ -82,8 +82,8 @@ final class Settings
     }
 
     /**
-     * تنظیمات نسخه‌های پیش از این پیشخوان (szw_telegram) یک بار به این‌جا می‌آیند:
-     * توکن به کلیدهای محرمانه، چت و مدت نگه‌داری به تنظیمات.
+     * Settings from before the panel (szw_telegram) move in once: the token
+     * to the secrets, the chat and the retention to the settings.
      */
     private static function migrate(): void
     {
@@ -110,21 +110,22 @@ final class Settings
     }
 
     /**
-     * ذخیره فقط فیلدهای یک بخش.
+     * Saves one section's fields only.
      *
-     * ⚠️ هر زبانه فقط فیلدهای خودش را می‌فرستد. بدون محدود کردن به بخش،
-     * چک‌باکس ارسال‌نشده بخش دیگر «خاموش» و متن ارسال‌نشده «خالی» ذخیره می‌شد.
-     * فیلد محرمانه خالی یعنی «دست نزن»؛ پاک کردنش فقط با تیک «حذف».
+     * Each tab sends only its own fields. Without keeping to the section, an
+     * unsent checkbox of another section would be saved as off, and unsent
+     * text as empty. An empty secret means "leave it"; it is cleared only by
+     * ticking "remove".
      *
-     * @param array<string,mixed> $input ورودی wp_unslash شده
-     * @return list<string> خطاها (خالی = ذخیره شد)
+     * @param array<string,mixed> $input input, already wp_unslash'ed
+     * @return list<string> errors (none = saved)
      */
     public static function save(array $input, string $sectionId): array
     {
         $section = Schema::section($sectionId);
 
         if ($section === null) {
-            return ['بخش تنظیمات ناشناخته است.'];
+            return ['Unknown settings section.'];
         }
 
         $values  = self::all();
@@ -151,7 +152,7 @@ final class Settings
             [$value, $error] = self::sanitize($field, $input[$field->key] ?? null);
 
             if ($error !== null) {
-                $errors[] = '«' . $field->label . '»: ' . $error;
+                $errors[] = '"' . $field->label . '": ' . $error;
                 continue;
             }
 
@@ -171,7 +172,7 @@ final class Settings
         return [];
     }
 
-    /** @return array{0:string|int|bool,1:?string} [مقدار، خطا] */
+    /** @return array{0:string|int|bool,1:?string} [value, error] */
     private static function sanitize(Field $field, mixed $raw): array
     {
         switch ($field->type) {
@@ -179,7 +180,7 @@ final class Settings
                 return [(bool) $raw, null];
 
             case FieldType::Number:
-                $digits = Fa::only((string) $raw);
+                $digits = Fmt::only((string) $raw);
 
                 if ($digits === '') {
                     return [(int) $field->default, null];
@@ -187,10 +188,10 @@ final class Settings
 
                 $n = (int) $digits;
                 if ($field->min !== null && $n < $field->min) {
-                    return [0, 'نباید کمتر از ' . Fa::digits($field->min) . ' باشد.'];
+                    return [0, 'must be at least ' . $field->min . '.'];
                 }
                 if ($field->max !== null && $n > $field->max) {
-                    return [0, 'نباید بیشتر از ' . Fa::digits($field->max) . ' باشد.'];
+                    return [0, 'must be at most ' . $field->max . '.'];
                 }
 
                 return [$n, null];

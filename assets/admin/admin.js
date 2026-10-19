@@ -1,17 +1,15 @@
 /**
- * کیت پیشخوان — بی‌وابستگی، بدون jQuery.
+ * The Requests panel's behaviour (from the admin kit): no dependencies, no jQuery.
  *
- *   ناوبری بی‌بارگذاری: پیوندها، فرم‌های GET (جست‌وجو، فیلتر، بازه) و
- *   فرم‌های POST (ذخیره، حذف، آزمایش‌ها) با fetch انجام
- *   می‌شوند و فقط محتوای .szw-admin عوض می‌شود؛ نوار پیشرفت، تاریخچه
- *   مرورگر (عقب/جلو)، پیش‌بارگذاری با نگه‌داشتن ماوس، و نتیجه اقدام به
- *   شکل پیام کوتاه. هر خطایی ← همان ناوبری معمولی مرورگر.
+ *   Navigation without reloads: links, GET forms (search, filters, range) and
+ *   POST forms (save, delete, tests) go through fetch and only the content of
+ *   .szw-admin is swapped; a progress bar, browser history (back/forward),
+ *   prefetch on hover, and action results as a toast. Any error falls back to
+ *   the browser's ordinary navigation.
  *
- *   رفتارهای صفحه (init): کلیک ردیف، انتخاب گروهی، فیلتر خودکار، راهنمای
- *   نمودار، کپی، میان‌برها، اعلان مورد تازه، هشدار تغییرات ذخیره‌نشده، پنجره.
- *
- *   برای افزونه خودتان فقط سه چیز را عوض کنید: کلاس ریشه (.szw-admin)،
- *   پیشوند نامک صفحه‌ها (/^szw/) و شناسه منوی وردپرس (#toplevel_page_szw).
+ *   Page behaviours (init): clickable rows, bulk selection, auto-submitting
+ *   filters, chart tips, copy, shortcuts, the new-request notice, the
+ *   unsaved-changes warning, dialogs.
  */
 (function () {
     'use strict';
@@ -26,7 +24,7 @@
     var dirtyInitial = '';
     var prefetched = {};
 
-    /* ---- پیام کوتاه ------------------------------------------------------- */
+    /* ---- Toast ----------------------------------------------------------- */
 
     var toast = document.createElement('div');
     toast.className = 'za-toast';
@@ -41,7 +39,7 @@
         toastTimer = setTimeout(function () { toast.classList.remove('is-on'); }, tone === 'error' ? 6000 : 3200);
     }
 
-    /* ---- نوار پیشرفت ------------------------------------------------------ */
+    /* ---- Progress bar ---------------------------------------------------- */
 
     var bar = document.createElement('div');
     bar.className = 'za-progress';
@@ -62,7 +60,7 @@
         }
     }
 
-    /* ---- ناوبری بی‌بارگذاری ----------------------------------------------- */
+    /* ---- Navigation without reloads -------------------------------------- */
 
     function ours(href) {
         var u;
@@ -81,7 +79,7 @@
 
     function leaveOk() {
         if (dirtyForm && serialize(dirtyForm) !== dirtyInitial) {
-            return window.confirm('تغییرات ذخیره نشده‌اند. بدون ذخیره از این صفحه خارج شوید؟');
+            return window.confirm('You have unsaved changes. Leave this page without saving?');
         }
         return true;
     }
@@ -117,10 +115,10 @@
                 throw new Error('no content');
             }
 
-            // مقصد: نشانی نهایی پاسخ (POST به همان نشانی فرم)
+            // where we end up: the response's final URL (a POST goes to the form's own URL)
             var landed = new URL(res.url || key);
             if (opts.push !== false) {
-                // جای اسکرول صفحه فعلی برای «عقب»
+                // the current scroll position, for Back
                 history.replaceState({szw: 1, y: window.scrollY}, '', location.href);
                 history.pushState({szw: 1, y: 0}, '', landed.toString());
             }
@@ -129,7 +127,7 @@
             root.innerHTML = fresh.innerHTML;
             document.title = doc.title;
 
-            // منوی وردپرس: شمارنده‌ها و گزینه جاری
+            // the WordPress menu: counters and the current item
             var menu = doc.querySelector('#toplevel_page_szw');
             var mine = document.querySelector('#toplevel_page_szw');
             if (menu && mine) { mine.innerHTML = menu.innerHTML; }
@@ -145,7 +143,7 @@
                 window.scrollTo(0, 0);
             }
 
-            // نتیجه اقدام: پیام کوتاه (و اعلان در صفحه می‌ماند)
+            // an action's result: a toast (the notice stays on the page)
             if (method !== 'GET') {
                 var flash = root.querySelector('[data-flash]');
                 if (flash) {
@@ -157,7 +155,7 @@
             if (focus) { focus.focus(); }
         }).catch(function () {
             progress(false);
-            // هر مشکلی: همان راه معمولی
+            // any problem: the ordinary way
             if (method === 'GET') {
                 location.href = key;
             } else if (opts.form) {
@@ -167,7 +165,7 @@
         });
     }
 
-    /** اسکریپت‌های درون محتوای تازه اجرا شوند */
+    /** run the scripts inside the new content */
     function runScripts(scope) {
         Array.prototype.forEach.call(scope.querySelectorAll('script'), function (old) {
             var s = document.createElement('script');
@@ -187,7 +185,7 @@
     }
     history.replaceState({szw: 1}, '', location.href);
 
-    // پیوندها: درون پیشخوان افزونه و زیرمنوی وردپرس آن
+    // links: inside the panel and its WordPress submenu
     document.addEventListener('click', function (e) {
         if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
             return;
@@ -208,7 +206,7 @@
         go(a.href);
     });
 
-    // ردیف کلیک‌پذیر
+    // clickable rows
     root.addEventListener('click', function (e) {
         var row = e.target.closest('tr[data-href]');
         if (!row || e.target.closest('a, button, input, label, form, summary, .za-check-col')) {
@@ -221,7 +219,7 @@
         }
     });
 
-    // پیش‌بارگذاری: ماوس کمی روی پیوند بماند
+    // prefetch: when the pointer rests on a link
     var hoverTimer = null;
     root.addEventListener('mouseover', function (e) {
         var a = e.target.closest('a[href], tr[data-href]');
@@ -242,14 +240,14 @@
     });
     root.addEventListener('mouseout', function () { clearTimeout(hoverTimer); });
 
-    // فرم‌ها
+    // forms
     root.addEventListener('submit', function (e) {
         var form = e.target;
         var submitter = e.submitter || null;
 
         if (form.hasAttribute('data-plain')) {
             form.removeAttribute('data-plain');
-            return;   // راه معمولی (پس از خطای fetch)
+            return;   // the ordinary way (after a fetch error)
         }
 
         var ask = form.getAttribute('data-confirm') || (submitter && submitter.getAttribute('data-confirm-click'));
@@ -262,7 +260,7 @@
         var method = (form.getAttribute('method') || 'get').toUpperCase();
 
         if (!ours(action)) {
-            return;   // admin-post و مانند آن: معمولی
+            return;   // admin-post and the like: ordinary
         }
 
         e.preventDefault();
@@ -286,16 +284,16 @@
         }
 
         if (form === dirtyForm) {
-            dirtyForm = null;   // ذخیره همان فرم؛ هشدار خروج لازم نیست
+            dirtyForm = null;   // saving that very form; no leave warning needed
         }
         go(action, {method: 'POST', body: data, form: form, submitter: submitter});
     });
 
-    /* ---- کپی ------------------------------------------------------------- */
+    /* ---- Copy ------------------------------------------------------------ */
 
     function copy(text, el) {
         var done = function () {
-            say('کپی شد', 'ok');
+            say('Copied', 'ok');
             if (el) {
                 el.classList.add('is-copied');
                 setTimeout(function () { el.classList.remove('is-copied'); }, 1200);
@@ -334,7 +332,7 @@
         copy(el.getAttribute('data-copy') || el.getAttribute('data-copy-text'), el);
     });
 
-    /* ---- راهنمای نمودار ---------------------------------------------------- */
+    /* ---- Chart tips ------------------------------------------------------ */
 
     var tip = document.createElement('div');
     tip.className = 'za-tip';
@@ -363,7 +361,7 @@
     root.addEventListener('focusout', function () { tip.hidden = true; });
     window.addEventListener('scroll', function () { tip.hidden = true; }, {passive: true});
 
-    /* ---- کلیدهای میان‌بر --------------------------------------------------- */
+    /* ---- Shortcuts ------------------------------------------------------- */
 
     document.addEventListener('keydown', function (e) {
         var el = document.activeElement || {};
@@ -384,7 +382,7 @@
         if (link) { go(link.href); }
     });
 
-    /* ---- انتخاب گروهی (رویدادها روی ریشه، یک بار) --------------------------- */
+    /* ---- Bulk selection (events on the root, bound once) ----------------- */
 
     function bulkSync() {
         var bulk = root.querySelector('form[data-bulk]');
@@ -393,7 +391,7 @@
         var all = root.querySelector('input[data-bulk-all]');
         var n = boxes.filter(function (b) { return b.checked; }).length;
         bulk.classList.toggle('is-on', n > 0);
-        bulk.querySelector('.za-bulk__count').textContent = n.toLocaleString('fa-IR') + ' انتخاب‌شده';
+        bulk.querySelector('.za-bulk__count').textContent = n.toLocaleString('en') + ' selected';
         if (all) {
             all.checked = n > 0 && n === boxes.length;
             all.indeterminate = n > 0 && n < boxes.length;
@@ -421,7 +419,7 @@
         }
     });
 
-    /* ---- تغییرات ذخیره‌نشده ------------------------------------------------- */
+    /* ---- Unsaved changes ------------------------------------------------- */
 
     function serialize(form) {
         return new URLSearchParams(new FormData(form)).toString();
@@ -432,7 +430,7 @@
         var dirty = serialize(dirtyForm) !== dirtyInitial;
         dirtyForm.classList.toggle('is-dirty', dirty);
         var state = dirtyForm.querySelector('.za-savebar__state');
-        if (state) { state.textContent = dirty ? 'تغییرات ذخیره نشده' : ''; }
+        if (state) { state.textContent = dirty ? 'Unsaved changes' : ''; }
         return dirty;
     }
 
@@ -445,7 +443,7 @@
         }
     });
 
-    // Ctrl+S / ⌘S: ذخیره فرم تنظیمات
+    // Ctrl+S / ⌘S: save the settings form
     document.addEventListener('keydown', function (e) {
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's' && dirtyForm) {
             e.preventDefault();
@@ -454,10 +452,10 @@
         }
     });
 
-    /* ---- پنجره (dialog)، جست‌وجوی درون فهرست ------------------------------ */
+    /* ---- Dialogs, filtering inside a list -------------------------------- */
 
-    // <button data-dialog="شناسه"> پنجره را باز می‌کند؛ [data-dialog-close] یا کلیک بیرون یا Esc می‌بندد
-    // و فرم داخل پنجره به حالت اول برمی‌گردد (تغییر ذخیره‌نشده دور ریخته می‌شود).
+    // <button data-dialog="id"> opens a dialog; [data-dialog-close], a click outside or Esc closes it
+    // and the form inside goes back to how it was (unsaved edits are dropped).
     root.addEventListener('click', function (e) {
         var open = e.target.closest('[data-dialog]');
         if (open) {
@@ -475,7 +473,7 @@
             return;
         }
 
-        // کلیک روی پس‌زمینه پنجره
+        // a click on the dialog's backdrop
         if (e.target.matches('dialog.za-dialog')) {
             var r = e.target.getBoundingClientRect();
             if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) {
@@ -486,13 +484,13 @@
         }
     });
 
-    // Esc (رویداد cancel حباب نمی‌زند)
+    // Esc (the cancel event does not bubble)
     root.addEventListener('cancel', function (e) {
         var form = e.target.matches && e.target.matches('dialog.za-dialog') ? e.target.querySelector('form') : null;
         if (form) { form.reset(); }
     }, true);
 
-    // <input data-filter-list="شناسه ul"> ← li هایی که data-text شان شامل متن نیست پنهان می‌شوند
+    // <input data-filter-list="ul id">: li elements whose data-text lacks the text are hidden
     root.addEventListener('input', function (e) {
         var list = e.target.getAttribute && e.target.getAttribute('data-filter-list');
         if (!list) { return; }
@@ -502,7 +500,7 @@
         });
     });
 
-    /* ---- هر بار پس از تعویض محتوا ------------------------------------------ */
+    /* ---- After every content swap ---------------------------------------- */
 
     function teardown() {
         timers.forEach(clearInterval);
@@ -511,9 +509,9 @@
     }
 
     /*
-     * چیدمان دوستونه کارت‌های هم‌قدنشده (صفحه وضعیت): هر کارت به ستون
-     * کوتاه‌تر می‌رود و آخرین کارت هر ستون کش می‌آید تا دو ستون هم‌تراز تمام
-     * شوند. بی‌جاوااسکریپت، چیدمان ستونی CSS جایگزین است.
+     * Two columns of uneven cards (System status): each card goes to the
+     * shorter column and each column's last card stretches so both end level.
+     * Without script, CSS columns stand in.
      */
     function masonry() {
         var box = root.querySelector('[data-masonry]');
@@ -557,12 +555,12 @@
         dirtyForm = root.querySelector('form[data-dirty-guard]');
         dirtyInitial = dirtyForm ? serialize(dirtyForm) : '';
 
-        // اعلان موفقیت در صفحه بعد از چند ثانیه کم‌رنگ می‌شود
+        // a success notice on the page fades after a few seconds
         Array.prototype.forEach.call(root.querySelectorAll('[data-flash="ok"]'), function (el) {
             setTimeout(function () { el.classList.add('is-fading'); }, 5000);
         });
 
-        // مورد تازه رسید (اختیاری: <div data-live="نشانی ajax" data-after="آخرین شناسه" hidden>)
+        // a new item arrived (optional: <div data-live="ajax URL" data-after="last id" hidden>)
         var live = root.querySelector('[data-live]');
         if (live && window.fetch) {
             var poll = function () {
@@ -576,12 +574,12 @@
                             live.textContent = '';
                             var a = document.createElement('a');
                             a.href = location.href;
-                            a.textContent = n.toLocaleString('fa-IR') + ' مورد تازه رسید — نمایش';
+                            a.textContent = (n === 1 ? '1 new request' : n.toLocaleString('en') + ' new requests') + ' arrived. Show';
                             live.appendChild(a);
-                            document.title = '(' + n.toLocaleString('fa-IR') + ') ' + document.title.replace(/^\(.+?\) /, '');
+                            document.title = '(' + n.toLocaleString('en') + ') ' + document.title.replace(/^\(.+?\) /, '');
                         }
                     })
-                    .catch(function () { /* شبکه: دفعه بعد */ });
+                    .catch(function () { /* network: next time */ });
             };
             timers.push(setInterval(poll, 30000));
             live.addEventListener('szw-poll', poll);
