@@ -4,6 +4,42 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.23.0 — Requests panel, built on the admin kit
+The admin side of the project form, rebuilt from the "admin kit" (Persian,
+right to left, Vazirmatn) in the site's own colours: navy for actions,
+orange as the accent. One menu, **درخواست‌ها**, with three pages:
+
+- **Overview:** health first (Telegram not connected, the last message not
+  delivered, WordPress cron off, no Project Form on any page), each with
+  its fix; then 7 / 30 / 90 days against the period before: requests,
+  waiting for an answer (and how long the oldest has waited), **response
+  time** (median, from arrival to first answer), contracts and the win
+  rate; a daily chart of answered against waiting; statuses; what people
+  need, their budgets and timelines, each linking to the filtered list.
+- **Requests:** views with counts (new, talking, contract, lost, spam),
+  search by name, email, phone or message (key /), filters by need, budget
+  and time, bulk actions, unanswered rows marked, CSV export, and a notice
+  when a new request arrives while the list is open.
+- **One request:** the message large and readable with its needs, timeline
+  and budget; **reply by email** (a greeting and their message quoted) or
+  **WhatsApp** in one click, from your own templates; call; copy a summary;
+  "I replied" moves it on and times the answer; status, a private note,
+  its Telegram delivery (resend), and every event with who did it.
+- **Settings:** Telegram (token kept apart and never shown again; may live
+  in wp-config as SZW_TELEGRAM_TOKEN), a four-step setup with "Find my
+  chat" and "Test message"; reply templates; how long closed requests and
+  spam are kept. **System status:** Telegram, the form, the data and the
+  server, with a connection test that sends nothing.
+
+Under it: the request pipeline is now new → talking → contract | lost
+(earlier "replied" and "archived" read as talking and lost), with an event
+log, a note, the first-answer time and the closing time. Telegram's
+"Open in WordPress" opens the request in the panel; old admin links
+redirect there; the earlier Telegram settings move in by themselves.
+
+The panel needs PHP 8.1. On older PHP it is not loaded at all and the
+plain WordPress list from 0.22 serves instead, so nothing breaks.
+
 ## 0.22.0 — Project Form, Reach, Requests in the admin, and Telegram
 The contact section's two halves as widgets, and somewhere for what the
 form sends to go. Rethought before it was built:

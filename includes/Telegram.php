@@ -30,20 +30,33 @@ final class Telegram {
 	private static array $queue = [];
 
 	public static function boot(): void {
+		add_action( self::RETRY, [ self::class, 'send' ] );
+		if ( Leads::kit() ) {
+			return; // settings live in the Requests panel (Admin\SettingsPage)
+		}
 		add_action( 'admin_menu', [ self::class, 'menu' ] );
 		add_action( 'admin_init', [ self::class, 'settings' ] );
 		add_action( 'admin_post_sz_tg_detect', [ self::class, 'detect_action' ] );
 		add_action( 'admin_post_sz_tg_test', [ self::class, 'test_action' ] );
-		add_action( self::RETRY, [ self::class, 'send' ] );
 	}
+
+	/** Panel setting names for the keys used here. */
+	private const KIT_KEYS = [ 'token' => 'tg_token', 'chat' => 'tg_chat', 'retention' => 'retention', 'spam_days' => 'spam_days' ];
 
 	/** @return mixed */
 	public static function option( string $key, $default = '' ) {
+		if ( Leads::kit() && isset( self::KIT_KEYS[ $key ] ) ) {
+			$v = Admin\Settings\Settings::get( self::KIT_KEYS[ $key ] );
+			return '' !== $v && null !== $v ? $v : $default;
+		}
 		$o = get_option( self::OPTION, [] );
 		return is_array( $o ) && isset( $o[ $key ] ) && '' !== $o[ $key ] ? $o[ $key ] : $default;
 	}
 
 	public static function ready(): bool {
+		if ( Leads::kit() && ! Admin\Settings\Settings::bool( 'tg_enabled' ) ) {
+			return false;
+		}
 		return '' !== (string) self::option( 'token' ) && '' !== (string) self::option( 'chat' );
 	}
 
@@ -97,11 +110,15 @@ final class Telegram {
 		}
 
 		if ( $r['ok'] ) {
-			update_post_meta( $id, self::META, [ 'state' => 'sent', 'tries' => $try ] );
+			update_post_meta( $id, self::META, [ 'state' => 'sent', 'tries' => $try, 'at' => time() ] );
+			update_option( 'szw_tg_last', [ 'ok' => true, 'at' => time() ], false );
+			Leads::log( $id, __( 'Announced on Telegram', 'samanzavarian-widgets' ) );
 			return true;
 		}
 
-		update_post_meta( $id, self::META, [ 'state' => 'failed', 'tries' => $try, 'error' => $r['error'] ] );
+		update_post_meta( $id, self::META, [ 'state' => 'failed', 'tries' => $try, 'error' => $r['error'], 'at' => time() ] );
+		update_option( 'szw_tg_last', [ 'ok' => false, 'at' => time(), 'error' => $r['error'] ], false );
+		Leads::log( $id, sprintf( /* translators: %s: error */ __( 'Telegram did not take it: %s', 'samanzavarian-widgets' ), $r['error'] ), 'error' );
 		if ( $try < self::TRIES && ! wp_next_scheduled( self::RETRY, [ $id ] ) ) {
 			wp_schedule_single_event( time() + 120 * ( 2 ** ( $try - 1 ) ), self::RETRY, [ $id ] ); // 2, 4, 8 minutes
 		}
@@ -134,7 +151,7 @@ final class Telegram {
 
 	/** @param array<string,mixed> $d @return array<int,array<string,string>> */
 	public static function buttons( int $id, array $d ): array {
-		$b = [ [ 'text' => __( 'Open in WordPress', 'samanzavarian-widgets' ), 'url' => admin_url( 'post.php?post=' . $id . '&action=edit' ) ] ];
+		$b = [ [ 'text' => __( 'Open in WordPress', 'samanzavarian-widgets' ), 'url' => Leads::kit() ? Admin\Kit::requestUrl( $id ) : admin_url( 'post.php?post=' . $id . '&action=edit' ) ] ];
 		if ( $d['phone'] ) {
 			$b[] = [ 'text' => 'WhatsApp', 'url' => 'https://wa.me/' . Leads::wa_digits( (string) $d['phone'] ) ];
 		}

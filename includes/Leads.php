@@ -27,7 +27,13 @@ final class Leads {
 	public const TYPE     = 'sz_lead';
 	public const META     = '_sz_lead';
 	public const STATUS   = '_sz_status';
-	public const STATUSES = [ 'new', 'replied', 'archived', 'spam' ];
+	/** new → talking → won | lost; spam kept aside. (Before 0.23: replied, archived.) */
+	public const STATUSES = [ 'new', 'talking', 'won', 'lost', 'spam' ];
+	private const LEGACY  = [ 'replied' => 'talking', 'archived' => 'lost' ];
+	public const LOG      = '_sz_log';
+	public const NOTE     = '_sz_note';
+	public const FIRST    = '_sz_first';  // when it first left "new": the response time
+	public const CLOSED   = '_sz_closed'; // when it became won or lost: retention counts from here
 	public const ROUTE    = 'szw/v1';
 
 	/** Requests per hour from one address. */
@@ -38,9 +44,21 @@ final class Leads {
 
 	public const MAX_MESSAGE = 2000;
 
+	/** The Requests panel (Admin\Kit) needs PHP 8.1; below that the plain list here serves. */
+	public static function kit(): bool {
+		return PHP_VERSION_ID >= 80100;
+	}
+
 	public static function boot(): void {
 		add_action( 'init', [ self::class, 'register' ] );
 		add_action( 'rest_api_init', [ self::class, 'routes' ] );
+		add_action( 'szw_leads_cleanup', [ self::class, 'cleanup' ] );
+		if ( ! wp_next_scheduled( 'szw_leads_cleanup' ) ) {
+			wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'szw_leads_cleanup' );
+		}
+		if ( self::kit() ) {
+			return;
+		}
 		add_action( 'admin_menu', [ self::class, 'bubble' ], 99 );
 		add_filter( 'manage_' . self::TYPE . '_posts_columns', [ self::class, 'columns' ] );
 		add_action( 'manage_' . self::TYPE . '_posts_custom_column', [ self::class, 'column' ], 10, 2 );
@@ -52,11 +70,7 @@ final class Leads {
 		add_action( 'admin_post_sz_leads_csv', [ self::class, 'csv' ] );
 		add_action( 'manage_posts_extra_tablenav', [ self::class, 'export_button' ] );
 		add_action( 'admin_head', [ self::class, 'admin_css' ] );
-		add_action( 'szw_leads_cleanup', [ self::class, 'cleanup' ] );
 		add_filter( 'post_updated_messages', [ self::class, 'no_messages' ] );
-		if ( ! wp_next_scheduled( 'szw_leads_cleanup' ) ) {
-			wp_schedule_event( time() + HOUR_IN_SECONDS, 'daily', 'szw_leads_cleanup' );
-		}
 	}
 
 	public static function register(): void {
@@ -75,8 +89,8 @@ final class Leads {
 				'public'              => false,
 				'publicly_queryable'  => false,
 				'exclude_from_search' => true,
-				'show_ui'             => true,
-				'show_in_menu'        => true,
+				'show_ui'             => ! self::kit(),
+				'show_in_menu'        => ! self::kit(),
 				'show_in_rest'        => false,
 				'menu_position'       => 26,
 				'menu_icon'           => 'dashicons-email-alt',
@@ -220,7 +234,57 @@ final class Leads {
 			true
 		);
 
-		return is_wp_error( $id ) ? 0 : (int) $id;
+		if ( is_wp_error( $id ) ) {
+			return 0;
+		}
+		self::forget();
+		self::log( (int) $id, 'spam' === $status ? __( 'Received, kept aside as spam (a message of links)', 'samanzavarian-widgets' ) : __( 'Received from the form', 'samanzavarian-widgets' ), 'spam' === $status ? 'warning' : 'info' );
+		return (int) $id;
+	}
+
+	/* =================================================================
+	 * Status, events, note
+	 * ================================================================= */
+
+	/** One line in the request's history. $level: info | warning | error. */
+	public static function log( int $id, string $message, string $level = 'info', string $by = '' ): void {
+		$log   = get_post_meta( $id, self::LOG, true );
+		$log   = is_array( $log ) ? $log : [];
+		$log[] = [ 'at' => gmdate( 'Y-m-d H:i:s' ), 'message' => $message, 'level' => $level, 'by' => $by ];
+		update_post_meta( $id, self::LOG, array_slice( $log, -100 ) );
+	}
+
+	/** @return list<array{at:string,message:string,level:string,by:string}> oldest first */
+	public static function events( int $id ): array {
+		$log = get_post_meta( $id, self::LOG, true );
+		return is_array( $log ) ? array_values( $log ) : [];
+	}
+
+	public static function note( int $id ): string {
+		return (string) get_post_meta( $id, self::NOTE, true );
+	}
+
+	/** Change the status; the first move out of "new" is the response time, won/lost starts retention. */
+	public static function set_status( int $id, string $to, string $by = '', string $message = '' ): bool {
+		if ( self::TYPE !== get_post_type( $id ) || ! in_array( $to, self::STATUSES, true ) ) {
+			return false;
+		}
+		$was = self::status( $id );
+		if ( $was === $to ) {
+			return true;
+		}
+		update_post_meta( $id, self::STATUS, $to );
+		self::forget();
+		if ( 'new' === $was && ! in_array( $to, [ 'new', 'spam' ], true ) && ! get_post_meta( $id, self::FIRST, true ) ) {
+			update_post_meta( $id, self::FIRST, time() );
+		}
+		if ( in_array( $to, [ 'won', 'lost' ], true ) ) {
+			update_post_meta( $id, self::CLOSED, time() );
+		} else {
+			delete_post_meta( $id, self::CLOSED );
+		}
+		self::log( $id, '' !== $message ? $message : $to, 'info', $by );
+		return true;
 	}
 
 	/** @return array<string,mixed> */
@@ -231,6 +295,7 @@ final class Leads {
 
 	public static function status( int $id ): string {
 		$s = (string) get_post_meta( $id, self::STATUS, true );
+		$s = self::LEGACY[ $s ] ?? $s;
 		return in_array( $s, self::STATUSES, true ) ? $s : 'new';
 	}
 
@@ -252,7 +317,7 @@ final class Leads {
 	/** wa.me wants digits with the country code; a local 09… number is read as Iranian. */
 	public static function wa_digits( string $phone ): string {
 		$p = preg_replace( '/\D/', '', $phone );
-		if ( str_starts_with( $phone, '00' ) ) {
+		if ( 0 === strncmp( ltrim( $phone ), '00', 2 ) ) {
 			$p = substr( $p, 2 );
 		} elseif ( preg_match( '/^0\d{10}$/', $p ) ) {
 			$p = '98' . substr( $p, 1 );
@@ -311,10 +376,11 @@ final class Leads {
 
 	private static function status_label( string $s ): string {
 		$l = [
-			'new'      => __( 'New', 'samanzavarian-widgets' ),
-			'replied'  => __( 'Replied', 'samanzavarian-widgets' ),
-			'archived' => __( 'Archived', 'samanzavarian-widgets' ),
-			'spam'     => __( 'Spam', 'samanzavarian-widgets' ),
+			'new'     => __( 'New', 'samanzavarian-widgets' ),
+			'talking' => __( 'Talking', 'samanzavarian-widgets' ),
+			'won'     => __( 'Won', 'samanzavarian-widgets' ),
+			'lost'    => __( 'Lost', 'samanzavarian-widgets' ),
+			'spam'    => __( 'Spam', 'samanzavarian-widgets' ),
 		];
 		return $l[ $s ] ?? $s;
 	}
@@ -366,7 +432,7 @@ final class Leads {
 		}
 		$s   = self::status( $post->ID );
 		$out = [ 'view' => '<a href="' . esc_url( get_edit_post_link( $post->ID ) ) . '">' . esc_html__( 'Open', 'samanzavarian-widgets' ) . '</a>' ];
-		foreach ( [ 'replied' => __( 'Mark replied', 'samanzavarian-widgets' ), 'archived' => __( 'Archive', 'samanzavarian-widgets' ), 'new' => __( 'Mark new', 'samanzavarian-widgets' ) ] as $to => $label ) {
+		foreach ( [ 'talking' => __( 'Talking', 'samanzavarian-widgets' ), 'won' => __( 'Won', 'samanzavarian-widgets' ), 'lost' => __( 'Lost', 'samanzavarian-widgets' ), 'new' => __( 'Mark new', 'samanzavarian-widgets' ) ] as $to => $label ) {
 			if ( $to !== $s && ! ( 'new' === $to && 'new' === $s ) ) {
 				$out[ $to ] = '<a href="' . esc_url( self::status_url( $post->ID, $to ) ) . '">' . esc_html( $label ) . '</a>';
 			}
@@ -384,10 +450,7 @@ final class Leads {
 		if ( ! $id || ! current_user_can( 'edit_post', $id ) || self::TYPE !== get_post_type( $id ) || ! in_array( $to, self::STATUSES, true ) ) {
 			wp_die( esc_html__( 'That request cannot be changed.', 'samanzavarian-widgets' ) );
 		}
-		update_post_meta( $id, self::STATUS, $to );
-		if ( 'archived' === $to ) {
-			update_post_meta( $id, '_sz_archived', time() );
-		}
+		self::set_status( $id, $to, wp_get_current_user()->display_name );
 		wp_safe_redirect( wp_get_referer() ?: admin_url( 'edit.php?post_type=' . self::TYPE ) );
 		exit;
 	}
@@ -442,7 +505,7 @@ final class Leads {
 		}
 		$s = self::status( $post->ID );
 		echo '<hr><p class="sz-lead-state">' . self::pill( $s ) . '</p><p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- whitelist
-		foreach ( [ 'replied' => __( 'Mark replied', 'samanzavarian-widgets' ), 'archived' => __( 'Archive', 'samanzavarian-widgets' ), 'new' => __( 'Mark new', 'samanzavarian-widgets' ) ] as $to => $label ) {
+		foreach ( [ 'talking' => __( 'Talking', 'samanzavarian-widgets' ), 'won' => __( 'Won', 'samanzavarian-widgets' ), 'lost' => __( 'Lost', 'samanzavarian-widgets' ), 'new' => __( 'Mark new', 'samanzavarian-widgets' ) ] as $to => $label ) {
 			if ( $to !== $s ) {
 				echo '<a class="button button-small" style="margin:0 4px 4px 0" href="' . esc_url( self::status_url( $post->ID, $to ) ) . '">' . esc_html( $label ) . '</a>';
 			}
@@ -497,35 +560,211 @@ final class Leads {
 		return $out;
 	}
 
-	/** Archived requests older than the set number of days, and spam after 30 days, go. */
+	/** Closed requests (won or lost) after the set number of days, and spam after its own, go. */
 	public static function cleanup(): int {
 		$days = (int) Telegram::option( 'retention', 0 );
+		$spam = (int) Telegram::option( 'spam_days', 30 );
 		$gone = 0;
-		foreach ( [ 'archived' => $days, 'spam' => 30 ] as $status => $d ) {
-			if ( $d <= 0 ) {
-				continue;
-			}
-			$ids = get_posts(
-				[
-					'post_type'   => self::TYPE,
-					'post_status' => 'any',
-					'numberposts' => 200,
-					'fields'      => 'ids',
-					'meta_key'    => self::STATUS, // phpcs:ignore WordPress.DB.SlowDBQuery
-					'meta_value'  => $status, // phpcs:ignore WordPress.DB.SlowDBQuery
-					'date_query'  => [ [ 'before' => gmdate( 'Y-m-d H:i:s', time() - $d * DAY_IN_SECONDS ), 'column' => 'post_date_gmt' ] ],
-				]
-			);
-			foreach ( $ids as $id ) {
-				$since = (int) get_post_meta( $id, '_sz_archived', true );
-				if ( 'archived' === $status && $since && $since > time() - $d * DAY_IN_SECONDS ) {
-					continue;
-				}
-				wp_delete_post( $id, true );
+		foreach ( self::rows() as $r ) {
+			$closed = (int) get_post_meta( $r['id'], self::CLOSED, true ) ?: (int) get_post_meta( $r['id'], '_sz_archived', true ) ?: $r['ts'];
+			$old    = ( $days > 0 && in_array( $r['status'], [ 'won', 'lost' ], true ) && $closed < time() - $days * DAY_IN_SECONDS )
+				|| ( $spam > 0 && 'spam' === $r['status'] && $r['ts'] < time() - $spam * DAY_IN_SECONDS );
+			if ( $old ) {
+				wp_delete_post( $r['id'], true );
 				++$gone;
 			}
 		}
 		return $gone;
+	}
+
+	/* =================================================================
+	 * Reading: every request as a row (a freelancer's volume: hundreds,
+	 * not millions, so one query and plain PHP)
+	 * ================================================================= */
+
+	/** @var array<int,array<string,mixed>>|null */
+	private static ?array $rows = null;
+
+	public static function forget(): void {
+		self::$rows = null;
+	}
+
+	/** @return array<int,array<string,mixed>> newest first, keyed by id */
+	public static function rows(): array {
+		if ( null !== self::$rows ) {
+			return self::$rows;
+		}
+		$posts = get_posts( [ 'post_type' => self::TYPE, 'post_status' => 'any', 'numberposts' => 3000, 'orderby' => [ 'date' => 'DESC', 'ID' => 'DESC' ], 'no_found_rows' => true, 'update_post_term_cache' => false ] );
+		$out   = [];
+		foreach ( $posts as $p ) {
+			$d = self::get( $p->ID );
+			if ( ! $d ) {
+				continue;
+			}
+			$out[ $p->ID ] = $d + [
+				'id'     => (int) $p->ID,
+				'status' => self::status( $p->ID ),
+				'ts'     => (int) strtotime( $p->post_date_gmt . ' UTC' ),
+				'first'  => (int) get_post_meta( $p->ID, self::FIRST, true ),
+			];
+		}
+		return self::$rows = $out;
+	}
+
+	/** @return array<string,mixed>|null */
+	public static function find( int $id ): ?array {
+		return self::rows()[ $id ] ?? null;
+	}
+
+	/** @return array<string,int> per status, and "all" (spam not in all) */
+	public static function counts(): array {
+		$c = array_fill_keys( array_merge( [ 'all' ], self::STATUSES ), 0 );
+		foreach ( self::rows() as $r ) {
+			++$c[ $r['status'] ];
+			if ( 'spam' !== $r['status'] ) {
+				++$c['all'];
+			}
+		}
+		return $c;
+	}
+
+	/**
+	 * @param array{service?:string,budget?:string,days?:int} $f
+	 * @return array{rows:list<array<string,mixed>>,total:int}
+	 */
+	public static function search( string $view, string $term, int $page, int $per, array $f = [] ): array {
+		$term  = function_exists( 'mb_strtolower' ) ? mb_strtolower( trim( $term ) ) : strtolower( trim( $term ) );
+		$since = ! empty( $f['days'] ) ? time() - (int) $f['days'] * DAY_IN_SECONDS : 0;
+		$rows  = array_filter(
+			self::rows(),
+			static function ( array $r ) use ( $view, $term, $f, $since ): bool {
+				if ( 'all' === $view ? 'spam' === $r['status'] : $r['status'] !== $view ) {
+					return false;
+				}
+				if ( ! empty( $f['service'] ) && ! in_array( $f['service'], (array) $r['services'], true ) ) {
+					return false;
+				}
+				if ( ! empty( $f['budget'] ) && $r['budget'] !== $f['budget'] ) {
+					return false;
+				}
+				if ( $since && $r['ts'] < $since ) {
+					return false;
+				}
+				if ( '' !== $term ) {
+					$hay = mb_strtolower( implode( ' ', [ $r['name'], $r['email'], $r['phone'], preg_replace( '/\D/', '', (string) $r['phone'] ), $r['message'], implode( ' ', (array) $r['services'] ) ] ) );
+					return false !== strpos( $hay, $term );
+				}
+				return true;
+			}
+		);
+		return [ 'rows' => array_values( array_slice( $rows, ( max( 1, $page ) - 1 ) * $per, $per ) ), 'total' => count( $rows ) ];
+	}
+
+	/** The next newer (or older) request, spam aside. */
+	public static function neighbour( int $id, bool $newer ): ?int {
+		$ids = array_keys( array_filter( self::rows(), static fn( $r ) => 'spam' !== $r['status'] ) );
+		$i   = array_search( $id, $ids, true );
+		if ( false === $i ) {
+			return null;
+		}
+		$j = $newer ? $i - 1 : $i + 1;
+		return $ids[ $j ] ?? null;
+	}
+
+	public static function latest_id(): int {
+		$ids = array_keys( self::rows() );
+		return $ids ? (int) max( $ids ) : 0;
+	}
+
+	public static function count_after( int $id ): int {
+		return count( array_filter( self::rows(), static fn( $r ) => $r['id'] > $id && 'spam' !== $r['status'] ) );
+	}
+
+	/** Every value a choice field has had, most used first: the list filters offer. @return array<string,int> */
+	public static function tally( string $field, int $since = 0 ): array {
+		$t = [];
+		foreach ( self::rows() as $r ) {
+			if ( 'spam' === $r['status'] || $r['ts'] < $since ) {
+				continue;
+			}
+			foreach ( (array) $r[ $field ] as $v ) {
+				if ( '' !== (string) $v ) {
+					$t[ (string) $v ] = ( $t[ (string) $v ] ?? 0 ) + 1;
+				}
+			}
+		}
+		arsort( $t );
+		return $t;
+	}
+
+	/**
+	 * The overview's numbers for the last $days, and the $days before.
+	 *
+	 * @return array<string,mixed>
+	 */
+	public static function stats( int $days ): array {
+		$now   = time();
+		$from  = $now - $days * DAY_IN_SECONDS;
+		$prev  = $from - $days * DAY_IN_SECONDS;
+		$blank = [ 'count' => 0, 'won' => 0, 'closed' => 0, 'replied' => 0, 'waits' => [] ];
+		$p     = $blank;
+		$b     = $blank;
+		$spam  = 0;
+		$day   = [];
+		$tz    = new \DateTimeZone( 'Asia/Tehran' );
+		for ( $i = $days - 1; $i >= 0; $i-- ) {
+			$k         = ( new \DateTimeImmutable( '@' . ( $now - $i * DAY_IN_SECONDS ) ) )->setTimezone( $tz )->format( 'Y-m-d' );
+			$day[ $k ] = [ 'ts' => $now - $i * DAY_IN_SECONDS, 'a' => 0, 'b' => 0 ];
+		}
+		$statuses = array_fill_keys( [ 'new', 'talking', 'won', 'lost' ], 0 );
+		foreach ( self::rows() as $r ) {
+			if ( $r['ts'] < $prev ) {
+				continue;
+			}
+			$in = $r['ts'] >= $from;
+			if ( 'spam' === $r['status'] ) {
+				$spam += $in ? 1 : 0;
+				continue;
+			}
+			$t = &$p;
+			if ( ! $in ) {
+				$t = &$b;
+			}
+			++$t['count'];
+			$t['won']    += 'won' === $r['status'] ? 1 : 0;
+			$t['closed'] += in_array( $r['status'], [ 'won', 'lost' ], true ) ? 1 : 0;
+			if ( $r['first'] ) {
+				++$t['replied'];
+				$t['waits'][] = max( 0, $r['first'] - $r['ts'] );
+			}
+			unset( $t );
+			if ( $in ) {
+				++$statuses[ $r['status'] ];
+				$k = ( new \DateTimeImmutable( '@' . $r['ts'] ) )->setTimezone( $tz )->format( 'Y-m-d' );
+				if ( isset( $day[ $k ] ) ) {
+					// a: answered; b: still waiting for an answer
+					++$day[ $k ][ 'new' === $r['status'] ? 'b' : 'a' ];
+				}
+			}
+		}
+		$median = static function ( array $w ): int {
+			if ( ! $w ) {
+				return -1;
+			}
+			sort( $w );
+			$n = count( $w );
+			return (int) ( $n % 2 ? $w[ intdiv( $n, 2 ) ] : ( $w[ $n / 2 - 1 ] + $w[ $n / 2 ] ) / 2 );
+		};
+		return [
+			'period'   => [ 'count' => $p['count'], 'won' => $p['won'], 'closed' => $p['closed'], 'replied' => $p['replied'], 'wait' => $median( $p['waits'] ) ],
+			'prev'     => [ 'count' => $b['count'], 'won' => $b['won'], 'closed' => $b['closed'], 'replied' => $b['replied'], 'wait' => $median( $b['waits'] ) ],
+			'spam'     => $spam,
+			'days'     => array_values( $day ),
+			'statuses' => $statuses,
+			'services' => self::tally( 'services', $from ),
+			'budgets'  => self::tally( 'budget', $from ),
+			'timeline' => self::tally( 'timeline', $from ),
+		];
 	}
 
 	public static function admin_css(): void {
@@ -536,7 +775,7 @@ final class Leads {
 		echo '<style>
 .sz-lead-sub{color:#646970;font-size:12px}
 .sz-lead-pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:600;line-height:1.6;background:#F0F0F1;color:#50575E}
-.sz-lead-pill.is-new{background:#FFE6DA;color:#B4400F}.sz-lead-pill.is-replied{background:#E9F7EF;color:#17633C}.sz-lead-pill.is-spam{background:#FDEEE8;color:#9B2A07}
+.sz-lead-pill.is-new{background:#FFE6DA;color:#B4400F}.sz-lead-pill.is-won{background:#E9F7EF;color:#17633C}.sz-lead-pill.is-talking{background:#EEF1F5;color:#17293D}.sz-lead-pill.is-spam{background:#FDEEE8;color:#9B2A07}
 .sz-lead-msg{margin:4px 0 16px;padding:14px 16px;border-radius:10px;background:#F6F7F7;font-size:14px;line-height:1.6;white-space:normal}
 .sz-lead-table{border-collapse:collapse;width:100%}.sz-lead-table th{width:120px;padding:7px 10px 7px 0;text-align:left;color:#646970;font-weight:500;vertical-align:top}.sz-lead-table td{padding:7px 0}
 .sz-lead-btn{width:100%;text-align:center}

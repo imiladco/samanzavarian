@@ -53,6 +53,9 @@ final class Plugin {
 		Projects::boot();
 		Leads::boot();
 		Telegram::boot();
+		if ( Leads::kit() ) {
+			Admin\Kit::boot(); // the Requests panel: PHP 8.1+ only, so loaded only there
+		}
 		Inline_Icons::boot();
 		Icon_Library::boot();
 

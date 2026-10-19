@@ -39,7 +39,11 @@ add_filter(
 	3
 );
 $saved_opt = get_option( Telegram::OPTION );
+$saved_kit = [ get_option( 'szw_settings', null ), get_option( 'szw_secrets', null ) ];
 update_option( Telegram::OPTION, [ 'token' => '123456789:AAAAAAAAAAAAAAAAAAAAAAAAAAAA', 'chat' => '555', 'retention' => 0 ] );
+if ( Leads::kit() ) {
+	\Samanzavarian_Widgets\Admin\Settings\Settings::save( [ 'tg_enabled' => '1', 'tg_token' => '123456789:AAAAAAAAAAAAAAAAAAAAAAAAAAAA', 'tg_chat' => '555' ], 'telegram' );
+}
 $_SERVER['REMOTE_ADDR'] = '203.0.113.' . wp_rand( 1, 250 );
 delete_transient( Leads::ip_key() );
 
@@ -110,6 +114,8 @@ foreach ( get_posts( [ 'post_type' => Leads::TYPE, 'post_status' => 'any', 'numb
 }
 delete_transient( Leads::ip_key() );
 false === $saved_opt ? delete_option( Telegram::OPTION ) : update_option( Telegram::OPTION, $saved_opt );
+null === $saved_kit[0] ? delete_option( 'szw_settings' ) : update_option( 'szw_settings', $saved_kit[0] );
+null === $saved_kit[1] ? delete_option( 'szw_secrets' ) : update_option( 'szw_secrets', $saved_kit[1] );
 
 szw_group( 'Telegram settings' );
 $s = Telegram::sanitize( [ 'token' => 'not a token', 'chat' => 'abc', 'retention' => '99999' ] );
