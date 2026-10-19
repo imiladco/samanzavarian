@@ -31,6 +31,8 @@ final class Assets {
 		'sz-chat'          => 'widgets/chat.css',
 		'sz-career'        => 'widgets/career.css',
 		'sz-toolkit'       => 'widgets/toolkit.css',
+		'sz-form'          => 'widgets/form.css',
+		'sz-reach'         => 'widgets/reach.css',
 	];
 
 	/** handle => path under assets/js. Frontend scripts, loaded in the footer, no jQuery. */
@@ -45,6 +47,8 @@ final class Assets {
 		'sz-chat'          => 'chat.js',
 		'sz-career'        => 'career.js',
 		'sz-toolkit'       => 'toolkit.js',
+		'sz-form'          => 'form.js',
+		'sz-reach'         => 'reach.js',
 	];
 
 	public static function boot(): void {

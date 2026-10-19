@@ -1,0 +1,103 @@
+/**
+ * Reach (markup: Reach::render()).
+ * - "Online" on WhatsApp and Telegram during working hours in the owner's
+ *   time zone, checked in the browser (cached pages stay right) and again
+ *   every few minutes while the page is open.
+ * - Copy: the button, and on a computer the whole email row (a mail app is
+ *   often missing there); the button and the address line confirm.
+ */
+( function () {
+	'use strict';
+	const done = new WeakSet();
+	const fine = () => window.matchMedia && window.matchMedia( '(hover: hover) and (pointer: fine)' ).matches;
+
+	function nowIn( tz ) {
+		try {
+			const p = new Intl.DateTimeFormat( 'en-US', { timeZone: tz, weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' } ).formatToParts( new Date() );
+			const get = ( t ) => ( p.find( ( x ) => x.type === t ) || {} ).value;
+			return { day: [ 'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat' ].indexOf( get( 'weekday' ) ), min: +get( 'hour' ) * 60 + +get( 'minute' ) };
+		} catch ( e ) {
+			return null;
+		}
+	}
+	const mins = ( s ) => {
+		const m = /^(\d{1,2}):?(\d{2})?$/.exec( String( s ).trim() );
+		return m ? +m[ 1 ] * 60 + +( m[ 2 ] || 0 ) : null;
+	};
+
+	async function copy( text ) {
+		try {
+			await navigator.clipboard.writeText( text );
+			return true;
+		} catch ( e ) {
+			const t = document.createElement( 'textarea' );
+			t.value = text;
+			t.setAttribute( 'readonly', '' );
+			t.style.cssText = 'position:fixed;opacity:0';
+			document.body.appendChild( t );
+			t.select();
+			let ok = false;
+			try {
+				ok = document.execCommand( 'copy' );
+			} catch ( x ) {}
+			t.remove();
+			return ok;
+		}
+	}
+
+	function mount( root ) {
+		if ( ! root || done.has( root ) ) {
+			return;
+		}
+		done.add( root );
+		const h = JSON.parse( root.dataset.hours || '{}' ), on = [ ...root.querySelectorAll( '.sz-reach__on' ) ];
+		const tick = () => {
+			const n = nowIn( h.tz || 'Asia/Tehran' ), a = mins( h.from ), b = mins( h.to );
+			const open = !! n && ( h.days || [] ).indexOf( n.day ) > -1 && a !== null && b !== null && n.min >= a && n.min < b;
+			on.forEach( ( el ) => ( el.hidden = ! open ) );
+		};
+		if ( on.length ) {
+			tick();
+			setInterval( tick, 5 * 60 * 1000 );
+		}
+
+		const confirm = ( row, btn ) => {
+			const sub = row.querySelector( '.sz-reach__sub' ), was = sub.textContent, bt = btn && btn.firstChild, bwas = bt && bt.textContent;
+			row.classList.add( 'is-copied' );
+			sub.textContent = '✓ ' + ( root.dataset.copied || 'Copied' );
+			if ( btn ) {
+				btn.classList.add( 'is-done' );
+				bt.textContent = root.dataset.copied || 'Copied';
+			}
+			window.szwTrack && window.szwTrack( 'sz_reach_copy', {} );
+			setTimeout( () => {
+				row.classList.remove( 'is-copied' );
+				sub.textContent = was;
+				if ( btn ) {
+					btn.classList.remove( 'is-done' );
+					bt.textContent = bwas;
+				}
+			}, 1800 );
+		};
+		root.querySelectorAll( '.sz-reach__copy' ).forEach( ( b ) => b.addEventListener( 'click', async () => ( await copy( b.dataset.copy ) ) && confirm( b.closest( '.sz-reach__row' ), b ) ) );
+		root.querySelectorAll( '.sz-reach__a[data-copy]' ).forEach( ( a ) => a.addEventListener( 'click', async ( e ) => {
+			if ( ! fine() ) {
+				return;
+			}
+			e.preventDefault();
+			const row = a.closest( '.sz-reach__row' );
+			( await copy( a.dataset.copy ) ) && confirm( row, row.querySelector( '.sz-reach__copy' ) );
+		} ) );
+		root.querySelectorAll( '.sz-reach__a:not([data-copy])' ).forEach( ( a ) => a.addEventListener( 'click', () => window.szwTrack && window.szwTrack( 'sz_reach_open', { channel: a.closest( '.sz-reach__row' ).dataset.type } ) ) );
+	}
+
+	const all = () => document.querySelectorAll( '[data-sz-rc]' ).forEach( mount );
+	window.addEventListener( 'elementor/frontend/init', () => {
+		window.elementorFrontend.hooks.addAction( 'frontend/element_ready/sz-reach.default', ( $el ) => mount( $el[ 0 ].querySelector( '[data-sz-rc]' ) ) );
+	} );
+	if ( document.readyState === 'loading' ) {
+		document.addEventListener( 'DOMContentLoaded', all );
+	} else {
+		all();
+	}
+}() );

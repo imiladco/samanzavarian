@@ -33,7 +33,7 @@ szw_ok( wp_style_is( 'sz-process', 'registered' ) && wp_style_is( 'sz-base', 're
 
 szw_group( 'Icon library' );
 
-szw_ok( 29 === count( Icon_Library::GLYPHS ), '29 glyphs from the design sprite' );
+szw_ok( 33 === count( Icon_Library::GLYPHS ), '33 glyphs: the design sprite\'s 29, and Telegram, Instagram, phone and link' );
 szw_ok( 'chat' === Icon_Library::glyph_name( 'szi szi-chat' ), 'stored value → glyph name' );
 szw_ok( null === Icon_Library::glyph_name( 'fas fa-star' ) && null === Icon_Library::glyph_name( 'szi szi-nope' ), 'foreign or unknown values are rejected' );
 

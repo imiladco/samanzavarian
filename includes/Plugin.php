@@ -23,6 +23,8 @@ final class Plugin {
 		Widgets\Chat_Reply::class,
 		Widgets\Career_Timeline::class,
 		Widgets\Toolkit::class,
+		Widgets\Project_Form::class,
+		Widgets\Reach::class,
 	];
 
 	public const CATEGORY = 'samanzavarian';
@@ -49,6 +51,8 @@ final class Plugin {
 
 		Assets::boot();
 		Projects::boot();
+		Leads::boot();
+		Telegram::boot();
 		Inline_Icons::boot();
 		Icon_Library::boot();
 

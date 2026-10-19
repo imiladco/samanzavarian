@@ -4,6 +4,64 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.22.0 — Project Form, Reach, Requests in the admin, and Telegram
+The contact section's two halves as widgets, and somewhere for what the
+form sends to go. Rethought before it was built:
+
+**Project Form**
+- **Needs you can combine.** "What do you need?" is a row of chips you can
+  pick several of (a project is often AI and editing), instead of a
+  one-choice switch that turned into a 2×2 grid on phones.
+- **Phone (optional), timeline and budget** as optional one-tap chips; tap
+  a chip again to clear it. Each can be turned off; the chips are your own.
+- **The message box helps:** examples take turns while it is empty; the
+  counter appears only near the limit.
+- **Nothing is lost:** what is typed is kept in the browser as a draft until
+  it is sent ("Your draft is back · Clear", in the place of the privacy
+  note so nothing moves).
+- **Mistakes in words** beside the fields, on leaving a field or sending;
+  focus goes to the first one.
+- **Sent:** the form gives way to a confirmation with a drawn tick, the
+  visitor's name, the actual day of the reply ("I'll reply by Wednesday,
+  October 21", working days and days off in your time zone) and a summary
+  of what they asked for.
+- **No captcha:** a field only bots fill, a minimum time, a few requests per
+  hour per address, the same request counted once, and messages full of
+  links kept aside as spam.
+- The Quote & Reply widget's quick replies fill it (message and need).
+
+**Reach**
+- Any mix of Email, WhatsApp, Telegram, LinkedIn, Instagram, phone or a
+  link: type the address, number or username and the row builds its link,
+  icon and grey line.
+- WhatsApp opens with a first message already written.
+- **"Online"** beside WhatsApp and Telegram in your working hours (worked
+  out in the browser, so cached pages stay right), never a grey "offline".
+- **Email:** Copy, and on a computer the whole row copies (a mail app is
+  often missing there); the row confirms "✓ Copied".
+
+**Requests (admin)**
+- Every request is kept in WordPress, private, under **Requests**: the menu
+  counts the new ones; the list filters New / Replied / Archived / Spam and
+  exports CSV (cells that would run as formulas neutralised).
+- One request on one screen: the message, the details, **Reply by email**
+  (with a greeting and their message quoted), **Reply on WhatsApp**,
+  **Call**, and Mark replied / Archive.
+- Archived requests can delete themselves after a number of days; spam goes
+  after 30.
+
+**Telegram**
+- Requests → Settings: paste your bot's token, press **Find my chat** (after
+  pressing Start in your bot) and **Send a test**. The token is never shown
+  again.
+- Each new request arrives with who, what, timeline and budget, the message,
+  and buttons to open it in WordPress or answer on WhatsApp. It is sent
+  after the visitor has their answer, so a slow Telegram never slows the
+  form; if Telegram does not take it, it is tried again (2, 4, 8 minutes)
+  and the request says what happened.
+
+Also: four new icons (Telegram, Instagram, phone, link).
+
 ## 0.21.0 — Toolkit: education and tools, under the career
 A new widget, **Toolkit**: the design's card of Education, "Editing and
 finishing" and "AI image and video", one row each.
