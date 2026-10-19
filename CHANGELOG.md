@@ -4,6 +4,29 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.18.0 — Words with icons, in Elementor's own Text Editor
+The About statement ("I trained in photography…") with its icon pills,
+made with no widget of ours: an ordinary Text Editor (or Heading), so the
+text stays a paragraph you edit like any other.
+
+- **Write it in the text:** `{cam:photography}` gives a pill with the
+  icon's navy tile; `{spark*:AI image and video}` an orange one;
+  `{cam:photography|#work-photo}` makes the pill a link. Any icon of the
+  library works by name; anything else in braces stays text.
+- **Made on the server,** so the pills are plain HTML: indexable, nothing
+  shifts, no script needed to show them. The editor's preview turns them
+  live as you type, and a "Words with icons" guide under the editor lists
+  every icon with its name.
+- **The design, refined:** the icon is glued to its first word, so a tile
+  never ends a line alone; a long pill wraps with its shape continued on
+  the next line; tiles have depth (a soft gradient and a light edge);
+  link pills answer hover with an orange edge and a tilt of the tile.
+- **The arrival:** further down the page, the pills light up in reading
+  order as the paragraph comes into view: each tile turns in, then its
+  pill fills. On screen at load or with reduced motion, it is simply there.
+- **`sz-statement`** in Advanced → CSS Classes gives the design's
+  statement type (22px, line height 1.8; 17px on phones).
+
 ## 0.17.0 — Quote & Reply: the bubble and the reply box, as one conversation
 A new widget, **Quote & Reply**: the design's "bubble" (Saman's quote with
 a reaction) and its "reply box" (quick replies, a message field), together

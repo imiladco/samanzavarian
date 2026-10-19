@@ -1,0 +1,29 @@
+/* Icon words (Inline_Icons): pills inside Elementor's Text Editor and Heading.
+   Self-contained: the page may load nothing else of ours. */
+.elementor-widget.sz-statement,.elementor-widget.sz-statement p{margin:0;font-family:var(--sz-font,inherit);font-size:clamp(18px,1.8vw,22px);font-weight:400;line-height:1.8;letter-spacing:-.012em;color:var(--sz-ink,#111318);text-wrap:pretty}
+.elementor-widget.sz-statement p + p{margin-top:.8em}
+@media (max-width:767px){.elementor-widget.sz-statement,.elementor-widget.sz-statement p{font-size:17px;line-height:1.75;letter-spacing:-.005em}}
+
+.sz-tok{display:inline;padding:.14em .34em .14em .22em;border-radius:99px;background:#fff;box-shadow:0 1px 1px rgba(13,27,42,.03),0 2px 6px rgba(13,27,42,.04),inset 0 0 0 1px rgba(13,27,42,.05);
+  font-weight:500;color:inherit;text-decoration:none;-webkit-box-decoration-break:clone;box-decoration-break:clone;
+  transition:background-color .35s,box-shadow .35s}
+/* the icon never ends a line alone: it is glued to the first word; the rest may wrap */
+.sz-tok__lead{white-space:nowrap}
+.sz-tok__tile{display:inline-grid;place-items:center;width:1.1em;height:1.1em;margin-right:.3em;border-radius:.3em;vertical-align:middle;position:relative;top:-.08em;
+  background:linear-gradient(160deg,#22364D,#0D1B2A);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 3px 8px -3px rgba(13,27,42,.45);color:#FF6B2C;
+  transition:transform .5s cubic-bezier(.34,1.4,.64,1),opacity .3s}
+.sz-tok.is-o .sz-tok__tile{background:linear-gradient(160deg,#FF8A55,#FF6B2C);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 3px 8px -3px rgba(255,107,44,.55);color:#fff}
+.sz-tok__svg{display:block;width:.62em;height:.62em}
+@media (max-width:767px){.sz-tok{padding:.1em .3em .1em .18em}}
+
+/* a pill that links: it says so on hover */
+a.sz-tok:hover,a.sz-tok:focus-visible{color:inherit;box-shadow:0 1px 2px rgba(13,27,42,.06),0 8px 18px -8px rgba(13,27,42,.22),inset 0 0 0 1px rgba(255,107,44,.45)}
+a.sz-tok:hover .sz-tok__tile{transform:rotate(-8deg) scale(1.08)}
+a.sz-tok:focus-visible{outline:2.5px solid rgba(255,107,44,.85);outline-offset:2px}
+
+/* the arrival: the pills light up in reading order (armed by the script only when it will play) */
+.is-sz-armed .sz-tok{background-color:transparent;box-shadow:none}
+.is-sz-armed .sz-tok__tile{opacity:0;transform:scale(.3) rotate(-20deg)}
+.is-sz-armed.is-sz-lit .sz-tok{background-color:#fff;box-shadow:0 1px 1px rgba(13,27,42,.03),0 2px 6px rgba(13,27,42,.04),inset 0 0 0 1px rgba(13,27,42,.05);transition-delay:calc(var(--i,0) * 150ms + 80ms)}
+.is-sz-armed.is-sz-lit .sz-tok__tile{opacity:1;transform:none;transition-delay:calc(var(--i,0) * 150ms)}
+@media (prefers-reduced-motion:reduce){.sz-tok,.sz-tok__tile{transition:none}}
