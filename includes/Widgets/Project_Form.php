@@ -144,6 +144,38 @@ class Project_Form extends Widget_Base {
 			$this->add_control( 'label_' . $key, [ 'label' => $def[1], 'type' => Controls_Manager::TEXT, 'default' => $def[0], 'label_block' => strlen( $def[0] ) > 24 || '' === $def[0] ] );
 		}
 		$this->end_controls_section();
+		$this->register_style();
+	}
+
+	private function register_style(): void {
+		$picked = esc_html__( 'Picked', 'samanzavarian-widgets' );
+		$w      = '{{WRAPPER}} .sz-pf';
+		Style_Controls::text( $this, 'st_q', esc_html__( 'Questions', 'samanzavarian-widgets' ), $w . ' .sz-pf__lbl', [ 'no_margin' => true ] );
+		Style_Controls::text( $this, 'st_hint', esc_html__( 'Hints beside the questions', 'samanzavarian-widgets' ), $w . ' .sz-pf__lbl > span', [ 'no_margin' => true ] );
+		Style_Controls::box( $this, 'st_count', esc_html__( '"2 selected"', 'samanzavarian-widgets' ), $w . ' .sz-pf__lbl .sz-pf__picked', [ 'extra' => [ 'c' => [ 'label' => esc_html__( 'Text colour', 'samanzavarian-widgets' ), 'type' => Controls_Manager::COLOR, 'selectors' => [ $w . ' .sz-pf__lbl .sz-pf__picked' => 'color: {{VALUE}};' ] ] ] ] );
+		Style_Controls::box( $this, 'st_tray', esc_html__( 'Needs: the tray', 'samanzavarian-widgets' ), $w . ' .sz-pf__tray' );
+		Style_Controls::box( $this, 'st_tile', esc_html__( 'Needs: tiles', 'samanzavarian-widgets' ), $w . ' .sz-pf__card', [ 'hover' => $w . ' .sz-pf__tile input:checked + .sz-pf__card', 'hover_label' => $picked ] );
+		Style_Controls::tile( $this, 'st_tico', esc_html__( 'Needs: icon tiles', 'samanzavarian-widgets' ), $w . ' .sz-pf__ico' );
+		$this->start_controls_section( 'st_tico_on', [ 'label' => esc_html__( 'Needs: icon tile when picked', 'samanzavarian-widgets' ), 'tab' => Controls_Manager::TAB_STYLE ] );
+		$this->add_control( 'tico_on_bg', [ 'label' => esc_html__( 'Background', 'samanzavarian-widgets' ), 'type' => Controls_Manager::COLOR, 'selectors' => [ $w . ' .sz-pf__tile input:checked + .sz-pf__card .sz-pf__ico' => 'background-color: {{VALUE}};' ] ] );
+		$this->add_control( 'tico_on_fg', [ 'label' => esc_html__( 'Icon colour', 'samanzavarian-widgets' ), 'type' => Controls_Manager::COLOR, 'selectors' => [ $w . ' .sz-pf__tile input:checked + .sz-pf__card .sz-pf__ico' => 'color: {{VALUE}};' ] ] );
+		$this->add_control( 'badge', [ 'label' => esc_html__( 'Check badge', 'samanzavarian-widgets' ), 'type' => Controls_Manager::COLOR, 'selectors' => [ $w . ' .sz-pf__badge circle' => 'fill: {{VALUE}};' ] ] );
+		$this->end_controls_section();
+		Style_Controls::text( $this, 'st_tname', esc_html__( 'Needs: names', 'samanzavarian-widgets' ), $w . ' .sz-pf__name', [ 'no_margin' => true, 'hover' => $w . ' .sz-pf__tile input:checked + .sz-pf__card .sz-pf__name' ] );
+		Style_Controls::box( $this, 'st_set', esc_html__( 'Field groups', 'samanzavarian-widgets' ), $w . ' .sz-pf__set' );
+		Style_Controls::text( $this, 'st_flabel', esc_html__( 'Field labels', 'samanzavarian-widgets' ), $w . ' .sz-pf__f > span', [ 'no_margin' => true ] );
+		Style_Controls::text( $this, 'st_input', esc_html__( 'What is typed', 'samanzavarian-widgets' ), $w . ' .sz-pf__f input, ' . $w . ' .sz-pf__f textarea', [ 'no_margin' => true ] );
+		Style_Controls::box( $this, 'st_chip', esc_html__( 'Timing and budget chips', 'samanzavarian-widgets' ), $w . ' .sz-pf__chip span', [ 'hover' => $w . ' .sz-pf__chip input:checked + span', 'hover_label' => $picked, 'extra' => [ 'c' => [ 'label' => esc_html__( 'Text colour', 'samanzavarian-widgets' ), 'type' => Controls_Manager::COLOR, 'selectors' => [ $w . ' .sz-pf__chip span' => 'color: {{VALUE}};' ] ], 'c_on' => [ 'label' => esc_html__( 'Text colour when picked', 'samanzavarian-widgets' ), 'type' => Controls_Manager::COLOR, 'selectors' => [ $w . ' .sz-pf__chip input:checked + span' => 'color: {{VALUE}};' ] ] ] ] );
+		Style_Controls::box( $this, 'st_more', esc_html__( 'More details', 'samanzavarian-widgets' ), $w . ' .sz-pf__more' );
+		Style_Controls::text( $this, 'st_more_t', esc_html__( 'More details: title', 'samanzavarian-widgets' ), $w . ' .sz-pf__mtxt b', [ 'no_margin' => true ] );
+		Style_Controls::text( $this, 'st_more_s', esc_html__( 'More details: line under', 'samanzavarian-widgets' ), $w . ' .sz-pf__msub', [ 'no_margin' => true ] );
+		Style_Controls::box( $this, 'st_btn', esc_html__( 'Send button', 'samanzavarian-widgets' ), $w . ' .sz-pf__send .sz-pf__btn', [ 'hover' => $w . ' .sz-pf__send .sz-pf__btn:hover' ] );
+		Style_Controls::text( $this, 'st_btn_t', esc_html__( 'Send button: text', 'samanzavarian-widgets' ), $w . ' .sz-pf__send .sz-pf__btn', [ 'no_margin' => true ] );
+		Style_Controls::tile( $this, 'st_go', esc_html__( 'Send button: icon tile', 'samanzavarian-widgets' ), $w . ' .sz-pf__go' );
+		Style_Controls::text( $this, 'st_note', esc_html__( 'Note beside the button', 'samanzavarian-widgets' ), $w . ' .sz-pf__send small', [ 'no_margin' => true ] );
+		Style_Controls::box( $this, 'st_done', esc_html__( 'After sending: card', 'samanzavarian-widgets' ), $w . ' .sz-pf__done' );
+		Style_Controls::text( $this, 'st_done_t', esc_html__( 'After sending: title', 'samanzavarian-widgets' ), $w . ' .sz-pf__ok', [ 'no_margin' => true ] );
+		Style_Controls::text( $this, 'st_done_p', esc_html__( 'After sending: text', 'samanzavarian-widgets' ), $w . ' .sz-pf__oktext', [ 'no_margin' => true ] );
 	}
 
 	/** @return array<string,array{0:string,1:string}> */

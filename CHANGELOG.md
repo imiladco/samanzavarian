@@ -4,6 +4,28 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.29.0 — The Style tab opens with the design's values
+Open a font size or a colour and it shows what is on screen, ready to
+change, instead of an empty field: 328 controls across all 20 widgets now
+start from the design's own values, and 79 more show it as a placeholder.
+
+- Read from the plugin's own stylesheets by a tool (tools/style-defaults),
+  not typed by hand, so they are the real values.
+- A fluid size keeps its formula: the title's size is
+  `clamp(64px, 9.6vw, 132px)` in Elementor's custom unit, still growing with
+  the screen; where the design has a phone value, it is the mobile default.
+- Left empty on purpose, so nothing can break: anything the design changes
+  with a state (hover, the picked tile, the open tab) or a choice (the
+  button's look, a tile's tone), anything inherited from its parent, and the
+  font family (setting Inter there would make Elementor load it from Google).
+- Proven harmless: every element's computed style, and full-page
+  screenshots at desktop and phone width, are identical with the defaults on
+  and off.
+- Project Form, Reach and Reply Promise get a full Style tab too (tray,
+  tiles picked and not, fields, chips, More details, the button, the sent
+  card; the list, the gliding card, names, tiles, the action, Copy, Online;
+  the pill, clock, promise and day).
+
 ## 0.28.0 — Hero widgets: full Style tab, and more life
 **Everything is styleable.** Each hero widget now has a full Style tab
 (a shared set, so they all work alike):

@@ -104,6 +104,16 @@ class Reply_Promise extends Widget_Base {
 			]
 		);
 		$this->end_controls_section();
+		$this->register_style();
+	}
+
+	private function register_style(): void {
+		$w = '{{WRAPPER}} .sz-promise';
+		Style_Controls::box( $this, 'st_box', esc_html__( 'Pill', 'samanzavarian-widgets' ), $w );
+		Style_Controls::tile( $this, 'st_tile', esc_html__( 'Clock tile', 'samanzavarian-widgets' ), $w . ' .sz-promise__tile' );
+		Style_Controls::text( $this, 'st_title', esc_html__( 'Promise', 'samanzavarian-widgets' ), $w . ' .sz-promise__title', [ 'no_margin' => true ] );
+		Style_Controls::text( $this, 'st_day', esc_html__( 'Day line', 'samanzavarian-widgets' ), $w . ' .sz-promise__day', [ 'no_margin' => true ] );
+		Style_Controls::text( $this, 'st_date', esc_html__( 'The day itself', 'samanzavarian-widgets' ), $w . ' .sz-promise__day b', [ 'no_margin' => true ] );
 	}
 
 	/**

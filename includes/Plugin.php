@@ -58,6 +58,7 @@ final class Plugin {
 		Assets::boot();
 		Projects::boot();
 		Leads::boot();
+		Style_Defaults::boot();
 		Telegram::boot();
 		if ( Leads::kit() ) {
 			Admin\Kit::boot(); // the Requests panel: PHP 8.1+ only, so loaded only there

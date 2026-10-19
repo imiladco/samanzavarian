@@ -46,7 +46,7 @@ final class Style_Controls {
 		$w->add_group_control( Group_Control_Box_Shadow::get_type(), [ 'name' => $id . '_shadow', 'selector' => $selector ] );
 		if ( ! empty( $o['hover'] ) ) {
 			$w->end_controls_tab();
-			$w->start_controls_tab( $id . '_h', [ 'label' => esc_html__( 'Hover', 'samanzavarian-widgets' ) ] );
+			$w->start_controls_tab( $id . '_h', [ 'label' => $o['hover_label'] ?? esc_html__( 'Hover', 'samanzavarian-widgets' ) ] );
 			$w->add_group_control( Group_Control_Background::get_type(), [ 'name' => $id . '_bg_h', 'types' => [ 'classic', 'gradient' ], 'selector' => $o['hover'] ] );
 			$w->add_control( $id . '_bc_h', [ 'label' => esc_html__( 'Border colour', 'samanzavarian-widgets' ), 'type' => Controls_Manager::COLOR, 'selectors' => [ $o['hover'] => 'border-color: {{VALUE}};' ] ] );
 			$w->add_group_control( Group_Control_Box_Shadow::get_type(), [ 'name' => $id . '_shadow_h', 'selector' => $o['hover'] ] );

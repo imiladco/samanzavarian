@@ -109,6 +109,11 @@ szw_ok( 4 === substr_count( $f, 'class="sz-float ' ) && false !== strpos( $f, 's
 $d = szw_render( [], 'sz-dock' );
 szw_ok( 4 === substr_count( $d, '<a class="sz-dock__a' ) && 1 === substr_count( $d, 'sz-dock__sep' ) && false !== strpos( $d, 'data-sz-dock' ), 'Dock: four items, a separator before Behance, the swell on' );
 
+// the Style tab's defaults: the design's values, fluid ones as formulas, the phone one apart
+$sd = require SZW_PATH . 'includes/style-defaults.php';
+szw_ok( 'clamp(64px, 9.6vw, 132px)' === ( $sd['sz-htitle']['st_all_type_font_size']['d']['size'] ?? '' ) && 'custom' === ( $sd['sz-htitle']['st_all_type_typography']['d'] ?? '' ) && isset( $sd['sz-htitle']['st_all_type_font_size']['m'] ), 'Style defaults: the title\'s size as its formula, with its phone value' );
+szw_ok( ! isset( $sd['sz-btn']['st_box_bg_color'] ) && ! isset( $sd['sz-dock']['st_tile_fg'] ), 'Style defaults: nothing that changes with hover or with a choice (the button\'s look, the tile\'s tone)' );
+
 szw_ok( 'Hi Sara, about ai visuals and post-production' === Kit::fill( 'Hi {first}, about {needs}', [ 'name' => 'Sara Ahmadi', 'services' => [ 'AI visuals', 'Post-production' ] ] ), 'reply templates fill in the first name and the needs' );
 
 szw_finish();

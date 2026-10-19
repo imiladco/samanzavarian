@@ -131,6 +131,19 @@ class Reach extends Widget_Base {
 		$this->add_control( 'l_copied', [ 'label' => esc_html__( 'Copied', 'samanzavarian-widgets' ), 'type' => Controls_Manager::TEXT, 'default' => esc_html__( 'Copied', 'samanzavarian-widgets' ) ] );
 		$this->add_control( 'l_online', [ 'label' => esc_html__( 'Online', 'samanzavarian-widgets' ), 'type' => Controls_Manager::TEXT, 'default' => esc_html__( 'Online', 'samanzavarian-widgets' ) ] );
 		$this->end_controls_section();
+		$this->register_style();
+	}
+
+	private function register_style(): void {
+		$w = '{{WRAPPER}} .sz-reach';
+		Style_Controls::box( $this, 'st_tray', esc_html__( 'The list', 'samanzavarian-widgets' ), $w );
+		Style_Controls::box( $this, 'st_glide', esc_html__( 'The card under the pointer', 'samanzavarian-widgets' ), $w . ' .sz-reach__glide' );
+		Style_Controls::text( $this, 'st_name', esc_html__( 'Names', 'samanzavarian-widgets' ), $w . ' .sz-reach__name', [ 'no_margin' => true ] );
+		Style_Controls::text( $this, 'st_sub', esc_html__( 'Addresses', 'samanzavarian-widgets' ), $w . ' .sz-reach__sub', [ 'no_margin' => true ] );
+		Style_Controls::tile( $this, 'st_tile', esc_html__( 'Icon tiles', 'samanzavarian-widgets' ), $w . ' .sz-reach__tile' );
+		Style_Controls::box( $this, 'st_go', esc_html__( 'Action ("Message →")', 'samanzavarian-widgets' ), $w . ' .sz-reach__row.is-hot .sz-reach__go' );
+		Style_Controls::box( $this, 'st_copy', esc_html__( 'Copy button', 'samanzavarian-widgets' ), $w . ' .sz-reach__row .sz-reach__copy', [ 'extra' => [ 'c' => [ 'label' => esc_html__( 'Text colour', 'samanzavarian-widgets' ), 'type' => Controls_Manager::COLOR, 'selectors' => [ $w . ' .sz-reach__row .sz-reach__copy' => 'color: {{VALUE}};' ] ] ] ] );
+		Style_Controls::box( $this, 'st_on', esc_html__( '"Online"', 'samanzavarian-widgets' ), $w . ' .sz-reach__on', [ 'extra' => [ 'c' => [ 'label' => esc_html__( 'Text colour', 'samanzavarian-widgets' ), 'type' => Controls_Manager::COLOR, 'selectors' => [ $w . ' .sz-reach__on' => 'color: {{VALUE}};' ] ] ] ] );
 	}
 
 	/** Strip a full link down to the username. */
