@@ -4,6 +4,20 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.30.0 — Style sizes in plain pixels
+Every size in the Style tab's defaults is now a plain pixel value, one per
+device: the design's value at desktop (1440px), tablet (1024px) and phone
+(390px) width, e.g. the hero title 132 / 98.304 / 55.38px instead of
+`clamp(64px, 9.6vw, 132px)`. Letter spacing, radii and gaps that were in em
+or % are in px too. Line heights stay unitless numbers (a pixel line height
+would be inherited as a fixed size by everything inside).
+
+Kept to three decimals so the page is the same as the design at those
+widths (phone: identical to the pixel; desktop: 6 anti-aliased pixels).
+Between them a size now holds the device's value instead of growing with
+the screen: on a 1200px laptop the title is 132px, not 115px. Type a
+`clamp()` in the custom unit to make any of them fluid again.
+
 ## 0.29.0 — The Style tab opens with the design's values
 Open a font size or a colour and it shows what is on screen, ready to
 change, instead of an empty field: 328 controls across all 20 widgets now

@@ -32,6 +32,7 @@ def mobile_ok(rec, ctrl):
         return True, oth[0]['v']
     return False, None
 
+pend_tab = {}
 out = {}; stats = {'set': 0, 'mobile': 0, 'skipped': 0}
 for w, ctrls in C.items():
     for cn, c in ctrls.items():
@@ -55,6 +56,23 @@ for w, ctrls in C.items():
             if t == 'color':
                 d = hexc(comp) if a else None
                 if d and mv is not None and prec: mob = hexc(prec.get('computed'))
+            elif t == 'slider' and prop != 'line-height':
+                # sizes in plain pixels, per device: the design's value at each width
+                src = a if a and 'var(' not in a else None
+                if src is None: d = None
+                else:
+                    def px(r):
+                        m = NUM.match((r or {}).get('computed', '').strip()) if r else None
+                        if not m or (m.group(2) or 'px') != 'px' or 'px' not in c['units']: return None
+                        v = round(float(m.group(1)), 3); return {'unit': 'px', 'size': int(v) if v.is_integer() else v}
+                    trec = M['tab'].get(w, {}).get(cn)
+                    d = px(rec)
+                    if d and c.get('resp'):
+                        tv, pv = px(trec), px(prec)
+                        if tv and tv != d: out.setdefault(w, {}); tab_v = tv
+                        else: tab_v = None
+                        mob = pv if pv and pv != (tv or d) else None
+                        if tab_v: pend_tab[(w, cn)] = tab_v
             elif t == 'slider':
                 # only a value the element sets itself: an inherited one would freeze what should follow its parent
                 src = a if a and 'var(' not in a else None
@@ -76,6 +94,7 @@ for w, ctrls in C.items():
                     stats['placeholder'] = stats.get('placeholder', 0) + 1
             continue
         out.setdefault(w, {})[cn] = {'s': c['section'], 'd': d}
+        if (w, cn) in pend_tab: out[w][cn]['t'] = pend_tab[(w, cn)]
         if mob is not None and mob != d: out[w][cn]['m'] = mob; stats['mobile'] += 1
         stats['set'] += 1
         # gates: the typography popover, the background type

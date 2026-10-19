@@ -8,9 +8,8 @@ defined( 'ABSPATH' ) || exit;
  * colour opens showing what is on screen instead of an empty field.
  *
  * The values come from includes/style-defaults.php, generated from the
- * plugin's stylesheets (tools/build-style-defaults). A fluid size keeps its
- * formula (clamp() in Elementor's custom unit), a phone value becomes the
- * mobile default, and a property the design changes with a state or at
+ * plugin's stylesheets (tools/style-defaults). Sizes are plain pixels, one
+ * per device (the design's value at desktop, tablet and phone width), and a property the design changes with a state or at
  * another breakpoint is not there at all: as a default it would be written
  * into the page's CSS and win over the design's own hover, picked or
  * narrow-screen rule. Such a size still shows its value, as a placeholder,
@@ -42,11 +41,15 @@ final class Style_Defaults {
 								$element->update_control( $name, [ 'placeholder' => $c['p'] ] );
 								continue;
 							}
-							// the phone value: on the desktop control for the editor's device switcher, on the _mobile copy for the page's CSS
-							$element->update_control( $name, isset( $c['m'] ) ? [ 'default' => $c['d'], 'mobile_default' => $c['m'] ] : [ 'default' => $c['d'] ] );
-							if ( isset( $c['m'] ) ) {
-								$element->update_control( $name . '_mobile', [ 'default' => $c['m'] ] );
+							// tablet and phone values: on the desktop control for the editor's device switcher, on the copies for the page's CSS
+							$args = [ 'default' => $c['d'] ];
+							foreach ( [ 't' => 'tablet', 'm' => 'mobile' ] as $k => $device ) {
+								if ( isset( $c[ $k ] ) ) {
+									$args[ $device . '_default' ] = $c[ $k ];
+									$element->update_control( $name . '_' . $device, [ 'default' => $c[ $k ] ] );
+								}
 							}
+							$element->update_control( $name, $args );
 						}
 					}
 				);

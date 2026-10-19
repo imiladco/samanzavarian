@@ -88,7 +88,7 @@ function inPage(CTRLS) {
 
 (async () => {
   const b = await chromium.launch(); const res = {};
-  for (const [w, n] of [[1440, 'desk'], [390, 'phone']]) {
+  for (const [w, n] of [[1440, 'desk'], [1024, 'tab'], [390, 'phone']]) {
     const p = await b.newPage({ viewport: { width: w, height: 900 } });
     await p.emulateMedia({ reducedMotion: 'reduce' });
     await p.goto('http://127.0.0.1:8899/?page_id=' + ID, { waitUntil: 'networkidle' }); await p.waitForTimeout(1200);

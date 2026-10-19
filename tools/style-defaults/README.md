@@ -9,11 +9,12 @@ Run `defaults.sh` from the test rig (a WordPress + Elementor site serving on
 
 1. `dumpctl.js` lists every style control from the editor (`controls.json`).
 2. `measure.js` reads, with the defaults off, each control's value from the
-   plugin's stylesheets, at desktop and phone width (`measured.json`).
+   plugin's stylesheets, at desktop, tablet and phone width (`measured.json`).
 3. `decide.py` keeps only the safe ones: a value the element sets itself,
    the same on every element the control reaches, not changed by a state or
-   by a breakpoint other than Elementor's phone. A fluid size keeps its
-   formula (`clamp()` in the custom unit). Others get a placeholder at most.
+   by a breakpoint other than Elementor's phone. Sizes are plain pixels, the
+   design's value at desktop (1440), tablet (1024) and phone (390) width.
+   Others get a placeholder at most.
 4. `snap.js` + `diff.py` compare the computed styles of every element with
    the defaults off and on; `pix.js` compares full-page screenshots. Both
    must come out clean.
