@@ -4,6 +4,33 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.20.0 — Career Timeline: a timeline you work, not a picture of one
+0.19.0 rebuilt the box properly but it still looked like the design. This
+release changes what you see and what you can do with it:
+
+- **The playhead is the way through the career.** A white playhead stands
+  on the selected role's first frame and glides to each role you pick.
+  **Drag it** (or drag along the ruler) to scrub: the card follows the
+  role under it as it passes and the flag reads the month ("Aug 2023");
+  let go and it settles on that role. It is a keyboard slider too.
+- **Play.** A Play button in the bar runs the career like a reel: the
+  playhead plays through every role, equal time each so a short role is as
+  readable as a long one, and the card follows; on a phone the timeline
+  pans along. Picking anything stops it; it waits off screen and in a
+  background tab. (Can be turned off.)
+- **Clips look like clips.** Each one carries the role's icon as its first
+  frame and an audio waveform underneath (fixed per company, as long as
+  the role); the tracks get an editor's V1 / V2 headers, pinned while the
+  timeline scrolls under them.
+- **Skimming:** with a mouse, a quiet line follows the pointer over the
+  timeline with the month it is on.
+- **"Now" is a fixed line** (dashed, orange, with its recording light);
+  it steps aside when the playhead stands on it. On arrival it is "Now"
+  that runs from the first role to today laying the clips down, then the
+  playhead drops in.
+- **How long:** the card shows each role's length beside its dates
+  ("2 yrs", "1 yr 2 mo", "10 mo").
+
 ## 0.19.0 — Career Timeline: the career as an edit
 A new widget, **Career Timeline**: one clip per role on an editor's
 timeline, a "Now" playhead, and an inspector card above it showing the

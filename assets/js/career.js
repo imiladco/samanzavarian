@@ -1,44 +1,64 @@
 /**
  * Career Timeline (markup: Career_Timeline::render()).
  *
- * - Picking a clip (click, arrows, Home/End, the bar's buttons) shows its
- *   role: the old inspector slides out against the direction of travel, the
- *   new one comes in from it, icon first. Every role shares one grid cell,
- *   so nothing below moves. The timeline scrolls the clip to the middle.
- * - Arrival: the first time the box scrolls into view, the playhead plays
- *   from the first role to "Now" and each clip is laid down as it passes;
- *   on a narrow screen the timeline pans along with it. Only when the box is
- *   out of view as the page opens, never with reduced motion or in the
- *   editor; otherwise it is simply there. Web Animations, compositor only
- *   (the clips' reveal is a clip-path on their own layer).
- * - The timeline's edges fade only where there is more to scroll, and the
- *   phone's swipe hint leaves once the visitor has swiped.
+ * - The playhead is the way through the career. It stands on the selected
+ *   role's first frame and glides to each role picked (clip, arrows,
+ *   Home/End, the bar's buttons). Drag it, or the ruler, to scrub: the card
+ *   follows the role under it as it passes, the flag reads the month; let
+ *   go and it settles on that role's first frame.
+ * - Play runs the career like a reel: the playhead plays through every role
+ *   (equal time each, so a short role is as readable as a long one) and the
+ *   card follows; the narrow timeline pans along. Picking anything stops it;
+ *   it pauses off screen and in a background tab.
+ * - Skimming (mouse): a quiet line follows the pointer over the timeline
+ *   with the month it is on.
+ * - Picking a role: the old card slides out against the direction of
+ *   travel, the new one comes in from it, icon first. Every role shares one
+ *   grid cell, so nothing below moves.
+ * - Arrival: the first time the box scrolls into view, the "Now" line runs
+ *   from the first role to today and lays each clip down as it passes; then
+ *   the playhead drops in. Only when the box is out of view as the page
+ *   opens, never with reduced motion or in the editor.
  */
 ( function () {
 	'use strict';
 
 	const instances = new WeakMap();
 	const media = ( q ) => window.matchMedia && window.matchMedia( q ).matches;
-	const SPRING = 'cubic-bezier(.34,1.4,.64,1)', EASE = 'cubic-bezier(.22,.8,.24,1)';
+	const SPRING = 'cubic-bezier(.34,1.4,.64,1)', EASE = 'cubic-bezier(.22,.8,.24,1)', GLIDE = 'cubic-bezier(.3,1.2,.5,1)';
+	const DWELL = 2600;
 
 	class SzCareer {
 		constructor( root ) {
 			this.root = root;
 			this.clips = [ ...root.querySelectorAll( '.sz-cr__clip' ) ].sort( ( a, b ) => a.dataset.i - b.dataset.i );
+			this.span = this.clips.map( ( c ) => [ +c.dataset.s, +c.dataset.e ] );
 			this.panels = [ ...root.querySelectorAll( '.sz-cr__panel' ) ];
 			this.scroller = root.querySelector( '.sz-cr__scroll' );
-			this.tracks = root.querySelector( '.sz-cr__tracks' );
+			this.heads = root.querySelector( '.sz-cr__heads' );
+			this.area = root.querySelector( '.sz-cr__area' );
 			this.head = root.querySelector( '.sz-cr__head' );
+			this.knob = root.querySelector( '.sz-cr__knob' );
+			this.now = root.querySelector( '.sz-cr__now' );
+			this.skim = root.querySelector( '.sz-cr__skim' );
+			this.ruler = root.querySelector( '.sz-cr__ruler' );
 			this.pos = root.querySelector( '.sz-cr__pos' );
 			this.btns = [ ...root.querySelectorAll( '.sz-cr__btn' ) ];
+			this.playBtn = root.querySelector( '.sz-cr__play' );
 			this.swipe = root.querySelector( '.sz-cr__swipe' );
+			this.labels = Object.assign( { of: 'of', play: 'Play', pause: 'Pause', now: 'Now' }, JSON.parse( root.dataset.labels || '{}' ) );
+			this.t0 = +this.area.dataset.t0;
+			this.t1 = +this.area.dataset.t1;
+			this.tNow = +this.area.dataset.now;
 			this.reduce = media( '(prefers-reduced-motion: reduce)' );
 			this.editor = !! ( window.elementorFrontend && window.elementorFrontend.isEditMode && window.elementorFrontend.isEditMode() );
 			this.cur = Math.max( 0, this.clips.findIndex( ( c ) => c.getAttribute( 'aria-selected' ) === 'true' ) );
+			this.fmt = this.monthFormat();
 			this.off = [];
 			this.bind();
 			this.center( this.cur, true );
 			this.edges();
+			this.near();
 			this.watch();
 		}
 
@@ -49,25 +69,119 @@
 
 		destroy() {
 			this.off.forEach( ( f ) => f() );
+			this.stop( true );
 			cancelAnimationFrame( this.raf );
 			if ( this.io ) {
 				this.io.disconnect();
 			}
 		}
 
+		/* ---------------- time ⇄ place ---------------- */
+
+		pct( t ) {
+			return ( ( t - this.t0 ) / ( this.t1 - this.t0 ) ) * 100 + '%';
+		}
+
+		timeAt( clientX ) {
+			const r = this.area.getBoundingClientRect();
+			const t = this.t0 + ( ( clientX - r.left ) / r.width ) * ( this.t1 - this.t0 );
+			return Math.max( this.t0, Math.min( this.tNow, t ) );
+		}
+
+		/** The role under a moment: the latest one running then, else the last one begun. */
+		roleAt( t ) {
+			let best = -1;
+			this.span.forEach( ( [ s, e ], i ) => {
+				if ( s <= t && t < e && ( best < 0 || s >= this.span[ best ][ 0 ] ) ) {
+					best = i;
+				}
+			} );
+			if ( best < 0 ) {
+				this.span.forEach( ( [ s ], i ) => {
+					if ( s <= t ) {
+						best = i;
+					}
+				} );
+			}
+			return Math.max( 0, best );
+		}
+
+		monthFormat() {
+			try {
+				return new Intl.DateTimeFormat( document.documentElement.lang || 'en', { month: 'short', year: 'numeric' } );
+			} catch ( e ) {
+				return null;
+			}
+		}
+
+		month( t ) {
+			const y = Math.floor( t ), m = Math.min( 11, Math.floor( ( t - y ) * 12 ) );
+			return this.fmt ? this.fmt.format( new Date( y, m, 1 ) ) : `${ m + 1 }/${ y }`;
+		}
+
+		/** Put the playhead at a moment; `glide` animates from where it was (compositor only). */
+		setHead( t, { glide = false, label = null } = {} ) {
+			if ( ! this.head ) {
+				return;
+			}
+			const from = glide && ! this.reduce ? this.head.offsetLeft : null;
+			this.head.style.left = this.pct( t );
+			this.head.setAttribute( 'aria-valuenow', t.toFixed( 2 ) );
+			const text = label !== null ? label : String( Math.floor( t ) );
+			this.head.setAttribute( 'aria-valuetext', text );
+			this.knob.textContent = text;
+			if ( from !== null ) {
+				const d = from - this.head.offsetLeft;
+				if ( Math.abs( d ) > 1 ) {
+					this.head.animate( [ { transform: `translateX(${ d }px)` }, { transform: 'none' } ], { duration: 560, easing: GLIDE } );
+				}
+			}
+			this.near();
+		}
+
+		/** The "Now" flag steps aside when the playhead stands on it. */
+		near() {
+			if ( this.head && this.now ) {
+				this.root.classList.toggle( 'is-near', Math.abs( this.head.offsetLeft - this.now.offsetLeft ) < 64 );
+			}
+		}
+
+		/* ---------------- wiring ---------------- */
+
 		bind() {
 			this.clips.forEach( ( c, i ) => {
 				this.on( c, 'click', () => this.pick( i ) );
-				this.on( c, 'keydown', ( e ) => {
-					const k = e.key, last = this.clips.length - 1;
-					const to = k === 'ArrowRight' || k === 'ArrowDown' ? i + 1 : k === 'ArrowLeft' || k === 'ArrowUp' ? i - 1 : k === 'Home' ? 0 : k === 'End' ? last : null;
-					if ( to !== null && to >= 0 && to <= last ) {
-						e.preventDefault();
-						this.pick( to, { focus: true } );
-					}
-				} );
+				this.on( c, 'keydown', ( e ) => this.keys( e, i, false ) );
 			} );
 			this.btns.forEach( ( b ) => this.on( b, 'click', () => this.pick( this.cur + ( +b.dataset.dir ), { from: b } ) ) );
+			if ( this.head ) {
+				this.on( this.head, 'keydown', ( e ) => this.keys( e, this.cur, true ) );
+			}
+			if ( this.playBtn ) {
+				this.on( this.playBtn, 'click', () => ( this.playing ? this.pause() : this.play() ) );
+			}
+
+			// scrubbing: the playhead or the ruler, dragged
+			[ this.head, this.ruler ].forEach( ( el ) => el && this.on( el, 'pointerdown', ( e ) => this.scrubStart( e ) ) );
+
+			// skimming, for a mouse
+			let skimRaf = 0, skimX = 0;
+			this.on( this.area, 'pointermove', ( e ) => {
+				if ( e.pointerType !== 'mouse' || this.scrubbing ) {
+					return;
+				}
+				skimX = e.clientX;
+				if ( ! skimRaf ) {
+					skimRaf = requestAnimationFrame( () => {
+						skimRaf = 0;
+						const r = this.area.getBoundingClientRect(), t = this.timeAt( skimX );
+						this.skim.style.transform = `translateX(${ ( ( t - this.t0 ) / ( this.t1 - this.t0 ) ) * r.width }px)`;
+						this.skim.firstChild.textContent = this.month( t );
+						this.root.classList.add( 'is-skim' );
+					} );
+				}
+			} );
+			this.on( this.area, 'pointerleave', () => this.root.classList.remove( 'is-skim' ) );
 
 			let raf = 0;
 			this.on( this.scroller, 'scroll', () => {
@@ -86,29 +200,64 @@
 				}
 			};
 			[ 'pointerdown', 'wheel', 'touchstart' ].forEach( ( t ) => this.on( this.scroller, t, took, { passive: true } ) );
-			this.on( window, 'resize', () => this.edges(), { passive: true } );
+			this.on( window, 'resize', () => {
+				this.edges();
+				this.near();
+			}, { passive: true } );
+			this.on( document, 'visibilitychange', () => document.hidden && this.playing && this.pause() );
+		}
+
+		keys( e, i, fromHead ) {
+			const k = e.key, last = this.clips.length - 1;
+			const to = k === 'ArrowRight' || k === 'ArrowDown' ? i + 1 : k === 'ArrowLeft' || k === 'ArrowUp' ? i - 1 : k === 'Home' ? 0 : k === 'End' ? last : null;
+			if ( to !== null && to >= 0 && to <= last ) {
+				e.preventDefault();
+				this.pick( to, { focus: ! fromHead } );
+			} else if ( fromHead && ( k === ' ' || k === 'Enter' ) && this.playBtn ) {
+				e.preventDefault();
+				this.playing ? this.pause() : this.play();
+			}
 		}
 
 		edges() {
-			const s = this.scroller, max = s.scrollWidth - s.clientWidth;
-			s.classList.toggle( 'is-start', s.scrollLeft <= 2 );
-			s.classList.toggle( 'is-end', s.scrollLeft >= max - 2 );
+			const s = this.scroller;
+			s.classList.toggle( 'is-end', s.scrollLeft >= s.scrollWidth - s.clientWidth - 2 );
 		}
 
+		/** Scroll a clip (or a point) to the middle of the visible timeline, right of the track headers. */
 		center( i, instant ) {
-			const s = this.scroller, c = this.clips[ i ];
-			if ( ! c || s.scrollWidth <= s.clientWidth ) {
+			const c = this.clips[ i ];
+			c && this.reveal( this.area.offsetLeft + c.offsetLeft + c.offsetWidth / 2, instant ? 'auto' : 'smooth' );
+		}
+
+		reveal( x, behavior ) {
+			const s = this.scroller, max = s.scrollWidth - s.clientWidth;
+			if ( max <= 0 ) {
 				return;
 			}
-			const left = Math.max( 0, Math.min( s.scrollWidth - s.clientWidth, c.offsetLeft + c.offsetWidth / 2 - s.clientWidth / 2 + this.tracks.offsetLeft ) );
-			s.scrollTo( { left, behavior: instant || this.reduce ? 'auto' : 'smooth' } );
+			const hw = this.heads ? this.heads.offsetWidth : 0;
+			const left = Math.max( 0, Math.min( max, x - ( s.clientWidth + hw ) / 2 ) );
+			if ( behavior === 'now' ) {
+				s.scrollLeft = left;
+			} else {
+				s.scrollTo( { left, behavior: this.reduce ? 'auto' : behavior } );
+			}
 		}
 
 		/* ---------------- picking a role ---------------- */
 
 		pick( i, opts = {} ) {
 			const n = this.clips.length;
-			if ( i < 0 || i >= n || i === this.cur ) {
+			if ( ! opts.auto ) {
+				this.stop( true );
+			}
+			if ( i < 0 || i >= n ) {
+				return;
+			}
+			if ( i === this.cur ) {
+				if ( ! opts.keepHead ) {
+					this.setHead( this.span[ i ][ 0 ], { glide: true } );
+				}
 				return;
 			}
 			const was = this.cur, dir = i > was ? 1 : -1;
@@ -118,7 +267,7 @@
 				c.tabIndex = k === i ? 0 : -1;
 			} );
 			if ( this.pos ) {
-				this.pos.textContent = `${ i + 1 } ${ this.root.dataset.of || 'of' } ${ n }`;
+				this.pos.textContent = `${ i + 1 } ${ this.labels.of } ${ n }`;
 			}
 			this.btns.forEach( ( b ) => {
 				b.disabled = +b.dataset.dir < 0 ? i === 0 : i === n - 1;
@@ -129,10 +278,15 @@
 				other && other.focus();
 			}
 			this.swap( was, i, dir );
+			if ( ! opts.keepHead ) {
+				this.setHead( this.span[ i ][ 0 ], { glide: true } );
+			}
 			if ( opts.focus ) {
 				this.clips[ i ].focus( { preventScroll: true } );
 			}
-			this.center( i );
+			if ( ! opts.keepView ) {
+				this.center( i );
+			}
 		}
 
 		swap( was, i, dir ) {
@@ -171,7 +325,113 @@
 			about && about.animate( [ from, to ], { duration: 440, delay: 170, easing: EASE, fill: 'backwards' } );
 		}
 
-		/* ---------------- arrival: the playhead plays to "Now" ---------------- */
+		/* ---------------- scrubbing ---------------- */
+
+		scrubStart( e ) {
+			if ( e.button !== 0 || ! this.head ) {
+				return;
+			}
+			e.preventDefault();
+			this.stop( true );
+			const el = e.currentTarget;
+			el.setPointerCapture && el.setPointerCapture( e.pointerId );
+			this.scrubbing = true;
+			this.root.classList.add( 'is-scrub' );
+			this.root.classList.remove( 'is-skim' );
+			this.head.getAnimations().forEach( ( a ) => a.cancel() );
+			const move = ( ev ) => {
+				const t = this.timeAt( ev.clientX );
+				this.setHead( t, { label: this.month( t ) } );
+				const i = this.roleAt( t );
+				if ( i !== this.cur ) {
+					this.pick( i, { keepHead: true, keepView: true, auto: true } );
+				}
+			};
+			const up = () => {
+				el.removeEventListener( 'pointermove', move );
+				el.removeEventListener( 'pointerup', up );
+				el.removeEventListener( 'pointercancel', up );
+				this.scrubbing = false;
+				this.root.classList.remove( 'is-scrub' );
+				// settle on the role's first frame
+				this.setHead( this.span[ this.cur ][ 0 ], { glide: true } );
+				this.center( this.cur );
+			};
+			el.addEventListener( 'pointermove', move );
+			el.addEventListener( 'pointerup', up );
+			el.addEventListener( 'pointercancel', up );
+			move( e );
+		}
+
+		/* ---------------- play: the career as a reel ---------------- */
+
+		play() {
+			if ( ! this.head || this.playing ) {
+				return;
+			}
+			const last = this.clips.length - 1;
+			if ( ! this.reel ) {
+				this.reel = { k: this.cur === last ? 0 : this.cur, p: 0 };
+			}
+			this.playing = true;
+			this.playBtn.setAttribute( 'aria-pressed', 'true' );
+			this.playBtn.lastChild.textContent = this.labels.pause;
+			this.pos && this.pos.setAttribute( 'aria-live', 'off' );
+			this.pick( this.reel.k, { auto: true, keepHead: true, keepView: true } );
+			let t0 = performance.now() - this.reel.p * DWELL, k = this.reel.k;
+			const step = ( now ) => {
+				if ( ! this.playing ) {
+					return;
+				}
+				let p = ( now - t0 ) / DWELL;
+				if ( p >= 1 ) {
+					if ( k >= last ) {
+						this.reel = null;
+						this.stop( false );
+						this.setHead( this.span[ this.cur ][ 0 ], { glide: true } );
+						return;
+					}
+					k++;
+					t0 = now;
+					p = 0;
+					this.pick( k, { auto: true, keepHead: true, keepView: true } );
+				}
+				this.reel = { k, p };
+				const s = this.span[ k ][ 0 ], e = k < last ? Math.max( s + 0.05, this.span[ k + 1 ][ 0 ] ) : Math.max( s + 0.05, this.tNow );
+				if ( this.reduce ) {
+					this.setHead( s );
+				} else {
+					this.setHead( s + ( e - s ) * p );
+					this.reveal( this.area.offsetLeft + this.head.offsetLeft, 'now' );
+				}
+				this.raf = requestAnimationFrame( step );
+			};
+			this.raf = requestAnimationFrame( step );
+		}
+
+		pause() {
+			this.stop( false );
+		}
+
+		/** Stop playing; `reset` forgets where the reel was (the visitor took over). */
+		stop( reset ) {
+			if ( reset ) {
+				this.reel = null;
+			}
+			if ( ! this.playing ) {
+				return;
+			}
+			this.playing = false;
+			cancelAnimationFrame( this.raf );
+			this.playBtn.setAttribute( 'aria-pressed', 'false' );
+			this.playBtn.lastChild.textContent = this.labels.play;
+			this.pos && this.pos.setAttribute( 'aria-live', 'polite' );
+			if ( reset ) {
+				this.setHead( this.span[ this.cur ][ 0 ], { label: null } );
+			}
+		}
+
+		/* ---------------- arrival: "Now" runs to today ---------------- */
 
 		watch() {
 			if ( ! ( 'IntersectionObserver' in window ) ) {
@@ -180,63 +440,70 @@
 			}
 			const r = this.root.getBoundingClientRect();
 			const away = r.top >= window.innerHeight || r.bottom <= 0;
-			const play = this.root.dataset.arrive === '1' && away && ! this.reduce && ! this.editor && this.head && this.head.animate;
-			if ( play ) {
+			const arrive = this.root.dataset.arrive === '1' && away && ! this.reduce && ! this.editor && this.now && this.now.animate;
+			if ( arrive ) {
 				this.root.classList.add( 'is-armed' );
 				if ( this.scroller.scrollWidth > this.scroller.clientWidth ) {
 					this.scroller.scrollLeft = 0;
 				}
 			}
+			let first = true;
 			this.io = new IntersectionObserver( ( es ) => {
-				const e = es[ es.length - 1 ];
-				if ( ! e.isIntersecting || e.intersectionRatio < 0.35 ) {
+				const e = es[ es.length - 1 ], seen = e.isIntersecting && e.intersectionRatio >= 0.35;
+				if ( ! seen ) {
+					// off screen: a playing reel waits
+					if ( ! e.isIntersecting && this.playing ) {
+						this.pause();
+					}
 					return;
 				}
-				this.io.disconnect();
-				this.root.classList.add( 'is-seen' );
-				if ( play ) {
-					this.play();
+				if ( first ) {
+					first = false;
+					this.root.classList.add( 'is-seen' );
+					if ( arrive ) {
+						this.arrive();
+					}
 				}
 			}, { threshold: [ 0, 0.35 ] } );
 			this.io.observe( this.root );
 		}
 
-		play() {
-			const tracks = this.tracks, W = tracks.clientWidth;
-			const x1 = this.head.offsetLeft;
+		arrive() {
+			const x1 = this.now.offsetLeft;
 			const x0 = Math.min( ...this.clips.map( ( c ) => c.offsetLeft ) );
 			const span = Math.max( 1, x1 - x0 );
 			// about 1.6s for the whole run, a little longer on wide timelines
 			const D = Math.round( Math.min( 2200, Math.max( 1300, span * 1.9 ) ) );
-			const linear = 'linear';
 			this.root.classList.remove( 'is-armed' );
 
-			this.head.animate(
+			this.now.animate(
 				[ { transform: `translateX(${ x0 - x1 }px)`, opacity: 0 }, { opacity: 1, offset: 0.06 }, { transform: 'none', opacity: 1 } ],
-				{ duration: D, easing: linear, fill: 'backwards' }
+				{ duration: D, easing: 'linear', fill: 'backwards' }
 			);
 			this.clips.forEach( ( c ) => {
 				const a = c.offsetLeft - x0, w = c.offsetWidth;
 				c.animate(
 					[ { clipPath: 'inset(-6px calc(100% + 6px) -6px -6px round 14px)' }, { clipPath: 'inset(-6px -6px -6px -6px round 14px)' } ],
-					{ duration: Math.max( 120, ( w / span ) * D ), delay: ( a / span ) * D, easing: linear, fill: 'backwards' }
+					{ duration: Math.max( 120, ( w / span ) * D ), delay: ( a / span ) * D, easing: 'linear', fill: 'backwards' }
 				);
 			} );
 			this.root.querySelectorAll( '.sz-cr__ruler span' ).forEach( ( s, k ) => {
 				s.animate( [ { opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' } ], { duration: 360, delay: k * 50, easing: EASE, fill: 'backwards' } );
 			} );
+			// then the playhead drops onto the current role
+			this.head && this.head.animate( [ { opacity: 0, transform: 'translateY(-10px)' }, { opacity: 1, transform: 'none' } ], { duration: 480, delay: D + 80, easing: SPRING, fill: 'backwards' } );
 
-			// a narrow timeline pans along with the playhead (until a hand takes it)
+			// a narrow timeline pans along with "Now" (until a hand takes it)
 			const s = this.scroller;
-			if ( s.scrollWidth > s.clientWidth && W ) {
+			if ( s.scrollWidth > s.clientWidth ) {
 				this.panning = true;
-				const t0 = performance.now(), max = s.scrollWidth - s.clientWidth;
+				const start = performance.now();
 				const step = ( now ) => {
 					if ( ! this.panning ) {
 						return;
 					}
-					const p = Math.min( 1, ( now - t0 ) / D ), x = x0 + span * p;
-					s.scrollLeft = Math.max( 0, Math.min( max, x + tracks.offsetLeft - s.clientWidth * 0.62 ) );
+					const p = Math.min( 1, ( now - start ) / D );
+					this.reveal( this.area.offsetLeft + x0 + span * p, 'now' );
 					if ( p < 1 ) {
 						this.raf = requestAnimationFrame( step );
 					} else {

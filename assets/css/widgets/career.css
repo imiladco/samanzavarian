@@ -30,6 +30,19 @@
 .sz-cr .sz-cr__nav .sz-cr__btn:not(:disabled):active{transform:scale(.9)}
 .sz-cr .sz-cr__nav .sz-cr__btn:disabled{opacity:.35;cursor:default}
 .sz-cr .sz-cr__nav .sz-cr__btn:focus-visible{outline:2.5px solid #fff;outline-offset:2px}
+.sz-cr .sz-cr__nav .sz-cr__play,.sz-cr .sz-cr__nav .sz-cr__play:is(:hover,:focus,:active){
+  flex:none;display:inline-flex;align-items:center;gap:7px;height:36px;min-height:0;margin:0 6px 0 0;padding:0 15px 0 12px;border:0;border-radius:99px;
+  background:#fff;box-shadow:none;color:var(--sz-navy);font:inherit;font-size:13px;font-weight:600;line-height:1;text-transform:none;letter-spacing:normal;cursor:pointer;
+  transition:background-color .2s,color .2s,transform .3s var(--sz-spring)}
+@media (hover:hover){.sz-cr .sz-cr__nav .sz-cr__play:hover{background:#E9EDF2}}
+.sz-cr .sz-cr__nav .sz-cr__play:active{transform:scale(.94)}
+.sz-cr .sz-cr__nav .sz-cr__play:focus-visible{outline:2.5px solid var(--szc-accent);outline-offset:2px}
+.sz-cr .sz-cr__nav .sz-cr__play[aria-pressed="true"]{background:var(--szc-accent);color:var(--szc-on-ink)}
+.sz-cr__play svg{width:14px;height:14px;fill:currentColor;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.sz-cr__pa{display:none;fill:none}
+.sz-cr__pi{stroke-width:1.4}
+.sz-cr__play[aria-pressed="true"] .sz-cr__pi{display:none}
+.sz-cr__play[aria-pressed="true"] .sz-cr__pa{display:inline}
 .sz-cr__btn svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 
 /* ---------- the inspector: every role in one cell, so its height never changes ---------- */
@@ -42,7 +55,9 @@
 .sz-cr__id{min-width:0}
 .sz-cr .sz-cr__role{margin:0;padding:0;font-family:inherit;font-size:clamp(22px,3cqw,28px);font-weight:600;line-height:1.15;letter-spacing:-.03em;text-transform:none;color:var(--szc-ink)}
 .sz-cr__co{display:block;margin-top:4px;font-size:15px;line-height:1.4;color:var(--szc-text)}
-.sz-cr__when{display:inline-flex;align-items:center;gap:7px;height:28px;margin-top:12px;padding:0 11px;border-radius:99px;background:var(--szc-chip);font-size:13px;font-weight:600;line-height:1;color:var(--szc-text);font-variant-numeric:tabular-nums;white-space:nowrap}
+.sz-cr__meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.sz-cr__when,.sz-cr__dur{display:inline-flex;align-items:center;gap:7px;height:28px;padding:0 11px;border-radius:99px;background:var(--szc-chip);font-size:13px;font-weight:600;line-height:1;color:var(--szc-text);font-variant-numeric:tabular-nums;white-space:nowrap}
+.sz-cr__dur{background:transparent;box-shadow:inset 0 0 0 1px var(--sz-line);font-weight:500}
 .sz-cr__when.is-live::before{content:"";width:6px;height:6px;border-radius:50%;background:#30B46C;box-shadow:0 0 0 3px rgba(48,180,108,.16)}
 .sz-cr .sz-cr__text{margin:0;padding:0;font-size:16px;line-height:1.6;color:var(--szc-text)}
 .sz-cr .sz-cr__tags{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 0;padding:0;list-style:none}
@@ -53,59 +68,94 @@
   .sz-cr__tile{width:44px;height:44px;border-radius:12px;font-size:20px}
   .sz-cr .sz-cr__role{font-size:20px}
   .sz-cr__co{margin-top:2px;font-size:14px}
-  .sz-cr__when{height:26px;margin-top:8px;font-size:12px}
+  .sz-cr__meta{margin-top:8px}
+  .sz-cr__when,.sz-cr__dur{height:26px;font-size:12px}
   .sz-cr .sz-cr__text{font-size:15px;line-height:1.55}
   .sz-cr .sz-cr__tags{margin-top:12px}
   .sz-cr .sz-cr__tags li{height:28px;padding:0 10px;font-size:12.5px}
 }
 
-/* ---------- the timeline ---------- */
-.sz-cr__scroll{position:relative;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;padding:18px 20px 20px;
-  /* the edges fade only where there is more to see (the script sets is-start / is-end) */
-  --szc-fl:16px;--szc-fr:28px;
-  -webkit-mask-image:linear-gradient(90deg,transparent,#000 var(--szc-fl),#000 calc(100% - var(--szc-fr)),transparent);
-          mask-image:linear-gradient(90deg,transparent,#000 var(--szc-fl),#000 calc(100% - var(--szc-fr)),transparent)}
+/* ---------- the timeline: track headers, a marker band, the ruler, the lanes ---------- */
+.sz-cr__scroll{position:relative;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;padding:16px 20px 20px 0;
+  /* the right edge fades only while there is more to see (the track headers cover the left) */
+  --szc-fr:28px;
+  -webkit-mask-image:linear-gradient(90deg,#000 calc(100% - var(--szc-fr)),transparent);
+          mask-image:linear-gradient(90deg,#000 calc(100% - var(--szc-fr)),transparent)}
 .sz-cr__scroll::-webkit-scrollbar{display:none}
-.sz-cr__scroll.is-start{--szc-fl:0px}
-.sz-cr__scroll.is-end{--szc-fr:0px}
-.sz-cr__scroll.is-start.is-end{-webkit-mask-image:none;mask-image:none}
-.sz-cr__tracks{position:relative;min-width:calc(var(--szc-years,7) * var(--szc-year))}
+.sz-cr__scroll.is-end{--szc-fr:0px;-webkit-mask-image:none;mask-image:none}
+.sz-cr__tracks{display:flex;min-width:0}
 
-.sz-cr__ruler{position:relative;height:30px;
+/* V1, V2: an editor's track headers, pinned while the timeline scrolls under them */
+.sz-cr__heads{position:sticky;left:0;z-index:5;flex:none;display:flex;flex-direction:column;width:58px;margin-right:6px;padding:52px 0 0 14px;
+  background:linear-gradient(90deg,var(--szc-bg) calc(100% - 6px),transparent)}
+.sz-cr__th{display:grid;place-items:center;height:var(--szc-clip-h);margin-top:8px;border-radius:10px;background:color-mix(in srgb,#fff 6%,var(--szc-bg));box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);
+  font-size:11px;font-weight:700;letter-spacing:.04em;color:var(--szc-muted);font-variant-numeric:tabular-nums}
+
+.sz-cr__area{position:relative;flex:1;min-width:calc(var(--szc-years,7) * var(--szc-year));padding-top:22px;touch-action:pan-x pan-y}
+.sz-cr__ruler{position:relative;height:30px;cursor:ew-resize;touch-action:none;
   /* quarter-year ticks along the baseline, quieter than the years */
   background:repeating-linear-gradient(90deg,rgba(255,255,255,.16) 0 1px,transparent 1px calc(100% / (var(--szc-years,7) * 4))) left bottom / 100% 5px no-repeat}
 .sz-cr__ruler::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:rgba(255,255,255,.14)}
-.sz-cr__ruler span{position:absolute;bottom:8px;padding-left:7px;font-size:12px;font-weight:600;line-height:1.2;color:var(--szc-muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.sz-cr__ruler span{position:absolute;bottom:8px;padding-left:7px;font-size:12px;font-weight:600;line-height:1.2;color:var(--szc-muted);font-variant-numeric:tabular-nums;white-space:nowrap;pointer-events:none}
 .sz-cr__ruler span::before{content:"";position:absolute;left:0;bottom:-8px;width:1px;height:14px;background:rgba(255,255,255,.3)}
-.sz-cr__zone{position:absolute;left:0;top:30px;bottom:0;margin-right:4px;border-radius:12px;background:repeating-linear-gradient(135deg,rgba(255,255,255,.045) 0 6px,transparent 6px 12px);pointer-events:none}
-.sz-cr__zone{width:calc(var(--w) - 4px)}
+.sz-cr__zone{position:absolute;left:0;top:52px;bottom:0;width:calc(var(--w) - 4px);border-radius:12px;background:repeating-linear-gradient(135deg,rgba(255,255,255,.045) 0 6px,transparent 6px 12px);pointer-events:none}
 
 .sz-cr__lane{position:relative;height:var(--szc-clip-h);margin-top:8px}
+
+/* a clip: the role's icon as its first frame, the name, and its audio underneath */
 .sz-cr .sz-cr__lane .sz-cr__clip,.sz-cr .sz-cr__lane .sz-cr__clip:is(:hover,:focus,:active){
-  position:absolute;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0;min-height:0;margin:0;padding:0 12px;
+  position:absolute;top:0;bottom:0;display:block;min-width:0;min-height:0;margin:0;padding:0;
   border:0;border-radius:14px;background:var(--szc-clip);box-shadow:inset 0 1px 0 rgba(255,255,255,.12);color:#fff;
-  font:inherit;text-align:left;text-transform:none;letter-spacing:normal;cursor:pointer;overflow:hidden;
+  font:inherit;text-align:left;text-transform:none;letter-spacing:normal;cursor:pointer;overflow:hidden;container-type:inline-size;
   transition:background-color .3s,color .3s,box-shadow .35s,transform .45s var(--sz-spring)}
 @media (hover:hover){.sz-cr .sz-cr__lane .sz-cr__clip:hover{background:var(--szc-clip-hover);transform:translateY(-2px)}}
 .sz-cr .sz-cr__lane .sz-cr__clip:active{transform:scale(.98)}
+.sz-cr__in{position:absolute;left:0;right:0;top:0;bottom:14px;display:flex;align-items:center;gap:9px;padding:0 12px 0 8px}
+.sz-cr__thumb{flex:none;display:grid;place-items:center;width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.1);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1);color:var(--szc-accent);font-size:15px;transition:background-color .3s,color .3s}
+.sz-cr__thumb svg{width:1em;height:1em}
+.sz-cr__ct{min-width:0}
 .sz-cr__clip b{display:block;font-size:13px;font-weight:600;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sz-cr__clip small{display:block;font-size:12px;line-height:1.2;color:#D3DBE4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums;transition:color .3s}
+.sz-cr__clip small{display:block;font-size:11.5px;line-height:1.25;color:#D3DBE4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums;transition:color .3s}
+.sz-cr__wave{position:absolute;left:10px;right:10px;bottom:5px;width:calc(100% - 20px);height:9px;fill:rgba(255,255,255,.26);transition:fill .3s}
+@container (max-width:118px){.sz-cr__thumb{display:none}.sz-cr__in{padding-left:12px}}
 /* the selected clip: lit, ringed, with an editor's trim handles at both ends */
 .sz-cr .sz-cr__lane .sz-cr__clip[aria-selected="true"]{background:var(--szc-accent);color:var(--szc-on-ink);box-shadow:0 0 0 2px #fff,0 14px 28px -10px color-mix(in srgb,var(--szc-accent) 70%,transparent);transform:none}
 .sz-cr .sz-cr__lane .sz-cr__clip[aria-selected="true"] small{color:color-mix(in srgb,var(--szc-on-ink) 78%,var(--szc-accent))}
-.sz-cr__clip::before,.sz-cr__clip::after{content:"";position:absolute;top:50%;width:3px;height:18px;margin-top:-9px;border-radius:2px;background:color-mix(in srgb,var(--szc-on-ink) 32%,transparent);transform:scaleY(0);transition:transform .35s var(--sz-spring)}
-.sz-cr__clip::before{left:4px}
-.sz-cr__clip::after{right:4px}
+.sz-cr__clip[aria-selected="true"] .sz-cr__thumb{background:rgba(13,27,42,.14);box-shadow:none;color:var(--szc-on-ink)}
+.sz-cr__clip[aria-selected="true"] .sz-cr__wave{fill:color-mix(in srgb,var(--szc-on-ink) 34%,transparent)}
+.sz-cr__clip::before,.sz-cr__clip::after{content:"";position:absolute;top:50%;z-index:1;width:3px;height:18px;margin-top:-9px;border-radius:2px;background:color-mix(in srgb,var(--szc-on-ink) 32%,transparent);transform:scaleY(0);transition:transform .35s var(--sz-spring)}
+.sz-cr__clip::before{left:3px}
+.sz-cr__clip::after{right:3px}
 .sz-cr__clip[aria-selected="true"]::before,.sz-cr__clip[aria-selected="true"]::after{transform:none;transition-delay:.08s}
 .sz-cr .sz-cr__lane .sz-cr__clip:focus-visible{outline:2.5px solid #fff;outline-offset:3px}
 
-/* the playhead, parked at "Now" */
-.sz-cr__head{position:absolute;top:20px;bottom:-6px;width:2px;margin-left:-1px;border-radius:2px;background:var(--szc-accent);pointer-events:none;z-index:3}
-.sz-cr__flag{position:absolute;top:-20px;left:50%;display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 8px;border-radius:6px;background:var(--szc-accent);color:var(--szc-on-ink);font-size:11px;font-weight:700;line-height:20px;white-space:nowrap;transform:translateX(-50%)}
-/* "live": a recording light, three slow beats once the box is seen, then still */
+/* "Now": where today is, a fixed orange line with its recording light */
+.sz-cr__now{position:absolute;top:0;bottom:-6px;width:0;border-left:2px dashed color-mix(in srgb,var(--szc-accent) 70%,transparent);margin-left:-1px;pointer-events:none;z-index:2}
+/* the flag hangs to the left of its line: "Now" is always at the far end, where the box ends */
+.sz-cr__flag{position:absolute;top:0;right:-1px;display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 8px;border-radius:6px 6px 0 6px;background:var(--szc-accent);color:var(--szc-on-ink);font-size:11px;font-weight:700;line-height:20px;white-space:nowrap;transition:opacity .25s,transform .3s var(--sz-spring)}
 .sz-cr__flag i{width:5px;height:5px;border-radius:50%;background:currentColor}
 .sz-cr.is-seen .sz-cr__flag i{animation:szc-rec 1.6s ease-in-out 3}
 @keyframes szc-rec{50%{opacity:.25}}
+/* the playhead sits on top of it: the flag steps aside */
+.sz-cr.is-near .sz-cr__flag{opacity:0;transform:translateY(-4px)}
+
+/* the playhead: white, on the selected role's first frame; drag it to scrub the career */
+.sz-cr__head{position:absolute;top:0;bottom:-6px;width:2px;margin-left:-1px;border-radius:2px;background:#fff;z-index:4;cursor:grab;touch-action:none;box-shadow:0 0 0 1px rgba(13,27,42,.25)}
+.sz-cr__head::after{content:"";position:absolute;top:0;bottom:0;left:-10px;right:-10px}
+.sz-cr__knob{position:absolute;top:0;left:50%;display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:6px;background:#fff;color:var(--sz-navy);
+  font-size:11px;font-weight:700;line-height:1;white-space:nowrap;font-variant-numeric:tabular-nums;transform:translateX(-50%);box-shadow:0 4px 10px -4px rgba(0,0,0,.5);transition:transform .25s var(--sz-spring)}
+.sz-cr__knob::after{content:"";position:absolute;left:50%;bottom:-4px;width:8px;height:8px;margin-left:-4px;border-radius:0 0 2px 0;background:inherit;transform:rotate(45deg);z-index:-1}
+@media (hover:hover){.sz-cr__head:hover .sz-cr__knob{transform:translateX(-50%) scale(1.08)}}
+.sz-cr.is-scrub .sz-cr__head{cursor:grabbing}
+.sz-cr.is-scrub .sz-cr__knob{transform:translateX(-50%) scale(1.12)}
+.sz-cr.is-scrub,.sz-cr.is-scrub *{cursor:grabbing;user-select:none;-webkit-user-select:none}
+.sz-cr__head:focus-visible{outline:none}
+.sz-cr__head:focus-visible .sz-cr__knob{box-shadow:0 0 0 2.5px var(--szc-accent)}
+
+/* skimming: a quiet line under the pointer, with the month it is on */
+.sz-cr__skim{position:absolute;top:22px;bottom:-6px;left:0;width:1px;background:rgba(255,255,255,.4);opacity:0;pointer-events:none;z-index:3;transition:opacity .15s}
+.sz-cr__skim span{position:absolute;top:-22px;left:0;height:20px;padding:0 7px;border-radius:6px;background:rgba(255,255,255,.14);color:#fff;font-size:11px;font-weight:600;line-height:20px;white-space:nowrap;transform:translateX(-50%);backdrop-filter:blur(6px)}
+.sz-cr.is-skim .sz-cr__skim{opacity:1}
 
 .sz-cr__swipe{display:none;align-items:center;justify-content:center;gap:6px;margin:0;padding:4px 0 14px;font-size:12px;font-weight:500;line-height:1.3;color:var(--szc-muted);transition:opacity .4s}
 .sz-cr__swipe svg{width:14px;height:14px;fill:none;stroke:var(--szc-accent);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
@@ -115,19 +165,21 @@
 @media (max-width:767px){
   .sz-cr{--szc-radius:26px}
   .sz-cr__bar{min-height:56px;padding:10px 10px 10px 16px}
-  .sz-cr__dots,.sz-cr__hint{display:none}
+  .sz-cr__dots,.sz-cr__hint,.sz-cr__pos{display:none}
+  .sz-cr .sz-cr__nav .sz-cr__play,.sz-cr .sz-cr__nav .sz-cr__play:is(:hover,:focus,:active){padding:0 13px 0 11px;margin-right:2px}
   .sz-cr__insp{margin:0 8px}
-  .sz-cr__scroll{padding:16px 16px 6px}
-  .sz-cr__tracks{margin-right:24px}
+  .sz-cr__scroll{padding:16px 16px 6px 0}
+  .sz-cr__heads{width:48px;padding-left:10px}
+  .sz-cr__area{margin-right:24px}
   .sz-cr__clip b{font-size:14px}
   .sz-cr__swipe{display:flex}
 }
 
-/* armed for its arrival (the script plays it in): clips not yet laid down, playhead parked off */
+/* armed for its arrival (the script plays it in): clips not yet laid down, the markers parked */
 .sz-cr.is-armed .sz-cr__clip{clip-path:inset(-6px calc(100% + 6px) -6px -6px round 14px)}
-.sz-cr.is-armed .sz-cr__head,.sz-cr.is-armed .sz-cr__ruler span{opacity:0}
+.sz-cr.is-armed .sz-cr__now,.sz-cr.is-armed .sz-cr__head,.sz-cr.is-armed .sz-cr__ruler span{opacity:0}
 
 @media (prefers-reduced-motion:reduce){
-  .sz-cr .sz-cr__lane .sz-cr__clip,.sz-cr__clip::before,.sz-cr__clip::after{transition:none}
+  .sz-cr .sz-cr__lane .sz-cr__clip,.sz-cr__clip::before,.sz-cr__clip::after,.sz-cr__knob,.sz-cr__flag{transition:none}
   .sz-cr.is-seen .sz-cr__flag i{animation:none}
 }

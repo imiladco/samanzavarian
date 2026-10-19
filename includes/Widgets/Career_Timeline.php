@@ -121,7 +121,7 @@ class Career_Timeline extends Widget_Base {
 
 		$this->start_controls_section( 'section_timeline', [ 'label' => esc_html__( 'Timeline', 'samanzavarian-widgets' ) ] );
 		$this->add_control( 'title', [ 'label' => esc_html__( 'Title', 'samanzavarian-widgets' ), 'type' => Controls_Manager::TEXT, 'default' => esc_html__( 'Career timeline', 'samanzavarian-widgets' ), 'label_block' => true ] );
-		$this->add_control( 'hint', [ 'label' => esc_html__( 'Hint', 'samanzavarian-widgets' ), 'type' => Controls_Manager::TEXT, 'default' => esc_html__( 'Select a clip to see the role', 'samanzavarian-widgets' ), 'label_block' => true, 'description' => esc_html__( 'Beside the title on wide screens.', 'samanzavarian-widgets' ) ] );
+		$this->add_control( 'hint', [ 'label' => esc_html__( 'Hint', 'samanzavarian-widgets' ), 'type' => Controls_Manager::TEXT, 'default' => esc_html__( 'Pick a clip, drag the playhead or press Play', 'samanzavarian-widgets' ), 'label_block' => true, 'description' => esc_html__( 'Beside the title on wide screens.', 'samanzavarian-widgets' ) ] );
 		$this->add_control(
 			'group_before',
 			[
@@ -132,7 +132,8 @@ class Career_Timeline extends Widget_Base {
 				'description' => esc_html__( 'Years before this one share one hatched "Before 2022" stretch of the ruler, and roles that ended by then are labelled that way. 0 shows every year.', 'samanzavarian-widgets' ),
 			]
 		);
-		$this->add_control( 'arrival', [ 'label' => esc_html__( 'Play the timeline on arrival', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'description' => esc_html__( 'The first time it scrolls into view, the playhead runs to "Now", laying each clip down as it passes. Never with reduced motion, or when the box is already on screen as the page opens.', 'samanzavarian-widgets' ) ] );
+		$this->add_control( 'play', [ 'label' => esc_html__( 'Play button', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'description' => esc_html__( 'Plays the career like a reel: the playhead runs through every role, a few seconds each, and the card follows. Stops as soon as the visitor picks something.', 'samanzavarian-widgets' ) ] );
+		$this->add_control( 'arrival', [ 'label' => esc_html__( 'Play the timeline on arrival', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'description' => esc_html__( 'The first time it scrolls into view, the "Now" line runs from the first role to today, laying each clip down as it passes. Never with reduced motion, or when the box is already on screen as the page opens.', 'samanzavarian-widgets' ) ] );
 		$this->end_controls_section();
 
 		$this->start_controls_section( 'section_labels', [ 'label' => esc_html__( 'Labels', 'samanzavarian-widgets' ) ] );
@@ -155,6 +156,12 @@ class Career_Timeline extends Widget_Base {
 			'next'   => [ __( 'Later role', 'samanzavarian-widgets' ), __( 'Later button (screen readers)', 'samanzavarian-widgets' ) ],
 			'roles'  => [ __( 'Roles', 'samanzavarian-widgets' ), __( 'The clips (screen readers)', 'samanzavarian-widgets' ) ],
 			'swipe'  => [ __( 'Swipe the timeline for earlier roles', 'samanzavarian-widgets' ), __( 'Swipe hint (phones)', 'samanzavarian-widgets' ) ],
+			'play'   => [ __( 'Play', 'samanzavarian-widgets' ), __( 'Play button', 'samanzavarian-widgets' ) ],
+			'pause'  => [ __( 'Pause', 'samanzavarian-widgets' ), __( 'Pause button', 'samanzavarian-widgets' ) ],
+			'yr'     => [ __( 'yr', 'samanzavarian-widgets' ), __( '"yr" (one year)', 'samanzavarian-widgets' ) ],
+			'yrs'    => [ __( 'yrs', 'samanzavarian-widgets' ), __( '"yrs" (years)', 'samanzavarian-widgets' ) ],
+			'mo'     => [ __( 'mo', 'samanzavarian-widgets' ), __( '"mo" (months)', 'samanzavarian-widgets' ) ],
+			'head'   => [ __( 'Playhead: drag along the timeline', 'samanzavarian-widgets' ), __( 'Playhead (screen readers)', 'samanzavarian-widgets' ) ],
 		];
 	}
 
@@ -283,6 +290,7 @@ class Career_Timeline extends Widget_Base {
 				'e'    => (float) $e,
 				'live' => $live,
 				'when' => $when,
+				'dur'  => self::duration( (float) $start, (float) $e, $l ),
 				'icon' => $it['icon'] ?? [],
 				'text' => trim( (string) ( $it['text'] ?? '' ) ),
 				'tags' => $tags,
@@ -339,6 +347,39 @@ class Career_Timeline extends Widget_Base {
 		return [ 'roles' => $roles, 't0' => $t0, 't1' => $t1, 'now' => $now, 'group' => $group, 'lanes' => count( $count ), 'current' => $current ];
 	}
 
+	/** How long a role ran: "2 yrs", "1 yr 2 mo", "9 mo". @param array<string,string> $l */
+	public static function duration( float $s, float $e, array $l ): string {
+		$m  = max( 1, (int) round( ( $e - $s ) * 12 ) );
+		$y  = intdiv( $m, 12 );
+		$mo = $m % 12;
+		$out = [];
+		if ( $y ) {
+			$out[] = $y . ' ' . ( 1 === $y ? $l['yr'] : $l['yrs'] );
+		}
+		if ( $mo ) {
+			$out[] = $mo . ' ' . $l['mo'];
+		}
+		return implode( ' ', $out );
+	}
+
+	/**
+	 * A clip's audio waveform: bars as long as the role (about one per two
+	 * weeks of screen), their heights fixed by the company's name so a clip
+	 * always shows the same wave.
+	 */
+	public static function wave( string $seed, float $years ): string {
+		$n    = max( 12, min( 90, (int) round( $years * 26 ) ) );
+		$h    = crc32( $seed );
+		$bars = '';
+		for ( $i = 0; $i < $n; $i++ ) {
+			$h     = ( $h * 1103515245 + 12345 ) & 0x7fffffff;
+			$env   = 0.55 + 0.45 * sin( $i / $n * M_PI ); // fuller in the middle, like speech under music
+			$v     = max( 1.4, round( ( 2 + ( $h % 1000 ) / 1000 * 8 ) * $env, 1 ) );
+			$bars .= '<rect x="' . ( $i * 2 ) . '" y="' . round( ( 10 - $v ) / 2, 2 ) . '" width="1.1" height="' . $v . '" rx=".5"/>';
+		}
+		return '<svg class="sz-cr__wave" viewBox="0 0 ' . ( $n * 2 - 0.9 ) . ' 10" preserveAspectRatio="none" aria-hidden="true" focusable="false">' . $bars . '</svg>';
+	}
+
 	/** @param array<string,mixed> $s @return array<string,string> */
 	private static function labels( array $s ): array {
 		$l = [];
@@ -375,6 +416,8 @@ class Career_Timeline extends Widget_Base {
 		$title = trim( (string) ( $s['title'] ?? '' ) );
 		$hint  = trim( (string) ( $s['hint'] ?? '' ) );
 		$now   = min( $lay['now'], $t1 );
+		$play  = $n > 1 && 'yes' === ( $s['play'] ?? 'yes' );
+		$pct   = static fn( float $y ): string => self::pct( $y, $t0, $t1 );
 
 		$this->add_render_attribute(
 			'root',
@@ -382,7 +425,7 @@ class Career_Timeline extends Widget_Base {
 				'class'       => 'sz-cr sz-w',
 				'data-sz-cr'  => '',
 				'data-arrive' => 'yes' === ( $s['arrival'] ?? 'yes' ) ? '1' : '0',
-				'data-of'     => $l['of'],
+				'data-labels' => wp_json_encode( [ 'of' => $l['of'], 'play' => $l['play'], 'pause' => $l['pause'], 'now' => $l['now'] ] ),
 				'style'       => '--szc-years:' . ( $t1 - $t0 ) . ';--szc-lanes:' . $lay['lanes'],
 			]
 		);
@@ -394,6 +437,9 @@ class Career_Timeline extends Widget_Base {
 				<?php if ( '' !== $hint && $n > 1 ) : ?><span class="sz-cr__hint"><?php echo esc_html( $hint ); ?></span><?php endif; ?>
 				<?php if ( $n > 1 ) : ?>
 					<div class="sz-cr__nav">
+						<?php if ( $play ) : ?>
+							<button type="button" class="sz-cr__play" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path class="sz-cr__pi" d="M8 5.5v13l10.5-6.5z"/><path class="sz-cr__pa" d="M8.5 6v12M15.5 6v12"/></svg><span><?php echo esc_html( $l['play'] ); ?></span></button>
+						<?php endif; ?>
 						<span class="sz-cr__pos" aria-live="polite"><?php echo esc_html( ( $cur + 1 ) . ' ' . $l['of'] . ' ' . $n ); ?></span>
 						<button type="button" class="sz-cr__btn" data-dir="-1" aria-label="<?php echo esc_attr( $l['prev'] ); ?>"<?php disabled( 0 === $cur ); ?>><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m15 6-6 6 6 6"/></svg></button>
 						<button type="button" class="sz-cr__btn" data-dir="1" aria-label="<?php echo esc_attr( $l['next'] ); ?>"<?php disabled( $n - 1 === $cur ); ?>><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m9 6 6 6-6 6"/></svg></button>
@@ -411,7 +457,10 @@ class Career_Timeline extends Widget_Base {
 							<div class="sz-cr__id">
 								<?php if ( '' !== $r['role'] ) : ?><h3 class="sz-cr__role"><?php echo esc_html( $r['role'] ); ?></h3><?php endif; ?>
 								<span class="sz-cr__co"><?php echo esc_html( $r['co'] ); ?></span>
-								<span class="sz-cr__when<?php echo $r['live'] ? ' is-live' : ''; ?>"><?php echo esc_html( $r['when'] ); ?></span>
+								<span class="sz-cr__meta">
+									<span class="sz-cr__when<?php echo $r['live'] ? ' is-live' : ''; ?>"><?php echo esc_html( $r['when'] ); ?></span>
+									<span class="sz-cr__dur"><?php echo esc_html( $r['dur'] ); ?></span>
+								</span>
 							</div>
 						</div>
 						<?php if ( '' !== $r['text'] || $r['tags'] ) : ?>
@@ -427,35 +476,47 @@ class Career_Timeline extends Widget_Base {
 			</div>
 
 			<div class="sz-cr__scroll">
-				<div class="sz-cr__tracks" role="tablist" aria-label="<?php echo esc_attr( $l['roles'] ); ?>">
-					<div class="sz-cr__ruler" aria-hidden="true">
-						<?php
-						$first = $lay['group'] ? $lay['group'] : $t0;
-						if ( $lay['group'] ) {
-							echo '<span style="left:0">' . esc_html( $l['before'] . ' ' . $lay['group'] ) . '</span>';
-						}
-						for ( $y = $first; $y < $t1; $y++ ) {
-							echo '<span style="left:' . esc_attr( self::pct( $y, $t0, $t1 ) ) . '">' . (int) $y . '</span>';
-						}
-						?>
+				<div class="sz-cr__tracks">
+					<div class="sz-cr__heads" aria-hidden="true">
+						<?php for ( $lane = 0; $lane < $lay['lanes']; $lane++ ) : ?><span class="sz-cr__th">V<?php echo (int) ( $lane + 1 ); ?></span><?php endfor; ?>
 					</div>
-					<?php if ( $lay['group'] ) : ?><span class="sz-cr__zone" aria-hidden="true" style="--w:<?php echo esc_attr( self::pct( $lay['group'], $t0, $t1 ) ); ?>"></span><?php endif; ?>
-					<?php for ( $lane = 0; $lane < $lay['lanes']; $lane++ ) : ?>
-						<div class="sz-cr__lane" role="presentation">
-							<?php foreach ( $roles as $i => $r ) : ?>
-								<?php
-								if ( $r['lane'] !== $lane ) {
-									continue;
-								}
-								$on = $i === $cur;
-								?>
-								<button type="button" class="sz-cr__clip" role="tab" id="<?php echo esc_attr( $uid . '-c' . $i ); ?>" data-i="<?php echo (int) $i; ?>" data-k="<?php echo (int) $r['k']; ?>" data-s="<?php echo esc_attr( (string) round( $r['s'], 4 ) ); ?>" aria-controls="<?php echo esc_attr( $uid . '-p' . $i ); ?>" aria-selected="<?php echo $on ? 'true' : 'false'; ?>" tabindex="<?php echo $on ? '0' : '-1'; ?>" style="left:<?php echo esc_attr( self::pct( $r['s'], $t0, $t1 ) ); ?>;width:calc(<?php echo esc_attr( self::pct( min( $r['e'], $t1 ), $t0, $t1 ) ); ?> - <?php echo esc_attr( self::pct( $r['s'], $t0, $t1 ) ); ?> - 4px)">
-									<b><?php echo esc_html( $r['co'] ); ?></b><small><?php echo esc_html( $r['when'] ); ?></small>
-								</button>
-							<?php endforeach; ?>
+					<div class="sz-cr__area" role="tablist" aria-label="<?php echo esc_attr( $l['roles'] ); ?>" data-t0="<?php echo (int) $t0; ?>" data-t1="<?php echo (int) $t1; ?>" data-now="<?php echo esc_attr( (string) round( $now, 4 ) ); ?>">
+						<div class="sz-cr__ruler" aria-hidden="true">
+							<?php
+							$first = $lay['group'] ? $lay['group'] : $t0;
+							if ( $lay['group'] ) {
+								echo '<span style="left:0">' . esc_html( $l['before'] . ' ' . $lay['group'] ) . '</span>';
+							}
+							for ( $y = $first; $y < $t1; $y++ ) {
+								echo '<span style="left:' . esc_attr( $pct( $y ) ) . '">' . (int) $y . '</span>';
+							}
+							?>
 						</div>
-					<?php endfor; ?>
-					<span class="sz-cr__head" aria-hidden="true" style="left:<?php echo esc_attr( self::pct( $now, $t0, $t1 ) ); ?>"><span class="sz-cr__flag"><i></i><?php echo esc_html( $l['now'] ); ?></span></span>
+						<?php if ( $lay['group'] ) : ?><span class="sz-cr__zone" aria-hidden="true" style="--w:<?php echo esc_attr( $pct( $lay['group'] ) ); ?>"></span><?php endif; ?>
+						<?php for ( $lane = 0; $lane < $lay['lanes']; $lane++ ) : ?>
+							<div class="sz-cr__lane" role="presentation">
+								<?php foreach ( $roles as $i => $r ) : ?>
+									<?php
+									if ( $r['lane'] !== $lane ) {
+										continue;
+									}
+									$on   = $i === $cur;
+									$icon = Icon_Library::html( $r['icon'] );
+									?>
+									<button type="button" class="sz-cr__clip<?php echo $r['live'] ? ' is-live' : ''; ?>" role="tab" id="<?php echo esc_attr( $uid . '-c' . $i ); ?>" data-i="<?php echo (int) $i; ?>" data-k="<?php echo (int) $r['k']; ?>" data-s="<?php echo esc_attr( (string) round( $r['s'], 4 ) ); ?>" data-e="<?php echo esc_attr( (string) round( $r['e'], 4 ) ); ?>" aria-controls="<?php echo esc_attr( $uid . '-p' . $i ); ?>" aria-selected="<?php echo $on ? 'true' : 'false'; ?>" tabindex="<?php echo $on ? '0' : '-1'; ?>" style="left:<?php echo esc_attr( $pct( $r['s'] ) ); ?>;width:calc(<?php echo esc_attr( $pct( min( $r['e'], $t1 ) ) ); ?> - <?php echo esc_attr( $pct( $r['s'] ) ); ?> - 4px)">
+										<span class="sz-cr__in">
+											<?php if ( '' !== $icon ) : ?><span class="sz-cr__thumb" aria-hidden="true"><?php echo $icon; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- icon renderer ?></span><?php endif; ?>
+											<span class="sz-cr__ct"><b><?php echo esc_html( $r['co'] ); ?></b><small><?php echo esc_html( $r['when'] ); ?></small></span>
+										</span>
+										<?php echo self::wave( $r['co'], $r['e'] - $r['s'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- numbers only ?>
+									</button>
+								<?php endforeach; ?>
+							</div>
+						<?php endfor; ?>
+						<span class="sz-cr__now" aria-hidden="true" style="left:<?php echo esc_attr( $pct( $now ) ); ?>"><span class="sz-cr__flag"><i></i><?php echo esc_html( $l['now'] ); ?></span></span>
+						<span class="sz-cr__head" role="slider" tabindex="0" aria-label="<?php echo esc_attr( $l['head'] ); ?>" aria-valuemin="<?php echo (int) $t0; ?>" aria-valuemax="<?php echo esc_attr( (string) round( $now, 2 ) ); ?>" aria-valuenow="<?php echo esc_attr( (string) round( $roles[ $cur ]['s'], 2 ) ); ?>" aria-valuetext="<?php echo (int) floor( $roles[ $cur ]['s'] ); ?>" style="left:<?php echo esc_attr( $pct( $roles[ $cur ]['s'] ) ); ?>"><span class="sz-cr__knob"><?php echo (int) floor( $roles[ $cur ]['s'] ); ?></span></span>
+						<span class="sz-cr__skim" aria-hidden="true"><span></span></span>
+					</div>
 				</div>
 			</div>
 			<?php if ( $n > 1 ) : ?>
