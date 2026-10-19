@@ -20,6 +20,7 @@ final class Plugin {
 		Widgets\Status_Pill::class,
 		Widgets\Stats_Cards::class,
 		Widgets\Highlights::class,
+		Widgets\Chat_Reply::class,
 	];
 
 	public const CATEGORY = 'samanzavarian';

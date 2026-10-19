@@ -4,6 +4,49 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.17.0 — Quote & Reply: the bubble and the reply box, as one conversation
+A new widget, **Quote & Reply**: the design's "bubble" (Saman's quote with
+a reaction) and its "reply box" (quick replies, a message field), together
+because they are one exchange. Rethought before it was built:
+
+- **It arrives as a conversation.** The first time it scrolls into view:
+  - typing dots,
+  - then the bubble opens from its corner,
+  - then the reaction pops on,
+  - then the quick replies rise one after another.
+  Every box already has its size, so nothing around it moves (layout shift
+  0). On screen already at load, with reduced motion, or in the editor, it
+  is simply there.
+- **The heart is drawn,** the same on every system. An emoji is optional.
+  It and its little dot now stay inside the widget; the design's heart
+  hung 2px past the edge of a 390px phone and over whatever sat above.
+- **A quick reply writes its message** into the field, letter by letter
+  (under a second), and stays marked as chosen until the text is edited.
+- **The field is 16px:** at the design's 15px, iPhones zoomed the page in
+  when it was tapped. The send key on phone keyboards says "send". A "28
+  left" count appears only near the limit. Sending an empty field nudges
+  it.
+- **Sending gives feedback and hands the message on.**
+  - The message stays as an outgoing bubble ("Delivered · continue below").
+  - It goes into the page's contact form, found by itself (an Elementor
+    form or any form with a message box), and the quick reply's option is
+    ticked there (e.g. "AI visuals").
+  - The page scrolls to the form, and the first empty field gets the
+    cursor.
+  - It can go to WhatsApp or email instead, and WhatsApp is the fallback
+    when the page has no form.
+- **Analytics:** sz_reply_quick and sz_reply_send (destination, length,
+  whether a quick reply was used), never the message itself.
+- **Editable:**
+  - Avatar: a photo, or the monogram.
+  - Reaction; the arrival on or off.
+  - Quick replies, each with its message and form option.
+  - Placeholder and length limit.
+  - Destination, an advanced field selector, and the labels.
+  - Colours for the bubble, chips, field, send button and sent message.
+- Buttons and field are protected from site-wide button and input styles.
+  At narrow widths it takes the design's phone layout by its own width.
+
 ## 0.16.1 — Highlights: it advances where it should
 Reported by the site owner: the cards did not move, and the timer under them
 was a fixed line.

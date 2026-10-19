@@ -28,6 +28,7 @@ final class Assets {
 		'sz-pills'         => 'widgets/pills.css',
 		'sz-stats'         => 'widgets/stats.css',
 		'sz-highlights'    => 'widgets/highlights.css',
+		'sz-chat'          => 'widgets/chat.css',
 	];
 
 	/** handle => path under assets/js. Frontend scripts, loaded in the footer, no jQuery. */
@@ -39,6 +40,7 @@ final class Assets {
 		'sz-status'        => 'status.js',
 		'sz-stats'         => 'stats.js',
 		'sz-highlights'    => 'highlights.js',
+		'sz-chat'          => 'chat.js',
 	];
 
 	public static function boot(): void {

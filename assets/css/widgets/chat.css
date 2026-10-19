@@ -1,0 +1,114 @@
+/* =====================================================================
+   Quote & Reply — Saman's message and the reply box under it.
+   Markup: Widgets/Chat_Reply.php; behaviour: js/chat.js.
+
+   The arrival (typing → bubble → heart → quick replies) is transforms and
+   opacity on boxes that already have their size: nothing moves around it.
+   It plays only once the script arms it (.is-armed); without the script,
+   everything is simply there.
+   ===================================================================== */
+
+.sz-chat{
+  --szc-max:572px; --szc-av:40px;
+  --szc-bubble:var(--sz-navy); --szc-bubble-text:#fff; --szc-caption:var(--sz-t3); --szc-heart:#F43F5E; --szc-ring:var(--sz-bg);
+  --szc-chip:var(--sz-card); --szc-chip-text:#B8460F; --szc-chip-on:var(--sz-peach);
+  --szc-field:var(--sz-card); --szc-send:var(--sz-orange); --szc-send-icon:var(--sz-navy); --szc-out:var(--sz-peach); --szc-out-text:var(--sz-ink);
+  max-width:var(--szc-max);container-type:inline-size;
+}
+.sz-chat__sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
+
+/* ---------- the message ---------- */
+.sz-chat .sz-chat__msg{display:grid;grid-template-columns:var(--szc-av) minmax(0,1fr);gap:4px 12px;align-items:end;margin:0;padding:0}
+.sz-chat__av{grid-row:1;display:flex;align-items:center;justify-content:center;width:var(--szc-av);height:var(--szc-av);overflow:hidden;border-radius:50%;
+  background:radial-gradient(80% 80% at 70% 20%,var(--sz-orange) 0%,transparent 65%),var(--sz-navy);box-shadow:var(--sz-s1);
+  font-family:var(--sz-font-mark);font-size:calc(var(--szc-av) * .43);line-height:1;letter-spacing:.02em;color:#fff}
+.sz-chat__av b{font-weight:400;color:inherit}
+.sz-chat__av-img{width:100%;height:100%;object-fit:cover}
+.sz-chat__bwrap{position:relative;grid-row:1;min-width:0}
+/* the reaction hangs past the bubble's corner (12px out, 16px up): keep that room inside the widget */
+.sz-chat__bwrap:has(.sz-chat__tap){padding-right:12px}
+.sz-chat .sz-chat__msg:has(.sz-chat__tap){padding-top:16px}
+.sz-chat .sz-chat__bubble{position:relative;margin:0;padding:14px 18px;border:0;border-radius:22px 22px 22px 6px;background:var(--szc-bubble);color:var(--szc-bubble-text);
+  box-shadow:0 12px 26px -14px rgba(13,27,42,.55);font-style:normal;transform-origin:0 100%}
+.sz-chat .sz-chat__bubble::before,.sz-chat .sz-chat__bubble::after{content:none}
+.sz-chat .sz-chat__bubble p{margin:0;font-size:16px;line-height:1.5;letter-spacing:-.005em;color:inherit}
+.sz-chat__cap{grid-column:2;padding-left:6px;font-size:12px;line-height:1.4;color:var(--szc-caption)}
+
+/* the reaction: a heart drawn in the site's hand, or an emoji */
+.sz-chat__tap{position:absolute;right:-12px;top:-16px;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#fff;
+  box-shadow:0 0 0 3px var(--szc-ring),var(--sz-s1);font-size:15px;line-height:1}
+.sz-chat__tap::after{content:"";position:absolute;right:0;bottom:-3px;width:9px;height:9px;border-radius:50%;background:#fff;box-shadow:0 0 0 3px var(--szc-ring)}
+.sz-chat__tap svg{width:16px;height:16px;fill:var(--szc-heart)}
+
+/* typing dots, in the bubble's corner */
+.sz-chat__typing{position:absolute;left:0;bottom:0;display:inline-flex;align-items:center;gap:4px;height:40px;padding:0 15px;border-radius:20px 20px 20px 6px;background:var(--szc-bubble);
+  opacity:0;transform:scale(.5);transform-origin:0 100%;pointer-events:none}
+.sz-chat__typing i{width:6px;height:6px;border-radius:50%;background:var(--szc-bubble-text);opacity:.55;animation:szc-dot 1.1s ease-in-out infinite}
+.sz-chat__typing i:nth-child(2){animation-delay:.15s}
+.sz-chat__typing i:nth-child(3){animation-delay:.3s}
+@keyframes szc-dot{0%,60%,100%{transform:none;opacity:.45}30%{transform:translateY(-3px);opacity:1}}
+
+/* ---------- the arrival (armed by the script, only when it will play) ---------- */
+.sz-chat.is-armed .sz-chat__bubble{opacity:0;transform:scale(.55)}
+.sz-chat.is-armed .sz-chat__bubble p{opacity:0}
+.sz-chat.is-armed .sz-chat__tap{transform:scale(0)}
+.sz-chat.is-armed .sz-chat__cap{opacity:0}
+.sz-chat.is-armed .sz-chat__chip{opacity:0;transform:translateY(8px)}
+.sz-chat.is-armed .sz-chat__typing{display:inline-flex}
+.sz-chat.is-armed.is-typing .sz-chat__typing{opacity:1;transform:none;transition:opacity .2s,transform .4s var(--sz-spring)}
+.sz-chat.is-armed.is-said .sz-chat__typing{opacity:0;transform:scale(.9);transition:opacity .15s}
+.sz-chat.is-armed.is-said .sz-chat__bubble{opacity:1;transform:none;transition:opacity .2s,transform .55s var(--sz-spring)}
+.sz-chat.is-armed.is-said .sz-chat__bubble p{opacity:1;transition:opacity .35s .12s}
+.sz-chat.is-armed.is-seen .sz-chat__tap{transform:none;transition:transform .6s var(--sz-spring)}
+.sz-chat.is-armed.is-seen .sz-chat__cap{opacity:1;transition:opacity .4s}
+.sz-chat.is-armed.is-ready .sz-chat__chip{opacity:1;transform:none;transition:opacity .3s calc(var(--k,0) * 70ms),transform .45s var(--sz-spring) calc(var(--k,0) * 70ms)}
+
+/* ---------- the reply box ---------- */
+.sz-chat .sz-chat__reply{margin:16px 0 0 calc(var(--szc-av) + 12px);padding:0;max-width:520px}
+.sz-chat__sent{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.sz-chat__sent:not(:empty){margin-bottom:12px}
+.sz-chat__out{max-width:85%;margin:0;padding:10px 14px;border-radius:18px 18px 6px 18px;background:var(--szc-out);color:var(--szc-out-text);font-size:15px;line-height:1.45;overflow-wrap:anywhere}
+.sz-chat__sent small{padding-right:6px;font-size:11.5px;color:var(--sz-t3)}
+
+.sz-chat__quick{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.sz-chat .sz-chat__quick .sz-chat__chip,.sz-chat .sz-chat__quick .sz-chat__chip:is(:hover,:focus,:active){
+  display:inline-flex;align-items:center;gap:6px;height:32px;min-height:0;margin:0;padding:0 12px 0 10px;border:0;border-radius:99px;
+  background:var(--szc-chip);box-shadow:inset 0 0 0 1px rgba(255,107,44,.35);font-family:inherit;font-size:13px;font-weight:500;line-height:1;letter-spacing:normal;text-transform:none;color:var(--szc-chip-text);cursor:pointer}
+.sz-chat .sz-chat__quick .sz-chat__chip{transition:background-color .2s,box-shadow .2s,transform .3s var(--sz-spring)}
+@media (hover:hover){.sz-chat .sz-chat__quick .sz-chat__chip:hover{background:var(--szc-chip-on)}}
+.sz-chat .sz-chat__quick .sz-chat__chip[aria-pressed="true"]{background:var(--szc-chip-on);box-shadow:inset 0 0 0 1.5px var(--sz-orange)}
+.sz-chat .sz-chat__quick .sz-chat__chip:active{transform:scale(.95)}
+.sz-chat .sz-chat__quick .sz-chat__chip:focus-visible{outline:2.5px solid rgba(255,107,44,.85);outline-offset:2px}
+
+.sz-chat__composer{display:flex;align-items:center;gap:8px;height:48px;padding:0 5px 0 18px;border-radius:99px;background:var(--szc-field);box-shadow:var(--sz-s1),inset 0 0 0 1px rgba(13,27,42,.08);transition:box-shadow .2s}
+.sz-chat__composer:focus-within{box-shadow:var(--sz-s1),inset 0 0 0 1.5px var(--sz-navy)}
+.sz-chat__composer.is-nudge{animation:szc-nudge .35s ease}
+@keyframes szc-nudge{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+/* 16px: below it, iPhones zoom the page in when the field is tapped */
+.sz-chat .sz-chat__composer .sz-chat__input,.sz-chat .sz-chat__composer .sz-chat__input:focus{
+  flex:1;min-width:0;height:auto;margin:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;outline:none;
+  font-family:inherit;font-size:16px;line-height:1.4;color:var(--sz-ink)}
+.sz-chat__input::placeholder{color:var(--sz-t3);opacity:1}
+.sz-chat__left{flex:none;font-size:11.5px;font-weight:600;color:var(--sz-t3);font-variant-numeric:tabular-nums}
+.sz-chat__left:empty{display:none}
+.sz-chat__left.is-low{color:#C2410C}
+.sz-chat .sz-chat__composer .sz-chat__send,.sz-chat .sz-chat__composer .sz-chat__send:is(:hover,:focus,:active,[disabled]){
+  flex:none;display:grid;place-items:center;width:38px;height:38px;min-height:0;margin:0;padding:0;border:0;border-radius:50%;background:#C9CED5;box-shadow:none;color:#fff;cursor:default;opacity:1}
+.sz-chat .sz-chat__composer .sz-chat__send{transition:background-color .2s,color .2s,transform .3s var(--sz-spring)}
+.sz-chat .sz-chat__composer.is-ready .sz-chat__send:not([disabled]){background:var(--szc-send);color:var(--szc-send-icon);cursor:pointer}
+.sz-chat .sz-chat__composer .sz-chat__send:not([disabled]):active{transform:scale(.9)}
+.sz-chat .sz-chat__composer .sz-chat__send:focus-visible{outline:2.5px solid rgba(255,107,44,.85);outline-offset:2px}
+.sz-chat__send svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+
+/* narrow: the design's phone layout, by the widget's own width */
+@container (max-width:480px){
+  .sz-chat{--szc-av:32px}
+  .sz-chat .sz-chat__msg{gap:4px 10px}
+  .sz-chat .sz-chat__bubble{padding:12px 14px;border-radius:18px 18px 18px 6px}
+  .sz-chat .sz-chat__bubble p{font-size:15px}
+  .sz-chat .sz-chat__reply{margin:14px 0 0}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .sz-chat__typing i,.sz-chat__composer.is-nudge{animation:none}
+}
