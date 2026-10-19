@@ -1,0 +1,38 @@
+/* Projects admin: the card meta box and the list's picture column. */
+
+.sz-pcard__intro{margin:4px 0 14px;color:#50575e}
+.sz-pcard__row{display:grid;grid-template-columns:170px minmax(0,1fr);gap:8px 16px;align-items:start;padding:12px 0;border-top:1px solid #f0f0f1}
+.sz-pcard__row > label,.sz-pcard__label{padding-top:6px;font-weight:600}
+.sz-pcard__inline{display:inline-flex;align-items:center;gap:6px;margin-top:6px}
+.sz-pcard__choice{display:flex;flex-wrap:wrap;gap:6px 18px;padding-top:6px}
+.sz-pcard__media{display:flex;flex-wrap:wrap;gap:8px}
+@media (max-width:782px){.sz-pcard__row{grid-template-columns:1fr}}
+
+/* icon picker: the site's own glyphs as tiles */
+.sz-pcard__icons{display:flex;flex-wrap:wrap;gap:6px}
+.sz-pcard__icons label,.sz-pcard__swatches label{position:relative;cursor:pointer}
+.sz-pcard__icons input,.sz-pcard__swatches input{position:absolute;opacity:0;width:1px;height:1px}
+.sz-pcard__icons span{display:grid;place-items:center;width:38px;height:38px;border-radius:11px;background:linear-gradient(160deg,#22364D,#0D1B2A);color:#FF6B2C;box-shadow:inset 0 0 0 2px transparent;transition:transform .15s}
+.sz-pcard__icons svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sz-pcard__icons input:checked + span{background:linear-gradient(160deg,#FF8A55,#FF6B2C);color:#fff;transform:scale(1.06);box-shadow:0 0 0 2px #fff,0 0 0 4px #FF6B2C}
+.sz-pcard__icons input:focus-visible + span,.sz-pcard__swatches input:focus-visible + span{outline:2px solid #2271b1;outline-offset:2px}
+
+/* gradient picker */
+.sz-pcard__swatches{display:flex;flex-wrap:wrap;gap:8px}
+.sz-pcard__swatches span{display:block;width:36px;height:48px;border-radius:9px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+.sz-pcard__swatches input:checked + span{box-shadow:0 0 0 2px #fff,0 0 0 4px #FF6B2C}
+
+/* list */
+.column-sz_card{width:56px}
+.column-sz_featured,.column-sz_order{width:80px}
+.sz-pthumb{display:block;width:42px;height:56px;border-radius:8px;object-fit:cover}
+.sz-pstar{color:#FF6B2C;font-size:18px}
+
+.sz-work__mesh--1{background:radial-gradient(60% 70% at 18% 22%,#FF8A55 0%,transparent 60%),radial-gradient(70% 80% at 85% 85%,#0D1B2A 0%,transparent 65%),radial-gradient(50% 60% at 70% 20%,#FFD3BF 0%,transparent 60%),#F1A27F}
+.sz-work__mesh--2{background:radial-gradient(60% 60% at 75% 25%,#FF6B2C 0%,transparent 55%),radial-gradient(80% 80% at 20% 90%,#2A4560 0%,transparent 65%),#0D1B2A}
+.sz-work__mesh--3{background:radial-gradient(60% 70% at 25% 30%,#FFFFFF 0%,transparent 60%),radial-gradient(70% 70% at 80% 80%,#C9D3DF 0%,transparent 60%),radial-gradient(40% 40% at 70% 30%,#FFD9C8 0%,transparent 60%),#E9EDF2}
+.sz-work__mesh--4{background:radial-gradient(70% 60% at 50% 110%,#FF6B2C 0%,transparent 60%),radial-gradient(60% 60% at 20% 10%,#2C4865 0%,transparent 60%),#0B1622}
+.sz-work__mesh--5{background:radial-gradient(70% 70% at 80% 20%,#FFF0E8 0%,transparent 60%),radial-gradient(70% 70% at 20% 80%,#FF8A55 0%,transparent 60%),#FFB896}
+.sz-work__mesh--6{background:radial-gradient(60% 60% at 30% 30%,#8FA3B8 0%,transparent 60%),radial-gradient(70% 70% at 80% 80%,#0D1B2A 0%,transparent 60%),#3E5670}
+.sz-work__mesh--7{background:radial-gradient(60% 60% at 70% 30%,#FFE1C9 0%,transparent 60%),radial-gradient(70% 70% at 20% 85%,#C25A2C 0%,transparent 60%),#E89A6E}
+.sz-work__mesh--8{background:radial-gradient(60% 60% at 30% 70%,#4E6A88 0%,transparent 60%),radial-gradient(60% 60% at 80% 20%,#FF8A55 0%,transparent 55%),#14243A}

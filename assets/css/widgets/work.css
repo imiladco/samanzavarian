@@ -20,6 +20,7 @@
   --szw-btn:46px; --szw-btn-bg:var(--sz-card); --szw-btn-icon:var(--sz-ink); --szw-prog:#E3E6EA; --szw-prog-on:var(--sz-navy);
   --szw-pos:var(--sz-t2); --szw-pos-on:var(--sz-ink);
   --szw-bl:0px; --szw-br:0px;
+  --szw-col:100%; --szw-al:.5;
   container:szwork/inline-size;
   position:relative;
 }
@@ -30,6 +31,10 @@
 .sz-work__sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}
 
 /* ---------- filters: a segmented control with a sliding thumb and counts ---------- */
+/* ---------- the content column: filters and controls; the first card lines up with it ---------- */
+.sz-work__top,.sz-work__bar{width:100%;max-width:var(--szw-col);margin-left:calc((100% - min(100%, var(--szw-col))) * var(--szw-al));margin-right:auto}
+.sz-work.run-column .sz-work__box{max-width:var(--szw-col);margin-left:calc((100% - min(100%, var(--szw-col))) * var(--szw-al));margin-right:auto}
+
 .sz-work__top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:var(--szw-top)}
 .sz-work__fwrap{position:relative;min-width:0;max-width:100%}
 /* fades at a cut edge say the row goes on (phones) */
@@ -62,8 +67,15 @@
 .sz-work__box{position:relative}
 .sz-work__rail{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:var(--szw-cw);gap:var(--szw-gap);overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;padding:10px 0 var(--szw-under);scrollbar-width:none;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
 .sz-work__rail::-webkit-scrollbar{display:none}
-/* out to the window's edges; the script measures how far that is */
-.sz-work.is-bleed .sz-work__rail{margin-left:calc(-1 * var(--szw-bl));margin-right:calc(-1 * var(--szw-br));padding-left:var(--szw-bl);padding-right:var(--szw-br);scroll-padding-left:var(--szw-bl);scroll-padding-right:var(--szw-br)}
+/* past the column: to the widget's edges, coming to rest on the column (% here: of the widget) */
+.sz-work.run-widget .sz-work__rail,.sz-work.run-window .sz-work__rail{
+  --szw-il:calc((100% - min(100%, var(--szw-col))) * var(--szw-al));
+  --szw-ir:calc((100% - min(100%, var(--szw-col))) * (1 - var(--szw-al)));
+  padding-left:var(--szw-il);padding-right:var(--szw-ir);scroll-padding-left:var(--szw-il);scroll-padding-right:var(--szw-ir)}
+/* …and on to the window's edges; the script (and the probe) measure how far that is */
+.sz-work.run-window .sz-work__rail{margin-left:calc(-1 * var(--szw-bl));margin-right:calc(-1 * var(--szw-br));
+  padding-left:calc(var(--szw-bl) + var(--szw-il));padding-right:calc(var(--szw-br) + var(--szw-ir));
+  scroll-padding-left:calc(var(--szw-bl) + var(--szw-il));scroll-padding-right:calc(var(--szw-br) + var(--szw-ir))}
 @media (pointer:fine){
   .sz-work__rail{cursor:grab}
   .sz-work__rail.is-dragging{cursor:grabbing;scroll-snap-type:none}

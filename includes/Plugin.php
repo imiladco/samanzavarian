@@ -43,6 +43,7 @@ final class Plugin {
 		}
 
 		Assets::boot();
+		Projects::boot();
 		Icon_Library::boot();
 
 		add_action( 'init', [ $this, 'flush_after_update' ], 20 );

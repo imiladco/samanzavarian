@@ -315,8 +315,9 @@
 			if ( card.dataset.g === '*' || f === 'all' ) {
 				return true;
 			}
-			const b = this.button( f );
-			return !! b && ( card.dataset.g === f || ( '' !== b.dataset.match && card.dataset.g === b.dataset.match ) );
+			// a card can belong to several filters (a project with two types)
+			const b = this.button( f ), g = card.dataset.g.split( ' ' );
+			return !! b && ( g.includes( f ) || ( '' !== b.dataset.match && g.includes( b.dataset.match ) ) );
 		}
 
 		/** Which cards a filter shows; its first project is the wide one. */

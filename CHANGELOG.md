@@ -4,6 +4,51 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.14.0 — Selected Work: a projects library, and two width layers
+From the site owner's review: the filters and controls must not share the
+cards' width, and typing each project's filter into the widget was too
+crude.
+
+**Width, in two layers.** In the design, the filters and the controls sit on
+the content column (1180px), while the cards slide out to the window's
+edges and come to rest with the first card on that column. In a full-width
+section, everything used to follow the widget.
+
+- New: *Content column width* and *Column position* (per breakpoint) for the
+  filter row and the control bar.
+- New: *Cards run out to*: the window's edges (design), the widget's edges,
+  or the column itself. In every mode the first card rests on the column, and
+  so does the last one at the end. The old "Slide out" switch still counts:
+  off means the widget's edges.
+
+**A projects library** (Projects in the WordPress menu).
+
+- Projects are kept like posts, with Project types (the filters).
+  - Types are picked from a checklist and never typed.
+  - A project can have several types and shows under each.
+  - Each type has an order number among the filters.
+- Each project's card is set on its own screen:
+  - The featured image is the card's picture.
+  - Category label.
+  - Icon, picked from a grid of the site's own glyphs.
+  - Text colour, and a gradient used when there is no picture.
+  - Preview video, from the Media Library.
+  - Link, with a new-tab option.
+  - Featured.
+- The list shows each card's picture, its types, the Featured star and its
+  order.
+- An empty library offers one button to add the design's eight projects and
+  four types.
+- In the widget, *Projects from* chooses the library, a list in the widget,
+  or "auto". Auto, the default, uses the library once it has projects, so
+  existing pages keep their list until then. Under the library you can
+  limit to some types, order by number, featured first or newest, and set
+  a maximum. The panel says how many projects and types there are, with
+  links to edit them.
+- Filters and their counts follow from the types of the projects shown.
+- Saving a project or a type drops Elementor's cached widget HTML, so changes
+  show at once.
+
 ## 0.13.1 — fix: the Elementor editor would not open
 Reported from the live site: opening any page in Elementor ended in a fatal
 error.

@@ -9,6 +9,7 @@ use Elementor\Repeater;
 use Elementor\Widget_Base;
 use Samanzavarian_Widgets\Icon_Library;
 use Samanzavarian_Widgets\Plugin;
+use Samanzavarian_Widgets\Projects;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -27,8 +28,8 @@ defined( 'ABSPATH' ) || exit;
  */
 class Work_Rail extends Widget_Base {
 
-	/** The design's projects: filter, category, title, icon, placeholder, light, featured. */
-	private const PROJECTS = [
+	/** The design's projects (manual list defaults): filter, category, title, icon, placeholder, light, featured. */
+	public const PROJECTS = [
 		[ 'AI', 'AI visuals', 'AI product key visuals', 'spark', 2, false, true ],
 		[ 'Film', 'Brand film', 'Scripted brand films', 'video', 1, false, false ],
 		[ 'Photo', 'Industrial', 'Industrial photography', 'factory', 6, false, false ],
@@ -105,6 +106,81 @@ class Work_Rail extends Widget_Base {
 
 	private function content_projects(): void {
 		$this->start_controls_section( 'section_projects', [ 'label' => esc_html__( 'Projects', 'samanzavarian-widgets' ) ] );
+
+		$this->add_control(
+			'source',
+			[
+				'label'       => esc_html__( 'Projects from', 'samanzavarian-widgets' ),
+				'type'        => Controls_Manager::SELECT,
+				'default'     => 'auto',
+				'options'     => [
+					'auto'    => esc_html__( 'Projects library (the list below until it has projects)', 'samanzavarian-widgets' ),
+					'library' => esc_html__( 'Projects library', 'samanzavarian-widgets' ),
+					'manual'  => esc_html__( 'A list in this widget', 'samanzavarian-widgets' ),
+				],
+				'description' => esc_html__( 'The library is Projects in the WordPress menu: each project with its picture, types (the filters) and card, reusable on any page.', 'samanzavarian-widgets' ),
+			]
+		);
+
+		$this->add_control(
+			'library_info',
+			[
+				'type'            => Controls_Manager::RAW_HTML,
+				'raw'             => self::library_info(),
+				'content_classes' => 'elementor-panel-alert elementor-panel-alert-info',
+				'condition'       => [ 'source!' => 'manual' ],
+			]
+		);
+
+		$this->add_control(
+			'lib_types',
+			[
+				'label'       => esc_html__( 'Only these types', 'samanzavarian-widgets' ),
+				'type'        => Controls_Manager::SELECT2,
+				'multiple'    => true,
+				'label_block' => true,
+				'options'     => Projects::type_options(),
+				'description' => esc_html__( 'Empty: every type. The filters are the types of the projects shown, in the types\' own order (Projects → Types).', 'samanzavarian-widgets' ),
+				'condition'   => [ 'source!' => 'manual' ],
+			]
+		);
+
+		$this->add_control(
+			'lib_order',
+			[
+				'label'     => esc_html__( 'Order', 'samanzavarian-widgets' ),
+				'type'      => Controls_Manager::SELECT,
+				'default'   => 'menu',
+				'options'   => [
+					'menu'     => esc_html__( 'Their Order number', 'samanzavarian-widgets' ),
+					'featured' => esc_html__( 'Featured first, then their Order number', 'samanzavarian-widgets' ),
+					'date'     => esc_html__( 'Newest first', 'samanzavarian-widgets' ),
+				],
+				'condition' => [ 'source!' => 'manual' ],
+			]
+		);
+
+		$this->add_control(
+			'lib_limit',
+			[
+				'label'     => esc_html__( 'At most', 'samanzavarian-widgets' ),
+				'type'      => Controls_Manager::NUMBER,
+				'min'       => 1,
+				'max'       => 50,
+				'default'   => 12,
+				'condition' => [ 'source!' => 'manual' ],
+			]
+		);
+
+		$this->add_control(
+			'manual_heading',
+			[
+				'label'     => esc_html__( 'List in this widget', 'samanzavarian-widgets' ),
+				'type'      => Controls_Manager::HEADING,
+				'separator' => 'before',
+				'condition' => [ 'source' => 'auto' ],
+			]
+		);
 
 		$r = new Repeater();
 
@@ -243,6 +319,7 @@ class Work_Rail extends Widget_Base {
 				'default'     => $defaults,
 				'title_field' => '{{{ title }}}<# if ( filter ) { #> · {{{ filter }}}<# } #>',
 				'button_text' => esc_html__( 'Add project', 'samanzavarian-widgets' ),
+				'condition'   => [ 'source!' => 'library' ],
 			]
 		);
 
@@ -326,8 +403,8 @@ class Work_Rail extends Widget_Base {
 				'default'     => array_map( static fn( $f ) => [ 'label' => $f ], self::FILTERS ),
 				'title_field' => '{{{ label }}}',
 				'button_text' => esc_html__( 'Add filter', 'samanzavarian-widgets' ),
-				'description' => esc_html__( 'A filter with no projects is not shown. Each shows how many projects it has.', 'samanzavarian-widgets' ),
-				'condition'   => [ 'show_filters' => 'yes' ],
+				'description' => esc_html__( 'For the list in this widget; the library\'s filters are its types. A filter with no projects is not shown.', 'samanzavarian-widgets' ),
+				'condition'   => [ 'show_filters' => 'yes', 'source!' => 'library' ],
 			]
 		);
 
@@ -491,16 +568,8 @@ class Work_Rail extends Widget_Base {
 			]
 		);
 
-		$this->add_control(
-			'bleed',
-			[
-				'label'        => esc_html__( 'Slide out to the screen edges', 'samanzavarian-widgets' ),
-				'type'         => Controls_Manager::SWITCHER,
-				'default'      => 'yes',
-				'return_value' => 'yes',
-				'description'  => esc_html__( 'On (the design): cards run past the content column to the edges of the window while sliding, and still stop aligned with it.', 'samanzavarian-widgets' ),
-			]
-		);
+		// 0.11–0.13 had a switch; Style → Layout → "Cards run out to" replaces it.
+		$this->add_control( 'bleed', [ 'type' => Controls_Manager::HIDDEN, 'default' => 'yes' ] );
 
 		$this->add_control(
 			'tilt',
@@ -618,7 +687,44 @@ class Work_Rail extends Widget_Base {
 	}
 
 	private function style_layout(): void {
-		$this->start_controls_section( 'style_layout', [ 'label' => esc_html__( 'Slider', 'samanzavarian-widgets' ), 'tab' => Controls_Manager::TAB_STYLE ] );
+		$this->start_controls_section( 'style_layout', [ 'label' => esc_html__( 'Layout', 'samanzavarian-widgets' ), 'tab' => Controls_Manager::TAB_STYLE ] );
+
+		$this->add_control( 'col_heading', [ 'label' => esc_html__( 'Filters and controls', 'samanzavarian-widgets' ), 'type' => Controls_Manager::HEADING ] );
+
+		$this->var_slider( 'col_width', esc_html__( 'Content column width', 'samanzavarian-widgets' ), '--szw-col', [ 'size' => 100, 'unit' => '%' ], [ 'min' => 320, 'max' => 1920 ], [ 'px', '%', 'vw', 'custom' ], true, esc_html__( 'The row of filters and the controls under the slider. The first card lines up with it too. In a full-width section, e.g. 1180 px (the design).', 'samanzavarian-widgets' ) );
+
+		$this->add_responsive_control(
+			'col_align',
+			[
+				'label'                => esc_html__( 'Column position', 'samanzavarian-widgets' ),
+				'type'                 => Controls_Manager::CHOOSE,
+				'options'              => [
+					'left'   => [ 'title' => esc_html__( 'Left', 'samanzavarian-widgets' ), 'icon' => 'eicon-h-align-left' ],
+					'center' => [ 'title' => esc_html__( 'Center', 'samanzavarian-widgets' ), 'icon' => 'eicon-h-align-center' ],
+					'right'  => [ 'title' => esc_html__( 'Right', 'samanzavarian-widgets' ), 'icon' => 'eicon-h-align-right' ],
+				],
+				'selectors_dictionary' => [ 'left' => '0', 'center' => '.5', 'right' => '1' ],
+				'selectors'            => [ '{{WRAPPER}} .sz-work' => '--szw-al: {{VALUE}};' ],
+				'description'          => esc_html__( 'When the column is narrower than the widget. Design: center.', 'samanzavarian-widgets' ),
+			]
+		);
+
+		$this->add_control( 'cards_heading', [ 'label' => esc_html__( 'Cards', 'samanzavarian-widgets' ), 'type' => Controls_Manager::HEADING, 'separator' => 'before' ] );
+
+		$this->add_control(
+			'run_out',
+			[
+				'label'       => esc_html__( 'Cards run out to', 'samanzavarian-widgets' ),
+				'type'        => Controls_Manager::SELECT,
+				'default'     => 'window',
+				'options'     => [
+					'window' => esc_html__( 'The window\'s edges (design)', 'samanzavarian-widgets' ),
+					'widget' => esc_html__( 'The widget\'s edges', 'samanzavarian-widgets' ),
+					'column' => esc_html__( 'The content column', 'samanzavarian-widgets' ),
+				],
+				'description' => esc_html__( 'How far the slider reaches while sliding. It always comes to rest with the first card on the content column.', 'samanzavarian-widgets' ),
+			]
+		);
 
 		$this->var_slider( 'card_width', esc_html__( 'Card width', 'samanzavarian-widgets' ), '--szw-cw', Control_Helpers::ph( 340 ), [ 'min' => 180, 'max' => 600 ], [ 'px', 'vw', 'custom' ], true, esc_html__( 'Design: 30% of the window, between 260 and 340 px.', 'samanzavarian-widgets' ) );
 		$this->var_slider( 'card_gap', esc_html__( 'Space between cards', 'samanzavarian-widgets' ), '--szw-gap', Control_Helpers::ph( 18 ), [ 'min' => 0, 'max' => 60 ] );
@@ -798,8 +904,19 @@ class Work_Rail extends Widget_Base {
 
 		$out  = [];
 		$seen = [ 'all' => true ];
+		$has  = static fn( string $key ) => count( array_filter( $projects, static fn( $p ) => in_array( $key, $p['groups'], true ) ) );
 
-		foreach ( (array) ( $s['filters'] ?? [] ) as $f ) {
+		if ( 'library' === self::source( $s ) ) {
+			foreach ( Projects::types() as $t ) {
+				$count = $has( $t->slug );
+				if ( $count && ! isset( $seen[ $t->slug ] ) ) {
+					$seen[ $t->slug ] = true;
+					$out[]            = [ 'key' => $t->slug, 'label' => $t->name, 'count' => $count, 'match' => $t->slug ];
+				}
+			}
+		}
+
+		foreach ( 'library' === self::source( $s ) ? [] : (array) ( $s['filters'] ?? [] ) as $f ) {
 			$label = trim( (string) ( $f['label'] ?? '' ) );
 			$key   = self::key( (string) ( $f['slug'] ?? '' ) );
 			$key   = '' !== $key ? $key : self::key( $label );
@@ -809,7 +926,7 @@ class Work_Rail extends Widget_Base {
 			}
 			$seen[ $key ] = true;
 
-			$count = count( array_filter( $projects, static fn( $p ) => $p['group'] === self::key( $label ) || $p['group'] === $key ) );
+			$count = count( array_filter( $projects, static fn( $p ) => in_array( self::key( $label ), $p['groups'], true ) || in_array( $key, $p['groups'], true ) ) );
 
 			if ( $count ) {
 				$out[] = [ 'key' => $key, 'label' => $label, 'count' => $count, 'match' => self::key( $label ) ];
@@ -821,6 +938,42 @@ class Work_Rail extends Widget_Base {
 		}
 
 		return $out;
+	}
+
+	/** Where the cards come from for these settings: 'library' or 'manual'. @param array<string,mixed> $s */
+	public static function source( array $s ): string {
+		$src = (string) ( $s['source'] ?? 'auto' );
+
+		if ( 'auto' === $src ) {
+			return Projects::count() ? 'library' : 'manual';
+		}
+
+		return 'library' === $src ? 'library' : 'manual';
+	}
+
+	/** How far the cards run: 'window', 'widget' or 'column'. @param array<string,mixed> $s */
+	public static function run_out( array $s ): string {
+		$run = in_array( $s['run_out'] ?? 'window', [ 'window', 'widget', 'column' ], true ) ? $s['run_out'] : 'window';
+
+		// the old switch, turned off, meant: stay within the widget
+		return 'window' === $run && 'yes' !== ( $s['bleed'] ?? 'yes' ) ? 'widget' : $run;
+	}
+
+	/** The panel's note on the library: how many projects, where to edit them. */
+	private static function library_info(): string {
+		if ( ! is_admin() && ! ( defined( 'REST_REQUEST' ) && REST_REQUEST ) && ! wp_doing_ajax() ) {
+			return '';
+		}
+
+		$n     = Projects::count();
+		$types = count( Projects::types() );
+		$list  = admin_url( 'edit.php?post_type=' . Projects::TYPE );
+		$tax   = admin_url( 'edit-tags.php?taxonomy=' . Projects::TAX . '&post_type=' . Projects::TYPE );
+
+		return $n
+			/* translators: 1: number of projects, 2: number of types */
+			? sprintf( esc_html__( '%1$d projects in %2$d types.', 'samanzavarian-widgets' ), $n, $types ) . ' <a href="' . esc_url( $list ) . '" target="_blank">' . esc_html__( 'Edit projects', 'samanzavarian-widgets' ) . '</a> · <a href="' . esc_url( $tax ) . '" target="_blank">' . esc_html__( 'Types and their order', 'samanzavarian-widgets' ) . '</a>'
+			: esc_html__( 'The library is empty.', 'samanzavarian-widgets' ) . ' <a href="' . esc_url( $list ) . '" target="_blank">' . esc_html__( 'Open Projects', 'samanzavarian-widgets' ) . '</a> ' . esc_html__( '(one click adds the design\'s eight examples). Then reload this page.', 'samanzavarian-widgets' );
 	}
 
 	/** A filter name or ID as it appears in the address: "Colour grading" → colour-grading. */
@@ -835,6 +988,12 @@ class Work_Rail extends Widget_Base {
 	 * @return array<int,array<string,mixed>>
 	 */
 	public static function projects( array $s ): array {
+		if ( 'library' === self::source( $s ) ) {
+			$types = array_values( array_filter( array_map( 'sanitize_title', (array) ( $s['lib_types'] ?? [] ) ) ) );
+
+			return Projects::cards( $types, (string) ( $s['lib_order'] ?? 'menu' ), (int) ( $s['lib_limit'] ?? 12 ) );
+		}
+
 		$out = [];
 
 		foreach ( (array) ( $s['projects'] ?? [] ) as $p ) {
@@ -850,7 +1009,7 @@ class Work_Rail extends Widget_Base {
 				'id'          => (string) ( $p['_id'] ?? '' ),
 				'title'       => $title,
 				'category'    => trim( (string) ( $p['category'] ?? '' ) ),
-				'group'       => self::key( (string) ( $p['filter'] ?? '' ) ),
+				'groups'      => array_values( array_filter( [ self::key( (string) ( $p['filter'] ?? '' ) ) ] ) ),
 				'filter'      => trim( (string) ( $p['filter'] ?? '' ) ),
 				'image'       => is_array( $p['image'] ?? null ) ? $p['image'] : [],
 				'video'       => self::video_url( $p['video'] ?? [] ),
@@ -906,7 +1065,7 @@ class Work_Rail extends Widget_Base {
 	 * @param array{key:string,match:string}|null $filter
 	 */
 	public static function in_filter( array $p, ?array $filter ): bool {
-		return ! $filter || 'all' === $filter['key'] || $p['group'] === $filter['match'] || $p['group'] === $filter['key'];
+		return ! $filter || 'all' === $filter['key'] || in_array( $filter['key'], $p['groups'], true ) || ( '' !== $filter['match'] && in_array( $filter['match'], $p['groups'], true ) );
 	}
 
 	/**
@@ -949,7 +1108,9 @@ class Work_Rail extends Widget_Base {
 
 		if ( ! $projects ) {
 			if ( Elementor::$instance->editor->is_edit_mode() ) {
-				echo '<p class="sz-work__note">' . esc_html__( 'Add a project with a title to show the slider.', 'samanzavarian-widgets' ) . '</p>';
+				echo '<p class="sz-work__note">' . ( 'library' === self::source( $s )
+					? esc_html__( 'No published projects in the library match. Add some under Projects in the WordPress menu, or check "Only these types".', 'samanzavarian-widgets' )
+					: esc_html__( 'Add a project with a title to show the slider.', 'samanzavarian-widgets' ) ) . '</p>';
 			}
 
 			return;
@@ -969,7 +1130,7 @@ class Work_Rail extends Widget_Base {
 		$this->add_render_attribute(
 			'root',
 			[
-				'class'          => [ 'sz-work', 'sz-w', 'yes' === ( $s['bleed'] ?? 'yes' ) ? 'is-bleed' : '' ],
+				'class'          => [ 'sz-work', 'sz-w', 'run-' . self::run_out( $s ), 'window' === self::run_out( $s ) ? 'is-bleed' : '' ],
 				'data-sz-work'   => '',
 				'data-sz-hash'   => 'yes' === ( $s['update_url'] ?? 'yes' ) ? '1' : '0',
 				'data-sz-track'  => 'yes' === ( $s['analytics'] ?? 'yes' ) ? '1' : '0',
@@ -1019,7 +1180,7 @@ class Work_Rail extends Widget_Base {
 	 * @param array<string,mixed> $s
 	 */
 	private static function render_bleed_probe( array $s ): void {
-		if ( 'yes' !== ( $s['bleed'] ?? 'yes' ) ) {
+		if ( 'window' !== self::run_out( $s ) ) {
 			return;
 		}
 		?>
@@ -1093,7 +1254,7 @@ class Work_Rail extends Widget_Base {
 					$wide ? 'is-wide' : '',
 					$p['id'] ? 'elementor-repeater-item-' . $p['id'] : '',
 				],
-				'data-g'               => $p['group'],
+				'data-g'               => implode( ' ', $p['groups'] ),
 				'data-i'               => (string) $index,
 				'aria-roledescription' => 'slide',
 				'aria-label'           => $n ? sprintf( '%d %s %d: %s', $n, $l['of'], $total, $p['title'] ) : $p['title'],
@@ -1102,6 +1263,9 @@ class Work_Rail extends Widget_Base {
 
 		if ( ! $shown ) {
 			$this->add_render_attribute( $key, 'hidden', 'hidden' );
+		}
+		if ( ! empty( $p['post'] ) ) {
+			$this->add_render_attribute( $key, 'data-project', (string) $p['post'] );
 		}
 
 		$el   = $href ? 'a' : 'div';
@@ -1221,13 +1385,13 @@ class Work_Rail extends Widget_Base {
 	public static function notes( array $projects, array $filters, array $s ): array {
 		$notes = [];
 
-		if ( 'yes' === ( $s['show_filters'] ?? 'yes' ) ) {
+		if ( 'yes' === ( $s['show_filters'] ?? 'yes' ) && 'manual' === self::source( $s ) ) {
 			$names = array_column( $filters, 'match' );
 			$keys  = array_column( $filters, 'key' );
 			$lost  = [];
 
 			foreach ( $projects as $p ) {
-				if ( '' !== $p['group'] && ! in_array( $p['group'], $names, true ) && ! in_array( $p['group'], $keys, true ) ) {
+				if ( $p['groups'] && ! array_intersect( $p['groups'], $names ) && ! array_intersect( $p['groups'], $keys ) ) {
 					$lost[] = $p['title'] . ' (' . $p['filter'] . ')';
 				}
 			}
