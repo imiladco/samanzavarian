@@ -98,6 +98,17 @@ szw_ok( 'Saturday' === $RP::reply_day( 2, [ 5 ], 'Asia/Tehran', $wed )->format( 
 $html = szw_render( [], 'sz-promise' );
 szw_ok( false !== strpos( $html, 'Replies within two business days' ) && preg_match( '/hear back by <b>\w+day, \d+ \w+<\/b>/', $html ), 'Reply Promise names the day on the server (no jump on load)' );
 
+// hero widgets
+$h = szw_render( [], 'sz-htitle' );
+szw_ok( false !== strpos( $h, '<h1 class="sz-htitle' ) && false !== strpos( $h, 'is-o">Zavarian' ) && false !== strpos( $h, 'szi-lens' ), 'Hero Title: an h1, the orange second word, the tile between' );
+szw_ok( false !== strpos( szw_render( [ 'text' => 'Plain *bold <x>* end' ], 'sz-lead' ), '<b class="sz-lead__sw">bold &lt;x&gt;<svg' ), 'Hero Lead: *stars* become the underlined bold, escaped' );
+$b = szw_render( [ 'text' => 'Go', 'look' => 'light', 'link' => [ 'url' => 'https://x.co', 'is_external' => 'on' ] ], 'sz-btn' );
+szw_ok( false !== strpos( $b, 'is-light' ) && false !== strpos( $b, 'href="https://x.co"' ) && false !== strpos( $b, 'target="_blank"' ), 'Button: look, link, new tab' );
+$f = szw_render( [], 'sz-floats' );
+szw_ok( 4 === substr_count( $f, 'class="sz-float ' ) && false !== strpos( $f, 'sz-mesh-m2' ) && 2 === substr_count( $f, 'is-wide' ), 'Hero Floats: four cards, meshes without images, two only on wide screens' );
+$d = szw_render( [], 'sz-dock' );
+szw_ok( 4 === substr_count( $d, '<a class="sz-dock__a' ) && 1 === substr_count( $d, 'sz-dock__sep' ) && false !== strpos( $d, 'data-sz-dock' ), 'Dock: four items, a separator before Behance, the swell on' );
+
 szw_ok( 'Hi Sara, about ai visuals and post-production' === Kit::fill( 'Hi {first}, about {needs}', [ 'name' => 'Sara Ahmadi', 'services' => [ 'AI visuals', 'Post-production' ] ] ), 'reply templates fill in the first name and the needs' );
 
 szw_finish();

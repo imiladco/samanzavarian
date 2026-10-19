@@ -4,6 +4,32 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.27.0 — Hero widgets: title, lead, button, floating cards, dock
+Five widgets to build the hero from the design ("Available for new
+projects" is the existing Status Pill):
+
+- **Hero Title:** the name in the display face, navy word, app-icon tile,
+  orange word. The words rise in one after another, the tile spins into
+  place; on a phone the tile steps out and the name stays on one line.
+  H1 by default; size and alignment.
+- **Hero Lead:** the line under it. Words between *stars* are bold with the
+  hand-drawn orange underline, drawn in after the title.
+- **Button:** one button, the design's pill: dark, light or orange, three
+  sizes, an optional icon tile that tips on hover; full width on phones by
+  default. Colours and type in the Style tab.
+- **Hero Floats:** the tilted work cards with frosted captions. By default
+  a layer behind everything else in its container (nothing is pushed
+  around); they fan in, then drift against the pointer at their own depth.
+  An image each, or one of six colour meshes. Two of them only on wide
+  screens; on a phone a small fan of three above the title.
+- **Dock:** the frosted bar of app icons, pinned to the bottom of the hero.
+  It swells like the Mac dock: the icon under the pointer grows most, its
+  neighbours a little. A separator before Behance; on a phone a
+  three-column grid without the items marked "hide on phones".
+
+The entrances are CSS only (transform and opacity): no flash before the
+script, nothing moves around them.
+
 ## 0.26.0 — Reply Promise, a livelier Reach, the needs in one row
 **Reply Promise (new widget).** "Replies within two business days", made
 concrete: the line under it names the day ("Write today, hear back by

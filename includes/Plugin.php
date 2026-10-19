@@ -26,6 +26,11 @@ final class Plugin {
 		Widgets\Project_Form::class,
 		Widgets\Reach::class,
 		Widgets\Reply_Promise::class,
+		Widgets\Hero_Title::class,
+		Widgets\Hero_Lead::class,
+		Widgets\Button::class,
+		Widgets\Hero_Floats::class,
+		Widgets\Dock::class,
 	];
 
 	public const CATEGORY = 'samanzavarian';

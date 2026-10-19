@@ -34,6 +34,7 @@ final class Assets {
 		'sz-form'          => 'widgets/form.css',
 		'sz-reach'         => 'widgets/reach.css',
 		'sz-promise'       => 'widgets/promise.css',
+		'sz-hero'          => 'widgets/hero.css',
 	];
 
 	/** handle => path under assets/js. Frontend scripts, loaded in the footer, no jQuery. */
@@ -51,6 +52,7 @@ final class Assets {
 		'sz-form'          => 'form.js',
 		'sz-reach'         => 'reach.js',
 		'sz-promise'       => 'promise.js',
+		'sz-hero'          => 'hero.js',
 	];
 
 	public static function boot(): void {
