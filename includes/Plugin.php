@@ -21,6 +21,7 @@ final class Plugin {
 		Widgets\Stats_Cards::class,
 		Widgets\Highlights::class,
 		Widgets\Chat_Reply::class,
+		Widgets\Career_Timeline::class,
 	];
 
 	public const CATEGORY = 'samanzavarian';

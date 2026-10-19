@@ -4,6 +4,40 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.19.0 — Career Timeline: the career as an edit
+A new widget, **Career Timeline**: one clip per role on an editor's
+timeline, a "Now" playhead, and an inspector card above it showing the
+selected role. Rethought before it was built:
+
+- **Dates, not hand placement.** Type "2022" or "2022-03" (an empty End
+  means now). Clips are placed on the ruler from the dates and packed into
+  as few lanes as overlapping roles need, with the longest unbroken run on
+  the top lane; nobody assigns tracks. The clip labels write themselves
+  ("2022 to 2023", "2026 to now", "Before 2022"), and any of them can be
+  overridden.
+- **Earlier years grouped:** years before 2022 (adjustable, or off) share
+  one hatched "Before 2022" stretch of the ruler, as in the design. Quarter
+  ticks along the ruler make it read as an editor's.
+- **Nothing jumps.** Every role's inspector is in the page (indexable,
+  readable without script) and all share one cell, so the card keeps its
+  height through every role and the timeline below never moves (layout
+  shift 0; it did in the design).
+- **Switching roles:** the old inspector slides out against the direction
+  of travel, the new one comes in from it, its icon springing in first.
+  The selected clip lights up with an editor's trim handles at both ends,
+  and the timeline scrolls it to the middle.
+- **The arrival:** the first time the box scrolls into view, the playhead
+  plays from the first role to "Now" and lays each clip down as it passes;
+  on a phone the timeline pans along with it. The "Now" flag carries a
+  recording light that beats three times, then rests. On screen at load,
+  with reduced motion or in the editor, it is simply there.
+- **Phones:** the edges fade only where there is more to scroll; the swipe
+  hint leaves once the visitor has swiped.
+- **Keyboard and screen readers:** the clips are tabs (arrows, Home, End),
+  the bar's arrows step through roles by date and dim at either end without
+  losing focus, the counter is announced.
+- **In the editor,** picking a role in the panel selects it in the preview.
+
 ## 0.18.2 — Icon words: the pill, measured and set right
 The pills' spacing, measured in the browser and redrawn:
 

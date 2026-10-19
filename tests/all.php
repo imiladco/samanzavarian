@@ -9,7 +9,7 @@ require_once __DIR__ . '/lib.php';
 
 $GLOBALS['szw_nested'] = true;
 
-foreach ( [ 'plugin-test.php', 'process-test.php', 'service-test.php', 'work-test.php', 'stack-test.php', 'pills-test.php', 'stats-test.php', 'highlights-test.php', 'chat-test.php', 'tokens-test.php' ] as $file ) {
+foreach ( [ 'plugin-test.php', 'process-test.php', 'service-test.php', 'work-test.php', 'stack-test.php', 'pills-test.php', 'stats-test.php', 'highlights-test.php', 'chat-test.php', 'tokens-test.php', 'career-test.php' ] as $file ) {
 	echo "\n━━ " . $file . " ━━\n";
 	require __DIR__ . '/' . $file;
 }
