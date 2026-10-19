@@ -4,6 +4,40 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.15.0 — Stats: the figure cards of Selected Work
+A new widget, **Stats**, from the prototype approved by the site owner.
+
+- **Counts up from zero** when the cards scroll into view, once.
+  - The cards start one after another (140 ms apart) and each number slows
+    as it lands (1.4 s).
+  - Each figure's final width is held while counting, so nothing moves
+    (layout shift 0.0000).
+  - A row already on screen when the page opens keeps its numbers, and so
+    does everything with reduced motion: nobody watches 106 turn into 0.
+- **A drawn "+".** The font's plus is a text glyph: thin and small, it
+  floated beside the 44px digits (owner's review). The drawn one has the
+  digits' stem weight and rounded ends, is a third of their height, and its
+  top sits on their cap height (measured with Inter: within a pixel at every
+  size). It pops in as the number lands. Any other suffix (%, k, ×) is text,
+  also on the cap height.
+- **"Years since a year" counts itself:** "Years in the field" is this
+  year − 2020, so it never goes stale. A detail line can say "since
+  {since}".
+- **The number follows the card:** 44px at the design's width, smaller in a
+  narrow card. "106+" fits from 300px phones up (checked at 300, 320, 375,
+  768 and 1280).
+- **Hover:** the card lifts and its icon turns. On the dark card, a soft
+  light follows the pointer. A card with a link shows ↗.
+- **Screen readers** hear one sentence per card ("106+ Projects delivered"),
+  never the counting.
+- **Per card:** number or years-since, decimals, prefix and suffix,
+  thousands separator, label, detail line, icon and tile, highlighted (dark),
+  link.
+- **Layout and style:** columns per breakpoint (default one per card), max
+  width and position (the design is 470px, on the right), and the design's
+  phone sizes on the site's breakpoints. The count-up can be switched off,
+  and its duration and stagger set.
+
 ## 0.14.1 — Selected Work: every state of the filter tabs
 Finished the way a segmented control behaves, from the site owner's review.
 
