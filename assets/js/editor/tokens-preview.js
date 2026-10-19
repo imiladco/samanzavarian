@@ -1,7 +1,8 @@
 /**
- * Editor preview: Elementor draws Text Editor and Heading widgets in the
- * browser while you type, so the server never sees them; turn the
- * {icon:words} codes into pills here too (same markup as Inline_Icons::pill).
+ * Editor preview: Elementor draws Text Editor and Heading widgets (and
+ * Elementor 4's Paragraph and Heading) in the browser while you type, so
+ * the server never sees them; turn the {icon:words} codes into pills here
+ * too (same markup as Inline_Icons::pill).
  */
 ( function () {
 	'use strict';
@@ -56,11 +57,45 @@
 		} );
 	}
 
+	var TYPES = [ 'text-editor', 'heading', 'e-paragraph', 'e-heading' ];
+	var SCOPE = TYPES.map( function ( t ) {
+		return '.elementor-widget-' + t;
+	} ).join( ',' );
+
+	// never under the cursor: text being edited on the canvas stays as typed
+	function editing( el ) {
+		return !! ( el.closest( '[contenteditable="true"]' ) || el.querySelector( '[contenteditable="true"]' ) );
+	}
+
+	function scan() {
+		document.querySelectorAll( SCOPE ).forEach( function ( w ) {
+			if ( ! editing( w ) ) {
+				convert( w );
+			}
+		} );
+	}
+
 	window.addEventListener( 'elementor/frontend/init', function () {
-		[ 'text-editor', 'heading' ].forEach( function ( name ) {
+		TYPES.forEach( function ( name ) {
 			window.elementorFrontend.hooks.addAction( 'frontend/element_ready/' + name + '.default', function ( $el ) {
-				convert( $el[ 0 ] );
+				if ( ! editing( $el[ 0 ] ) ) {
+					convert( $el[ 0 ] );
+				}
 			} );
 		} );
+
+		// Elementor 4's widgets redraw themselves without element_ready (and
+		// after inline editing ends): catch every redraw, once per frame
+		var queued = false;
+		new MutationObserver( function () {
+			if ( ! queued ) {
+				queued = true;
+				window.requestAnimationFrame( function () {
+					queued = false;
+					scan();
+				} );
+			}
+		} ).observe( document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: [ 'contenteditable' ] } );
+		scan();
 	} );
 }() );

@@ -4,6 +4,20 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.18.1 — Words with icons in Elementor 4's Paragraph and Heading
+The icon codes now work in Elementor 4's own **Paragraph** and **Heading**
+widgets too (0.18.0 only knew the classic Text Editor and Heading), so
+`{cam:photography}` in a Paragraph becomes its pill.
+
+- **`sz-statement`** works where Elementor 4 puts the class: on the
+  paragraph itself, not on a widget wrapper.
+- **In the editor,** the pills show in the canvas and update after every
+  change. While you edit the text in place, it stays as typed (the codes
+  visible, the cursor never disturbed) and turns back into pills when you
+  click away.
+- The arrival (pills lighting up in reading order) plays for these widgets
+  as well.
+
 ## 0.18.0 — Words with icons, in Elementor's own Text Editor
 The About statement ("I trained in photography…") with its icon pills,
 made with no widget of ours: an ordinary Text Editor (or Heading), so the

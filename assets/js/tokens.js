@@ -9,7 +9,7 @@
 		}
 		var seen = [];
 		document.querySelectorAll( '.sz-tok' ).forEach( function ( t ) {
-			var box = t.closest( '.elementor-widget' ) || t.parentElement;
+			var box = t.closest( '.elementor-widget, [data-e-type="widget"]' ) || t.parentElement;
 			if ( seen.indexOf( box ) < 0 ) {
 				seen.push( box );
 			}

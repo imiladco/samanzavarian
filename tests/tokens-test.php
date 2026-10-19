@@ -5,6 +5,7 @@
  *   wp eval-file tests/tokens-test.php
  */
 
+use Elementor\Plugin as Elementor;
 use Samanzavarian_Widgets\Inline_Icons;
 
 require_once __DIR__ . '/lib.php';
@@ -25,6 +26,16 @@ szw_ok( false !== strpos( $html, '{nope:this}' ) && false !== strpos( $html, '{b
 
 $html = szw_render( [ 'title' => 'Shooting {cam:products}' ], 'heading' );
 szw_ok( 1 === substr_count( $html, 'style="--i:' ), 'the Heading widget too' );
+
+// Elementor 4's Paragraph and Heading (the class sits on the <p> itself)
+foreach ( [ 'e-paragraph', 'e-heading' ] as $type ) {
+	if ( Elementor::$instance->widgets_manager->get_widget_types( $type ) ) {
+		$widget = Elementor::$instance->elements_manager->create_element_instance( [ 'id' => 'szwtest', 'elType' => 'widget', 'widgetType' => $type, 'settings' => [] ] );
+		$html   = (string) apply_filters( 'elementor/widget/render_content', '<p class="sz-statement e-paragraph-base">' . $text . '</p>', $widget, [] );
+		szw_ok( 4 === substr_count( $html, 'style="--i:' ) && false !== strpos( $html, 'class="sz-statement' ), "Elementor 4's {$type} widget too, with the class on the element" );
+	}
+}
+szw_ok( false !== strpos( (string) file_get_contents( SZW_PATH . 'assets/css/tokens.css' ), ':is(p,span,div,h1,h2,h3,h4,h5,h6).sz-statement' ), 'the statement type applies with the class on the widget or on the paragraph itself' );
 
 $html = szw_render( [ 'editor' => '<p>{cam:<b>bold</b>} {cam:x|javascript:alert(1)}</p>' ], 'text-editor' );
 szw_ok( false === strpos( $html, 'javascript:' ), 'no script links' );

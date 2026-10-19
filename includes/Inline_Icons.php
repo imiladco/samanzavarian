@@ -4,7 +4,8 @@ namespace Samanzavarian_Widgets;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Icon words inside Elementor's own Text Editor and Heading widgets — the
+ * Icon words inside Elementor's own Text Editor and Heading widgets (and
+ * Elementor 4's Paragraph and Heading) — the
  * About statement's "photography", "products"… pills — with no widget of
  * our own: the text stays an ordinary paragraph, written like this:
  *
@@ -30,7 +31,8 @@ final class Inline_Icons {
 	/** {icon(*):words(|link)} — the words never contain braces, pipes or tags. */
 	public const PATTERN = '/\{([a-z]+)(\*?):([^{}|<>]+?)(?:\|([^{}<>\s]+))?\}/u';
 
-	private const WIDGETS = [ 'text-editor', 'heading' ];
+	/** Elementor's Text Editor and Heading, and v4's Paragraph and Heading. */
+	private const WIDGETS = [ 'text-editor', 'heading', 'e-paragraph', 'e-heading' ];
 
 	public static function boot(): void {
 		add_filter( 'elementor/widget/render_content', [ self::class, 'render' ], 10, 2 );
