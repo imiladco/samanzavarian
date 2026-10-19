@@ -43,4 +43,9 @@ szw_ok( false === strpos( Inline_Icons::convert( '<p>{cam:a&quot;onmouseover=x}<
 
 szw_ok( false !== strpos( (string) file_get_contents( SZW_PATH . 'assets/css/tokens.css' ), 'box-decoration-break:clone' ), 'a wrapped pill keeps its shape on the next line' );
 
+$html = Inline_Icons::convert( '<p>most of my work is {spark*:AI video}. Next</p>' );
+szw_ok( false !== strpos( $html, '</span><span class="sz-tok__p">.</span> Next' ), 'a full stop right after a pill is tucked into its padding' );
+$css = (string) file_get_contents( SZW_PATH . 'assets/css/tokens.css' );
+szw_ok( false !== strpos( $css, 'border-radius:calc(.3em + var(--tok-in))' ) && false !== strpos( $css, 'border-radius:.3em' ), 'the pill and its tile are concentric: corner = tile corner + inset' );
+
 szw_finish();

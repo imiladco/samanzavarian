@@ -6,7 +6,7 @@
  */
 ( function () {
 	'use strict';
-	var RE = /\{([a-z]+)(\*?):([^{}|<>]+?)(?:\|([^{}<>\s]+))?\}/g;
+	var RE = /\{([a-z]+)(\*?):([^{}|<>]+?)(?:\|([^{}<>\s]+))?\}([.,;:!?…]*)/g;
 
 	function pill( icon, orange, words, link, i ) {
 		var glyphs = window.szwGlyphs || {};
@@ -47,6 +47,12 @@
 				}
 				frag.appendChild( document.createTextNode( text.slice( last, m.index ) ) );
 				frag.appendChild( pill( m[ 1 ], m[ 2 ] === '*', m[ 3 ], m[ 4 ] || '', i++ ) );
+				if ( m[ 5 ] ) {
+					var p = document.createElement( 'span' );
+					p.className = 'sz-tok__p';
+					p.textContent = m[ 5 ];
+					frag.appendChild( p );
+				}
 				last = RE.lastIndex;
 				changed = true;
 			}

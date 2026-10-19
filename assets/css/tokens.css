@@ -3,20 +3,26 @@
 /* the class sits on the widget (Text Editor) or on the paragraph itself (Elementor 4's Paragraph) */
 .elementor-widget.sz-statement,.elementor-widget.sz-statement p,:is(p,span,div,h1,h2,h3,h4,h5,h6).sz-statement{margin:0;font-family:var(--sz-font,inherit);font-size:clamp(18px,1.8vw,22px);font-weight:400;line-height:1.8;letter-spacing:-.012em;color:var(--sz-ink,#111318);text-wrap:pretty}
 .elementor-widget.sz-statement p + p,p.sz-statement + p.sz-statement{margin-top:.8em}
-@media (max-width:767px){/* the class sits on the widget (Text Editor) or on the paragraph itself (Elementor 4's Paragraph) */
-.elementor-widget.sz-statement,.elementor-widget.sz-statement p,:is(p,span,div,h1,h2,h3,h4,h5,h6).sz-statement{font-size:17px;line-height:1.75;letter-spacing:-.005em}}
+@media (max-width:767px){.elementor-widget.sz-statement,.elementor-widget.sz-statement p,:is(p,span,div,h1,h2,h3,h4,h5,h6).sz-statement{font-size:17px;line-height:1.75;letter-spacing:-.005em}}
 
-.sz-tok{display:inline;padding:.14em .34em .14em .22em;border-radius:99px;background:#fff;box-shadow:0 1px 1px rgba(13,27,42,.03),0 2px 6px rgba(13,27,42,.04),inset 0 0 0 1px rgba(13,27,42,.05);
+/* Geometry, in em so it holds at every size. The tile sits concentric in the
+   pill: the same inset (.2em) above, below and on its left, and the pill's
+   corner = the tile's corner + that inset, so the two curves run parallel.
+   The text side gets almost twice the inset (.36em, plus the glyphs' own side
+   bearing). The pill is a little shorter than before (1.44em in a 1.8 line),
+   so pills on consecutive lines keep clear air between them. */
+.sz-tok{--tok-in:.2em;display:inline;padding:.04em .36em .04em var(--tok-in);border-radius:calc(.3em + var(--tok-in));background:#fff;box-shadow:0 1px 1px rgba(13,27,42,.03),0 2px 6px rgba(13,27,42,.04),inset 0 0 0 1px rgba(13,27,42,.05);
   font-weight:500;color:inherit;text-decoration:none;-webkit-box-decoration-break:clone;box-decoration-break:clone;
   transition:background-color .35s,box-shadow .35s}
 /* the icon never ends a line alone: it is glued to the first word; the rest may wrap */
 .sz-tok__lead{white-space:nowrap}
-.sz-tok__tile{display:inline-grid;place-items:center;width:1.1em;height:1.1em;margin-right:.3em;border-radius:.3em;vertical-align:middle;position:relative;top:-.08em;
+.sz-tok__tile{display:inline-grid;place-items:center;width:1.04em;height:1.04em;margin-right:.28em;border-radius:.3em;vertical-align:middle;position:relative;top:-.1em;
   background:linear-gradient(160deg,#22364D,#0D1B2A);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 3px 8px -3px rgba(13,27,42,.45);color:#FF6B2C;
   transition:transform .5s cubic-bezier(.34,1.4,.64,1),opacity .3s}
 .sz-tok.is-o .sz-tok__tile{background:linear-gradient(160deg,#FF8A55,#FF6B2C);box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 3px 8px -3px rgba(255,107,44,.55);color:#fff}
 .sz-tok__svg{display:block;width:.62em;height:.62em}
-@media (max-width:767px){.sz-tok{padding:.1em .3em .1em .18em}}
+/* a full stop or comma right after a pill tucks into its padding */
+.sz-tok__p{margin-left:-.16em}
 
 /* a pill that links: it says so on hover */
 a.sz-tok:hover,a.sz-tok:focus-visible{color:inherit;box-shadow:0 1px 2px rgba(13,27,42,.06),0 8px 18px -8px rgba(13,27,42,.22),inset 0 0 0 1px rgba(255,107,44,.45)}

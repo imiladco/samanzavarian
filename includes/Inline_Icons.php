@@ -29,7 +29,7 @@ defined( 'ABSPATH' ) || exit;
 final class Inline_Icons {
 
 	/** {icon(*):words(|link)} — the words never contain braces, pipes or tags. */
-	public const PATTERN = '/\{([a-z]+)(\*?):([^{}|<>]+?)(?:\|([^{}<>\s]+))?\}/u';
+	public const PATTERN = '/\{([a-z]+)(\*?):([^{}|<>]+?)(?:\|([^{}<>\s]+))?\}([.,;:!?…]*)/u';
 
 	/** Elementor's Text Editor and Heading, and v4's Paragraph and Heading. */
 	private const WIDGETS = [ 'text-editor', 'heading', 'e-paragraph', 'e-heading' ];
@@ -70,7 +70,10 @@ final class Inline_Icons {
 					return $m[0];
 				}
 
-				return self::pill( $m[1], '*' === $m[2], html_entity_decode( trim( $m[3] ), ENT_QUOTES ), $m[4] ?? '', $i++ );
+				$pill = self::pill( $m[1], '*' === $m[2], html_entity_decode( trim( $m[3] ), ENT_QUOTES ), $m[4] ?? '', $i++ );
+
+				// punctuation right after a pill is drawn into its padding, so "video." does not read "video ."
+				return '' !== ( $m[5] ?? '' ) ? $pill . '<span class="sz-tok__p">' . $m[5] . '</span>' : $pill;
 			},
 			$html
 		);

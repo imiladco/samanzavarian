@@ -4,6 +4,21 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.18.2 — Icon words: the pill, measured and set right
+The pills' spacing, measured in the browser and redrawn:
+
+- **The tile sits concentric in its pill.** Before, its inset was uneven:
+  6.3px above, 5.7 below, but only 4.8 on the left (3.3 and 3.0 on phones),
+  and a rounded square in a fully round capsule left the tile's corners
+  crowding the curve. Now one inset (.2em) on three sides and the pill's
+  corner = the tile's corner + that inset, so the two curves run parallel.
+  Everything is in em, so it holds at every size (no phone override).
+- **The text side gets about twice the inset,** so the pill reads tile-then-word.
+- **A shorter pill** (1.44em instead of 1.65em, in a 1.8 line): pills on
+  consecutive lines keep clear air between them.
+- **Punctuation right after a pill tucks into its padding:** "video." no
+  longer reads "video .". On the server and in the editor preview.
+
 ## 0.18.1 — Words with icons in Elementor 4's Paragraph and Heading
 The icon codes now work in Elementor 4's own **Paragraph** and **Heading**
 widgets too (0.18.0 only knew the classic Text Editor and Heading), so
