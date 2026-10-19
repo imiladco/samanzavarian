@@ -91,6 +91,13 @@ $html = szw_render( [ 'services' => [ [ 'label' => 'Video editing', 'value' => '
 szw_ok( false !== strpos( $html, 'sz-pf__tile' ) && false !== strpos( $html, 'szi-sliders' ) && false !== strpos( $html, 'sz-pf__more' ), 'needs as tiles with icons (an old tile gets one by its name); More details holds the rest' );
 szw_ok( false === strpos( szw_render( [ 'timeline' => '', 'budget' => '', 'link' => '' ], 'sz-form' ), 'sz-pf__more' ), 'nothing optional to ask: no More details row' );
 
+// Reply Promise: working days in the owner's zone, days off skipped
+$RP  = \Samanzavarian_Widgets\Widgets\Reply_Promise::class;
+$wed = strtotime( '2026-10-21 09:00 Asia/Tehran' ); // a Wednesday
+szw_ok( 'Saturday' === $RP::reply_day( 2, [ 5 ], 'Asia/Tehran', $wed )->format( 'l' ) && 'Monday' === $RP::reply_day( 2, [ 5, 6, 0 ], 'Asia/Tehran', $wed )->format( 'l' ), 'Reply Promise: two working days, skipping the days off' );
+$html = szw_render( [], 'sz-promise' );
+szw_ok( false !== strpos( $html, 'Replies within two business days' ) && preg_match( '/hear back by <b>\w+day, \d+ \w+<\/b>/', $html ), 'Reply Promise names the day on the server (no jump on load)' );
+
 szw_ok( 'Hi Sara, about ai visuals and post-production' === Kit::fill( 'Hi {first}, about {needs}', [ 'name' => 'Sara Ahmadi', 'services' => [ 'AI visuals', 'Post-production' ] ] ), 'reply templates fill in the first name and the needs' );
 
 szw_finish();

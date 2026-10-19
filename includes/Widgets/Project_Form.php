@@ -20,7 +20,7 @@ defined( 'ABSPATH' ) || exit;
  * - Needs are tiles in a tray you can combine (a project is often AI and
  *   editing): a picked tile lifts out as a white card, its icon warms to
  *   orange and a check pops on its corner; "2 selected" counts beside the
- *   question. On a phone the tray is two by two, icon beside the words.
+ *   question. One row of tiles on a phone too: they tighten instead.
  * - Timeline, budget and a reference link wait behind "More details", so the
  *   form starts short. Closed, the row says what was picked inside it.
  * - Timeline and budget are optional one-tap chips; tap again to clear.

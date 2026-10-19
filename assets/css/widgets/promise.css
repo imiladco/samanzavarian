@@ -1,0 +1,30 @@
+/* =====================================================================
+   Reply Promise. Markup: Widgets/Reply_Promise.php; behaviour: js/promise.js.
+   ===================================================================== */
+
+.sz-promise-wrap{display:flex}
+.sz-promise{display:inline-flex;align-items:center;gap:12px;max-width:100%;min-width:0}
+.sz-promise.is-pill{padding:7px 20px 7px 7px;border-radius:99px;background:#fff;box-shadow:0 1px 1px rgba(13,27,42,.04),0 6px 18px -8px rgba(13,27,42,.16)}
+
+/* the clock: peach tile, orange hands; it sweeps once on arrival and under the pointer */
+.sz-promise__tile{flex:none;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--sz-peach);color:var(--sz-orange)}
+.sz-promise.is-plain .sz-promise__tile{width:40px;height:40px;border-radius:12px}
+.sz-promise__tile svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round}
+.sz-promise__h,.sz-promise__m{transform-origin:12px 12px;transform-box:view-box}
+.sz-promise__pin{fill:currentColor;stroke:none}
+.sz-promise.is-sweep .sz-promise__m{animation:szp-m 1.1s var(--sz-ease)}
+.sz-promise.is-sweep .sz-promise__h{animation:szp-h 1.1s var(--sz-ease)}
+@keyframes szp-m{from{transform:rotate(-360deg)}}
+@keyframes szp-h{from{transform:rotate(-30deg)}}
+
+.sz-promise__t{display:grid;min-width:0;gap:1px}
+.sz-promise__title{font-size:15px;font-weight:600;line-height:1.3;color:var(--sz-ink)}
+.sz-promise__day{display:block;font-size:13px;line-height:1.4;color:var(--sz-t2)}
+.sz-promise__day b{font-weight:600;color:var(--sz-ink);white-space:nowrap}
+/* a new day (a page left open past midnight): the line changes softly */
+.sz-promise__day.is-swap{animation:szp-in .45s var(--sz-ease)}
+@keyframes szp-in{from{opacity:0;transform:translateY(4px)}}
+
+@media (prefers-reduced-motion:reduce){
+  .sz-promise__h,.sz-promise__m,.sz-promise__day{animation:none !important}
+}

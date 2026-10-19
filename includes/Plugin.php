@@ -25,6 +25,7 @@ final class Plugin {
 		Widgets\Toolkit::class,
 		Widgets\Project_Form::class,
 		Widgets\Reach::class,
+		Widgets\Reply_Promise::class,
 	];
 
 	public const CATEGORY = 'samanzavarian';

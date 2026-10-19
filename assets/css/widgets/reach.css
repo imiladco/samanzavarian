@@ -6,7 +6,7 @@
    ===================================================================== */
 
 .sz-reach{--c:var(--sz-t2);--t:#EEF0F3;display:grid;gap:3px;min-width:0;margin:0;padding:5px;list-style:none;border-radius:24px;background:var(--sz-fill)}
-.sz-reach__row{position:relative;display:flex;align-items:center;margin:0;border-radius:19px;transition:background-color .3s,box-shadow .35s,transform .45s var(--sz-spring)}
+.sz-reach__row{position:relative;display:flex;align-items:center;margin:0;border-radius:19px}
 /* each channel in its own colour: the glyph at rest, a tint on the tile when the row lifts */
 .sz-reach__row[data-type="email"]{--c:#E85A1C;--t:#FFE9DE}
 .sz-reach__row[data-type="whatsapp"]{--c:#1E9E5A;--t:#E3F6EA}
@@ -23,19 +23,34 @@
 .sz-reach__t{flex:1;min-width:0}
 .sz-reach__name{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:600;line-height:1.3;color:var(--sz-ink)}
 .sz-reach__sub{display:block;margin-top:1px;font-size:14px;line-height:1.4;color:var(--sz-t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color .2s}
-.sz-reach__go{flex:none;display:grid;place-items:center;width:32px;height:32px;border-radius:50%;transition:background-color .3s,transform .45s var(--sz-spring)}
 .sz-reach__chev{width:17px;height:17px;fill:none;stroke:#A3A9B1;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:stroke .2s}
 
-/* lifted: a white card; the tile takes the channel's tint, the arrow moves on */
-.sz-reach__row:is(:hover,:focus-within){background:#fff;box-shadow:0 1px 2px rgba(13,27,42,.05),0 10px 22px -8px rgba(13,27,42,.18)}
-@media (hover:none){.sz-reach__row:hover:not(:focus-within){background:none;box-shadow:none}}
-.sz-reach__row:is(:hover,:focus-within) .sz-reach__tile{background:var(--t);box-shadow:none}
-.sz-reach__row:is(:hover,:focus-within) .sz-reach__tile svg{animation:szr-nod .55s var(--sz-ease)}
-.sz-reach__row:is(:hover,:focus-within) .sz-reach__go{background:var(--sz-fill);transform:translateX(2px)}
-.sz-reach__row:is(:hover,:focus-within) .sz-reach__chev{stroke:var(--sz-ink)}
+/* the glide: one white card that follows the pointer from row to row (js/reach.js
+   sets its place); the rows sit above it */
+.sz-reach{position:relative;isolation:isolate}
+.sz-reach__glide{position:absolute;z-index:-1;top:0;left:5px;right:5px;height:0;margin:0;border-radius:19px;background:#fff;pointer-events:none;
+  box-shadow:0 1px 2px rgba(13,27,42,.05),0 12px 26px -10px rgba(13,27,42,.22);opacity:0;
+  transition:transform .5s var(--sz-spring),height .5s var(--sz-spring),opacity .25s}
+.sz-reach.is-gliding .sz-reach__glide{opacity:1}
+.sz-reach.is-instant .sz-reach__glide{transition:opacity .25s}
+/* spotlight: the others step back */
+.sz-reach.is-gliding .sz-reach__row:not(.is-hot){opacity:.5}
+.sz-reach__row{transition:opacity .3s,transform .45s var(--sz-spring)}
+
+/* the hot row: the tile fills with the channel's colour, the arrow becomes the action */
+.sz-reach__row.is-hot .sz-reach__tile{background:var(--c);color:#fff;transform:scale(1.06) rotate(-4deg);box-shadow:0 8px 18px -6px var(--c)}
+.sz-reach__row.is-hot .sz-reach__tile svg{animation:szr-nod .55s var(--sz-ease)}
+.sz-reach__go{display:inline-flex;align-items:center;gap:0;height:34px;padding:0 8px;border-radius:99px;color:var(--c);transition:background-color .3s,gap .4s var(--sz-spring),padding .4s var(--sz-spring)}
+.sz-reach__verb{max-width:0;overflow:hidden;font-size:13px;font-weight:600;white-space:nowrap;opacity:0;transition:max-width .45s var(--sz-spring),opacity .25s}
+.sz-reach__row.is-hot .sz-reach__go{background:var(--t);gap:6px;padding:0 12px 0 14px}
+.sz-reach__row.is-hot .sz-reach__verb{max-width:90px;opacity:1}
+.sz-reach__row.is-hot .sz-reach__chev{stroke:var(--c);transform:translateX(2px)}
+.sz-reach__chev{transition:stroke .2s,transform .4s var(--sz-spring)}
 .sz-reach__row:active{transform:scale(.985)}
 .sz-reach .sz-reach__a:focus-visible{box-shadow:inset 0 0 0 2.5px rgba(255,107,44,.85)}
-@keyframes szr-nod{30%{transform:rotate(-12deg) scale(1.12)}65%{transform:rotate(5deg)}}
+@keyframes szr-nod{30%{transform:rotate(-14deg) scale(1.15)}65%{transform:rotate(6deg)}}
+/* touch: no glide; a press shows the row */
+@media (hover:none){.sz-reach__row:active{background:#fff}}
 
 /* "Online": only in working hours, never a grey "offline" */
 .sz-reach__on{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 8px 0 7px;border-radius:99px;background:#E9F7EF;font-size:11.5px;font-weight:600;color:#17633C}
@@ -48,7 +63,7 @@
   font:inherit;font-size:13px;font-weight:600;line-height:34px;color:var(--sz-ink);text-transform:none;letter-spacing:normal;cursor:pointer;
   transition:transform .3s var(--sz-spring),background-color .2s,color .2s,box-shadow .2s}
 /* on the lifted (white) row the button turns grey, so it still reads as a button */
-.sz-reach .sz-reach__row:is(:hover,:focus-within) .sz-reach__copy{background:var(--sz-fill);box-shadow:none}
+.sz-reach .sz-reach__row.is-hot .sz-reach__copy{background:var(--sz-fill);box-shadow:none}
 .sz-reach .sz-reach__row .sz-reach__copy:active{transform:scale(.94)}
 .sz-reach .sz-reach__row .sz-reach__copy:focus-visible{outline:2.5px solid rgba(255,107,44,.85);outline-offset:2px}
 .sz-reach .sz-reach__row .sz-reach__copy.is-done{background:#E9F7EF;box-shadow:none;color:#17633C}
@@ -66,6 +81,6 @@
 
 @media (prefers-reduced-motion:reduce){
   .sz-reach__on::before,.sz-reach__row .sz-reach__tile svg,.sz-reach__copy.is-done span{animation:none !important}
-  .sz-reach__row,.sz-reach__go,.sz-reach__tile{transition:none}
+  .sz-reach__row,.sz-reach__go,.sz-reach__tile,.sz-reach__glide,.sz-reach__verb{transition:none}
   .sz-reach.is-armed .sz-reach__row{opacity:1;transform:none}
 }

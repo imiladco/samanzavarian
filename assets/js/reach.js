@@ -47,6 +47,49 @@
 		}
 	}
 
+	/* The glide: one white card moves to the row under the pointer (or with
+	   keyboard focus). Entering the list it appears in place; after that it
+	   travels, so it reads as one object following you. */
+	function glide( root ) {
+		const card = root.querySelector( '.sz-reach__glide' );
+		if ( ! card ) {
+			return;
+		}
+		let hot = null;
+		const to = ( row ) => {
+			if ( row === hot ) {
+				return;
+			}
+			if ( hot ) {
+				hot.classList.remove( 'is-hot' );
+			}
+			const first = ! root.classList.contains( 'is-gliding' );
+			root.classList.toggle( 'is-instant', first );
+			card.style.transform = `translateY(${ row.offsetTop }px)`;
+			card.style.height = row.offsetHeight + 'px';
+			if ( first ) {
+				void card.offsetWidth;
+			}
+			root.classList.add( 'is-gliding' );
+			row.classList.add( 'is-hot' );
+			hot = row;
+			requestAnimationFrame( () => root.classList.remove( 'is-instant' ) );
+		};
+		const off = () => {
+			root.classList.remove( 'is-gliding' );
+			if ( hot ) {
+				hot.classList.remove( 'is-hot' );
+			}
+			hot = null;
+		};
+		root.querySelectorAll( '.sz-reach__row' ).forEach( ( row ) => {
+			row.addEventListener( 'pointerenter', ( e ) => e.pointerType === 'mouse' && to( row ) );
+			row.addEventListener( 'focusin', () => to( row ) );
+		} );
+		root.addEventListener( 'pointerleave', ( e ) => e.pointerType === 'mouse' && ! root.contains( document.activeElement ) && off() );
+		root.addEventListener( 'focusout', ( e ) => ! root.contains( e.relatedTarget ) && ! root.matches( ':hover' ) && off() );
+	}
+
 	function arrive( root ) {
 		const edit = window.elementorFrontend && window.elementorFrontend.isEditMode && window.elementorFrontend.isEditMode();
 		const calm = window.matchMedia && window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
@@ -71,6 +114,7 @@
 		}
 		done.add( root );
 		arrive( root );
+		glide( root );
 		const h = JSON.parse( root.dataset.hours || '{}' ), on = [ ...root.querySelectorAll( '.sz-reach__on' ) ];
 		const tick = () => {
 			const n = nowIn( h.tz || 'Asia/Tehran' ), a = mins( h.from ), b = mins( h.to );

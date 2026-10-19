@@ -4,6 +4,26 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.26.0 — Reply Promise, a livelier Reach, the needs in one row
+**Reply Promise (new widget).** "Replies within two business days", made
+concrete: the line under it names the day ("Write today, hear back by
+Wednesday, 21 October"), counted in working days in your time zone, skipping
+your days off, the same count as the Project Form's confirmation. Worked out
+on the server (no jump on load) and again in the browser (cached pages stay
+right). The clock in its tile sweeps once on arrival and under the pointer.
+Pill or plain look, alignment.
+
+**Reach hover, rethought.** One white card now glides from row to row with
+the pointer, so the list feels like one object following you instead of
+rows popping on their own. The other rows step back; the row's tile fills
+with its channel's colour (with a coloured glow and a small nod) and the
+arrow opens into the action: "Message", "Connect", "Call", "Visit".
+Keyboard focus does the same; touch keeps a simple press.
+
+**Project Form: the needs stay in one row**, as in the design, on phones
+too: the tiles tighten (smaller icon and words) instead of going two by
+two. Only below 250px, or with more tiles than fit, do they wrap.
+
 ## 0.25.0 — Telegram to several chats, clearer settings, a new form and Reach
 **Telegram: as many chats as you like.** One bot, sent to you, a teammate,
 a group or a channel. Settings → Telegram is now one list:

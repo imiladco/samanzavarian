@@ -23,16 +23,21 @@ defined( 'ABSPATH' ) || exit;
  * mail app.
  *
  * Drawn like the Project Form's needs: a soft tray of rows, each icon in a
- * white tile in its channel's colour. A row lifts out as a white card under
- * the pointer (or keyboard focus); the tile warms to the channel's tint and
- * the arrow moves on. The rows come in one after another the first time
- * the list scrolls into view.
+ * white tile in its channel's colour. Under the pointer one white card
+ * glides from row to row (it follows you down the list rather than each row
+ * popping on its own), the other rows step back, the row's tile fills with
+ * its channel's colour and the arrow opens into what will happen ("Message",
+ * "Call", "Connect"). The rows come in one after another the first time the
+ * list scrolls into view.
  */
 class Reach extends Widget_Base {
 
 	public const TYPES = [ 'email', 'whatsapp', 'telegram', 'linkedin', 'instagram', 'phone', 'link' ];
 
 	private const ICONS = [ 'email' => 'mail', 'whatsapp' => 'wa', 'telegram' => 'tg', 'linkedin' => 'in', 'instagram' => 'ig', 'phone' => 'phone', 'link' => 'link' ];
+
+	/** What a row does, said on hover. */
+	private const VERBS = [ 'whatsapp' => 'Message', 'telegram' => 'Message', 'linkedin' => 'Connect', 'instagram' => 'Follow', 'phone' => 'Call', 'link' => 'Visit' ];
 
 	private const ROWS = [
 		[ 'email', 'Email', 'saman.zavarian@gmail.com' ],
@@ -189,6 +194,7 @@ class Reach extends Widget_Base {
 		);
 		?>
 		<ul <?php $this->print_render_attribute_string( 'root' ); ?>>
+					<li class="sz-reach__glide" aria-hidden="true"></li>
 			<?php foreach ( $rows as $r ) : ?>
 				<?php
 				$type = in_array( $r['type'] ?? '', self::TYPES, true ) ? $r['type'] : 'link';
@@ -205,7 +211,7 @@ class Reach extends Widget_Base {
 							<span class="sz-reach__name"><?php echo esc_html( trim( (string) ( $r['label'] ?? '' ) ) ); ?><?php if ( $online ) : ?><span class="sz-reach__on" hidden><?php echo esc_html( (string) ( $s['l_online'] ?? 'Online' ) ); ?></span><?php endif; ?></span>
 							<small class="sz-reach__sub"><?php echo esc_html( $shown ); ?></small>
 						</span>
-						<?php if ( ! $copy ) : ?><span class="sz-reach__go" aria-hidden="true"><svg class="sz-reach__chev" viewBox="0 0 24 24" focusable="false"><path d="M5 12h13M13 6l6 6-6 6"/></svg></span><?php endif; ?>
+						<?php if ( ! $copy ) : ?><span class="sz-reach__go" aria-hidden="true"><span class="sz-reach__verb"><?php echo esc_html( self::VERBS[ $type ] ?? 'Open' ); ?></span><svg class="sz-reach__chev" viewBox="0 0 24 24" focusable="false"><path d="M5 12h13M13 6l6 6-6 6"/></svg></span><?php endif; ?>
 					</a>
 					<?php if ( $copy ) : ?>
 						<button type="button" class="sz-reach__copy" data-copy="<?php echo esc_attr( trim( (string) $r['value'] ) ); ?>" aria-label="<?php echo esc_attr( ( $s['l_copy'] ?? 'Copy' ) . ' ' . trim( (string) $r['value'] ) ); ?>"><span><?php echo esc_html( (string) ( $s['l_copy'] ?? 'Copy' ) ); ?></span></button>
