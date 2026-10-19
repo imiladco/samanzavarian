@@ -4,6 +4,19 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.31.0 — Line heights in pixels too
+The Style tab's line heights are now pixels as well, per device like the
+sizes (the hero title: 116.156 / 86.5 / 48.719px). Each is written on the
+browser's own 1/64px layout grid, as a unitless line height lands, so
+nothing moves by a hair: phone identical to the pixel, desktop 6
+anti-aliased pixels, as before.
+
+Left empty, on purpose: where text inside the element has no line height of
+its own and another font size (a fixed pixel line height would be inherited
+by it and squash or stretch it, e.g. the "Online" badge inside a Reach name),
+and where the font size follows its container (the needs tiles' names on a
+phone).
+
 ## 0.30.0 — Style sizes in plain pixels
 Every size in the Style tab's defaults is now a plain pixel value, one per
 device: the design's value at desktop (1440px), tablet (1024px) and phone

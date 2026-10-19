@@ -1,4 +1,4 @@
-import json, re, sys
+import json, math, re, sys
 C = json.load(open('controls.json')); M = json.load(open('measured.json'))
 MOB = '(max-width: 767px)'
 NUM = re.compile(r'^(-?[\d.]+)(px|em|rem|%|vw|vh|deg|s|ms)?$')
@@ -56,7 +56,9 @@ for w, ctrls in C.items():
             if t == 'color':
                 d = hexc(comp) if a else None
                 if d and mv is not None and prec: mob = hexc(prec.get('computed'))
-            elif t == 'slider' and prop != 'line-height':
+            elif t == 'slider' and prop == 'line-height' and (any((x or {}).get('inhRisk') for x in (rec, prec, M['tab'].get(w, {}).get(cn)))):
+                d = None
+            elif t == 'slider':
                 # sizes in plain pixels, per device: the design's value at each width
                 src = a if a and 'var(' not in a else None
                 if src is None: d = None
@@ -64,7 +66,18 @@ for w, ctrls in C.items():
                     def px(r):
                         m = NUM.match((r or {}).get('computed', '').strip()) if r else None
                         if not m or (m.group(2) or 'px') != 'px' or 'px' not in c['units']: return None
-                        v = round(float(m.group(1)), 3); return {'unit': 'px', 'size': int(v) if v.is_integer() else v}
+                        v = float(m.group(1))
+                        # a line height on the browser's 1/64px layout grid, as a unitless one lands (18.2 → 18.1875)
+                        if prop == 'line-height':
+                            # as the browser lands a unitless line height: the font size snapped to its 1/64px grid, times the number, snapped again
+                            au = ((r or {}).get('authored') or '').strip(); fsv = (r or {}).get('fs') or ''
+                            if re.match(r'^[\d.]+$', au) and fsv.endswith('px'):
+                                v = math.floor(math.floor(float(fsv[:-2]) * 64 + 1e-6) / 64 * float(au) * 64 + 1e-6) / 64
+                            else:
+                                v = math.floor(v * 64 + 1e-6) / 64
+                        else:
+                            v = round(v, 3)
+                        return {'unit': 'px', 'size': int(v) if v.is_integer() else v}
                     trec = M['tab'].get(w, {}).get(cn)
                     d = px(rec)
                     if d and c.get('resp'):

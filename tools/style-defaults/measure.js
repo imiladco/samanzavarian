@@ -70,12 +70,20 @@ function inPage(CTRLS) {
           const extra = decls.slice(1).filter(d => !(d[1] === 'font-size' && el.tagName.toLowerCase() === 'svg')).map(d => cs.getPropertyValue(d[1]));
           if (extra.some(v => v !== cs.getPropertyValue(prop))) bad = 'multi';
           const r = { authored: f.win ? f.win.v : null, computed: cs.getPropertyValue(prop), other: f.other.map(o => ({ cond: o.cond, sel: o.sel, v: o.v })) };
+          // a line height in px is inherited as that fixed size: unsafe if text inside, with no line height of its own, has another font size
+          if (prop === 'line-height') {
+            const fs = cs.fontSize;
+            const fw = find(el, 'font-size').win;
+            r.fsFluid = !!(fw && /cq[iwhb]|cqmin|cqmax/.test(fw.v));
+            r.fs = fs;
+            r.inhRisk = [...el.querySelectorAll('*')].some(k => !k.closest('svg') && k.textContent.trim() !== '' && !find(k, 'line-height').win && getComputedStyle(k).fontSize !== fs);
+          }
           seen.add(c.type === 'color' ? r.computed : (r.authored || '') + '|' + r.computed);
           return r;
         });
         if (seen.size > 1) bad = bad || 'differ';
         Object.assign(rec, per[0]);
-        if (!isDims) rec.other = [].concat(...per.map(x => x.other));
+        if (!isDims) { rec.other = [].concat(...per.map(x => x.other)); rec.inhRisk = per.some(x => x.inhRisk || x.fsFluid); }
         else rec.sides = rec.sides.map((s, i) => ({ ...s, other: [].concat(...per.map(x => x.sides[i].other)) }));
         if (bad) rec.bad = bad;
         (out[wname] = out[wname] || {})[cn] = rec;

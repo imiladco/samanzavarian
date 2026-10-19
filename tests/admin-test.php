@@ -115,7 +115,7 @@ $fs = $sd['sz-htitle']['st_all_type_font_size'] ?? [];
 szw_ok( [ 'unit' => 'px', 'size' => 132 ] === ( $fs['d'] ?? null ) && 'px' === ( $fs['t']['unit'] ?? '' ) && 'px' === ( $fs['m']['unit'] ?? '' ) && 'custom' === ( $sd['sz-htitle']['st_all_type_typography']['d'] ?? '' ), 'Style defaults: the title\'s size in plain pixels, for desktop, tablet and phone' );
 $units = [];
 array_walk_recursive( $sd, static function ( $v, $k ) use ( &$units ) { if ( 'unit' === $k ) { $units[ $v ] = true; } } );
-szw_ok( [] === array_diff( array_keys( $units ), [ 'px', 'custom' ] ), 'Style defaults: every size in px (custom is only a unitless line height): ' . implode( ', ', array_keys( $units ) ) );
+szw_ok( [ 'px' ] === array_keys( $units ), 'Style defaults: every size and line height in px: ' . implode( ', ', array_keys( $units ) ) );
 szw_ok( ! isset( $sd['sz-btn']['st_box_bg_color'] ) && ! isset( $sd['sz-dock']['st_tile_fg'] ), 'Style defaults: nothing that changes with hover or with a choice (the button\'s look, the tile\'s tone)' );
 
 szw_ok( 'Hi Sara, about ai visuals and post-production' === Kit::fill( 'Hi {first}, about {needs}', [ 'name' => 'Sara Ahmadi', 'services' => [ 'AI visuals', 'Post-production' ] ] ), 'reply templates fill in the first name and the needs' );

@@ -14,6 +14,9 @@ Run `defaults.sh` from the test rig (a WordPress + Elementor site serving on
    the same on every element the control reaches, not changed by a state or
    by a breakpoint other than Elementor's phone. Sizes are plain pixels, the
    design's value at desktop (1440), tablet (1024) and phone (390) width.
+   Line heights too, on the browser's 1/64px grid; not where text inside
+   inherits it at another font size, or where the font size follows its
+   container (container query units).
    Others get a placeholder at most.
 4. `snap.js` + `diff.py` compare the computed styles of every element with
    the defaults off and on; `pix.js` compares full-page screenshots. Both
