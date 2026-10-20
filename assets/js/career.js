@@ -22,6 +22,19 @@
  */
 ( function () {
 	'use strict';
+	// text written into the existing text node: Elementor re-measures the page (a forced layout)
+	// on every childList change anywhere, and replacing a text node is one; changing its data is not
+	const szwText = ( el, s ) => {
+		s = String( s );
+		const t = el.firstChild;
+		if ( t && t.nodeType === 3 && ! t.nextSibling ) {
+			if ( t.data !== s ) {
+				t.data = s;
+			}
+		} else if ( el.textContent !== s ) {
+			el.textContent = s;
+		}
+	};
 
 	const instances = new WeakMap();
 	const media = ( q ) => window.matchMedia && window.matchMedia( q ).matches;
@@ -129,7 +142,7 @@
 			this.head.setAttribute( 'aria-valuenow', t.toFixed( 2 ) );
 			const text = label !== null ? label : String( Math.floor( t ) );
 			this.head.setAttribute( 'aria-valuetext', text );
-			this.knob.textContent = text;
+			szwText( this.knob, text );
 			if ( from !== null ) {
 				const d = from - this.head.offsetLeft;
 				if ( Math.abs( d ) > 1 ) {
@@ -176,7 +189,7 @@
 						skimRaf = 0;
 						const r = this.area.getBoundingClientRect(), t = this.timeAt( skimX );
 						this.skim.style.transform = `translateX(${ ( ( t - this.t0 ) / ( this.t1 - this.t0 ) ) * r.width }px)`;
-						this.skim.firstChild.textContent = this.month( t );
+						szwText( this.skim.firstChild, this.month( t ) );
 						this.root.classList.add( 'is-skim' );
 					} );
 				}
@@ -267,7 +280,7 @@
 				c.tabIndex = k === i ? 0 : -1;
 			} );
 			if ( this.pos ) {
-				this.pos.textContent = `${ i + 1 } ${ this.labels.of } ${ n }`;
+				szwText( this.pos, `${ i + 1 } ${ this.labels.of } ${ n }` );
 			}
 			this.btns.forEach( ( b ) => {
 				b.disabled = +b.dataset.dir < 0 ? i === 0 : i === n - 1;
@@ -375,7 +388,7 @@
 			}
 			this.playing = true;
 			this.playBtn.setAttribute( 'aria-pressed', 'true' );
-			this.playBtn.lastChild.textContent = this.labels.pause;
+			szwText( this.playBtn.lastChild, this.labels.pause );
 			this.pos && this.pos.setAttribute( 'aria-live', 'off' );
 			this.pick( this.reel.k, { auto: true, keepHead: true, keepView: true } );
 			let t0 = performance.now() - this.reel.p * DWELL, k = this.reel.k;
@@ -424,7 +437,7 @@
 			this.playing = false;
 			cancelAnimationFrame( this.raf );
 			this.playBtn.setAttribute( 'aria-pressed', 'false' );
-			this.playBtn.lastChild.textContent = this.labels.play;
+			szwText( this.playBtn.lastChild, this.labels.play );
 			this.pos && this.pos.setAttribute( 'aria-live', 'polite' );
 			if ( reset ) {
 				this.setHead( this.span[ this.cur ][ 0 ], { label: null } );

@@ -119,18 +119,23 @@
 }
 
 /* ---------- Brand Mark at rest: the lens catches the light ----------
-   One cycle every --sz-loop (8s): in its first ~14% a soft glint crosses the tile and the
-   lens ring pulls focus; the rest of the cycle is stillness. Starts once the bar has arrived;
-   paused off screen (.is-off, js) and for reduced motion. */
+   A beat every few seconds (data-sz-beat, js/loops.js): a soft glint crosses the tile and
+   the lens ring pulls focus. Between beats nothing is running at all. Starts once the bar
+   has arrived; none for reduced motion. */
 .sz-brand.has-idle .sz-brand__app{position:relative;overflow:hidden;isolation:isolate}
 .sz-brand.has-idle .sz-brand__app::after{content:"";position:absolute;inset:-40%;z-index:1;pointer-events:none;
   background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.18) 42%,rgba(255,255,255,.62) 50%,rgba(255,255,255,.18) 58%,transparent 70%);
-  transform:translateX(-120%);animation:szb-glint var(--sz-loop,8s) 2.6s cubic-bezier(.45,0,.3,1) infinite}
-@keyframes szb-glint{0%{transform:translateX(-120%)}16%,100%{transform:translateX(120%)}}
+  transform:translateX(-120%)}
+.sz-brand.has-idle.is-beat .sz-brand__app::after{animation:szb-glint 1.3s cubic-bezier(.45,0,.3,1)}
+@keyframes szb-glint{0%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
 /* the lens ring (the icon's inner circle) pulls focus; another icon breathes as a whole */
-.sz-brand.has-idle .sz-brand__app svg circle:last-child{transform-origin:12px 12px;transform-box:view-box;animation:szb-focus var(--sz-loop,8s) 2.6s infinite}
-.sz-brand.has-idle .sz-brand__app svg:not(:has(circle + circle)){transform-origin:center;animation:szb-breathe var(--sz-loop,8s) 2.6s infinite}
-@keyframes szb-focus{0%,7%{transform:scale(1);animation-timing-function:cubic-bezier(.5,0,.75,0)}11%{transform:scale(.66);animation-timing-function:cubic-bezier(.34,1.6,.64,1)}20%,100%{transform:scale(1)}}
-@keyframes szb-breathe{0%,7%{transform:scale(1)}11%{transform:scale(.86)}20%,100%{transform:scale(1)}}
+.sz-brand.has-idle .sz-brand__app svg circle:last-child{transform-origin:12px 12px;transform-box:view-box}
+.sz-brand.has-idle .sz-brand__app svg{transform-origin:center}
+.sz-brand.has-idle.is-beat .sz-brand__app svg circle:last-child{animation:szb-focus 1.6s}
+.sz-brand.has-idle.is-lens.is-beat .sz-brand__app svg{animation:none}
+.sz-brand.has-idle:not(.is-lens).is-beat .sz-brand__app svg{animation:szb-breathe 1.6s}
+/* the light reaches the lens at about a third of the way: focus starts there */
+@keyframes szb-focus{0%,35%{transform:scale(1);animation-timing-function:cubic-bezier(.5,0,.75,0)}55%{transform:scale(.66);animation-timing-function:cubic-bezier(.34,1.6,.64,1)}100%{transform:scale(1)}}
+@keyframes szb-breathe{0%,35%{transform:scale(1)}55%{transform:scale(.86)}100%{transform:scale(1)}}
 .sz-brand.is-off .sz-brand__app::after,.sz-brand.is-off .sz-brand__app svg,.sz-brand.is-off .sz-brand__app svg circle{animation-play-state:paused}
 @media (prefers-reduced-motion:reduce){.sz-brand.has-idle .sz-brand__app::after,.sz-brand.has-idle .sz-brand__app svg,.sz-brand.has-idle .sz-brand__app svg circle{animation:none !important}}

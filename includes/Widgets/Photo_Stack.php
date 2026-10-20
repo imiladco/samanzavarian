@@ -583,7 +583,7 @@ class Photo_Stack extends Widget_Base {
 				self::render_sticker( $s );
 				if ( $deck && $yes( 'hint' ) ) :
 					?>
-					<span class="sz-stack__hint" aria-hidden="true"><i></i><span class="is-hover"><?php echo esc_html( $l['hover'] ); ?></span><span class="is-tap"><?php echo esc_html( $l['tap'] ); ?></span><span class="is-click"><?php echo esc_html( $l['click'] ); ?></span><span class="is-swipe"><?php echo esc_html( $l['swipe'] ); ?></span></span>
+					<span class="sz-stack__hint" aria-hidden="true"><i data-sz-beat="2400"></i><span class="is-hover"><?php echo esc_html( $l['hover'] ); ?></span><span class="is-tap"><?php echo esc_html( $l['tap'] ); ?></span><span class="is-click"><?php echo esc_html( $l['click'] ); ?></span><span class="is-swipe"><?php echo esc_html( $l['swipe'] ); ?></span></span>
 				<?php endif; ?>
 			</div>
 			<?php if ( $deck ) : ?>

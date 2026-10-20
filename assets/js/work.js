@@ -19,6 +19,19 @@
  */
 ( function () {
 	'use strict';
+	// text written into the existing text node: Elementor re-measures the page (a forced layout)
+	// on every childList change anywhere, and replacing a text node is one; changing its data is not
+	const szwText = ( el, s ) => {
+		s = String( s );
+		const t = el.firstChild;
+		if ( t && t.nodeType === 3 && ! t.nextSibling ) {
+			if ( t.data !== s ) {
+				t.data = s;
+			}
+		} else if ( el.textContent !== s ) {
+			el.textContent = s;
+		}
+	};
 
 	window.szwTrack = window.szwTrack || function ( event, params ) {
 		try {
@@ -232,7 +245,16 @@
 			const key = a + '-' + b + '-' + n;
 			if ( this.pos && this.posKey !== key ) {
 				this.posKey = key;
-				this.pos.innerHTML = '<b>' + ( a + 1 ) + ( b > a ? '–' + ( b + 1 ) : '' ) + '</b> ' + this.esc( this.labels.of ) + ' ' + n;
+				// the same two text nodes, rewritten in place (no childList change for Elementor to react to)
+				if ( ! this.posB ) {
+					this.pos.textContent = '';
+					this.posB = document.createElement( 'b' );
+					this.posB.appendChild( document.createTextNode( '' ) );
+					this.posT = document.createTextNode( '' );
+					this.pos.append( this.posB, this.posT );
+				}
+				this.posB.firstChild.data = ( a + 1 ) + ( b > a ? '–' + ( b + 1 ) : '' );
+				this.posT.data = ' ' + this.labels.of + ' ' + n;
 			}
 		}
 
@@ -247,7 +269,7 @@
 
 		esc( s ) {
 			const d = document.createElement( 'span' );
-			d.textContent = s;
+			szwText( d, s );
 			return d.innerHTML;
 		}
 
@@ -358,7 +380,7 @@
 			const label = b.dataset.label || b.textContent;
 
 			if ( ! opts.quiet ) {
-				this.live.textContent = n + ' ' + ( n === 1 ? this.labels.one : this.labels.many ) + ( f === 'all' ? '' : ' ' + this.labels.in + ' ' + label );
+				szwText( this.live, n + ' ' + ( n === 1 ? this.labels.one : this.labels.many ) + ( f === 'all' ? '' : ' ' + this.labels.in + ' ' + label ) );
 			}
 			if ( opts.user ) {
 				this.hash( f );

@@ -24,6 +24,19 @@
  */
 ( function () {
 	'use strict';
+	// text written into the existing text node: Elementor re-measures the page (a forced layout)
+	// on every childList change anywhere, and replacing a text node is one; changing its data is not
+	const szwText = ( el, s ) => {
+		s = String( s );
+		const t = el.firstChild;
+		if ( t && t.nodeType === 3 && ! t.nextSibling ) {
+			if ( t.data !== s ) {
+				t.data = s;
+			}
+		} else if ( el.textContent !== s ) {
+			el.textContent = s;
+		}
+	};
 
 	const clamp = ( v, a, b ) => Math.max( a, Math.min( b, v ) );
 	const rnd = ( a, b ) => a + Math.random() * ( b - a );
@@ -111,7 +124,7 @@
 			s.knob.style.translate = Math.abs( dx ) < 0.01 ? '' : dx.toFixed( 2 ) + 'px 0';
 			s.input.setAttribute( 'aria-valuetext', signed( v ) );
 			if ( s.out ) {
-				s.out.textContent = signed( v );
+				szwText( s.out, signed( v ) );
 			}
 			applyGrade();
 		}
@@ -217,7 +230,9 @@
 				const whole = tickAt % 2 === 0;
 				e.className = 'szs-pe__tick' + ( whole ? ' is-s' : '' );
 				if ( whole && tickAt % 4 === 0 ) {
-					e.innerHTML = `<b>${ pad( Math.floor( t / 60 ) % 60 ) }:${ pad( t % 60 ) }</b>`;
+					const b = document.createElement( 'b' );
+					b.textContent = `${ pad( Math.floor( t / 60 ) % 60 ) }:${ pad( t % 60 ) }`;
+					e.appendChild( b );
 				}
 				e.style.translate = t * PPS + 'px 0';
 				lanesEl.appendChild( e );
@@ -263,7 +278,7 @@
 			fill();
 			lanesEl.style.transform = `translateX(${ ( -V * PPS ).toFixed( 2 ) }px)`;
 			headEl.style.transform = `translateX(${ ( ( T - V ) * PPS ).toFixed( 2 ) }px)`;
-			timeEl.textContent = tc( T );
+			szwText( timeEl, tc( T ) );
 			const hx = T * PPS;
 			for ( const L of LANES ) {
 				for ( const c of L.clips ) {
@@ -274,7 +289,7 @@
 		function go( speed ) {
 			v = speed;
 			modeEl.dataset.m = 0 === v ? 'stop' : v < 0 ? 'rew' : v > 1 ? 'ff' : 'play';
-			modeEl.lastChild.textContent = v ? Math.abs( v ) + '×' : '';
+			szwText( modeEl.lastChild, v ? Math.abs( v ) + '×' : '' );
 		}
 
 		/* Visitors can scrub: the playhead follows the hand, and play carries on from there. */
@@ -374,7 +389,7 @@
 		const label = ( t, p ) => t.replace( '{v}', version ).replace( '{p}', p );
 		const state = ( text, cls ) => {
 			pill.className = 'szs-pe__pill' + ( cls ? ' ' + cls : '' );
-			pillText.textContent = text;
+			szwText( pillText, text );
 		};
 		let exported = false;
 		async function edited() {

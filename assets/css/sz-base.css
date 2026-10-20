@@ -112,3 +112,8 @@
   box-shadow:inset 0 1px 0 #fff,0 6px 14px -4px rgba(13,27,42,.18);
   color:var(--sz-navy);
 }
+
+/* ---------- out of sight, at rest ----------
+   js/loops.js puts .sz-asleep on a widget that is off screen: nothing inside it animates
+   (a running animation, even an invisible one, costs a restyle every frame). */
+.sz-asleep,.sz-asleep *,.sz-asleep *::before,.sz-asleep *::after{animation-play-state:paused !important}

@@ -9,6 +9,19 @@
  */
 ( function () {
 	'use strict';
+	// text written into the existing text node: Elementor re-measures the page (a forced layout)
+	// on every childList change anywhere, and replacing a text node is one; changing its data is not
+	const szwText = ( el, s ) => {
+		s = String( s );
+		const t = el.firstChild;
+		if ( t && t.nodeType === 3 && ! t.nextSibling ) {
+			if ( t.data !== s ) {
+				t.data = s;
+			}
+		} else if ( el.textContent !== s ) {
+			el.textContent = s;
+		}
+	};
 
 	const done = new WeakSet();
 	const ease = ( k ) => ( k >= 1 ? 1 : 1 - Math.pow( 2, -10 * k ) ); // fast, then settling: like a counter
@@ -52,7 +65,7 @@
 			f.d.style.minWidth = f.d.getBoundingClientRect().width + 'px';
 			f.to = parseFloat( f.d.dataset.to ) || 0;
 			f.dec = parseInt( f.d.dataset.dec, 10 ) || 0;
-			f.d.textContent = format( 0, f.dec, sep );
+			szwText( f.d, format( 0, f.dec, sep ) );
 			if ( f.mark ) {
 				f.mark.style.opacity = '0';
 			}
@@ -63,7 +76,7 @@
 			const t0 = performance.now();
 			const tick = ( t ) => {
 				const k = Math.min( 1, ( t - t0 ) / D );
-				f.d.textContent = format( f.to * ease( k ), f.dec, sep );
+				szwText( f.d, format( f.to * ease( k ), f.dec, sep ) );
 				if ( k < 1 ) {
 					requestAnimationFrame( tick );
 				} else if ( f.mark ) {

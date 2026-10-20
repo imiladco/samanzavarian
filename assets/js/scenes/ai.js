@@ -21,6 +21,19 @@
  */
 ( function () {
 	'use strict';
+	// text written into the existing text node: Elementor re-measures the page (a forced layout)
+	// on every childList change anywhere, and replacing a text node is one; changing its data is not
+	const szwText = ( el, s ) => {
+		s = String( s );
+		const t = el.firstChild;
+		if ( t && t.nodeType === 3 && ! t.nextSibling ) {
+			if ( t.data !== s ) {
+				t.data = s;
+			}
+		} else if ( el.textContent !== s ) {
+			el.textContent = s;
+		}
+	};
 
 	const W = 412; // the window, design px (see AI_Showreel::WIN)
 	const OUT = 0.5; // scale of the reel when pulled back
@@ -132,7 +145,7 @@
 			const sec = Math.floor( e / 1000 );
 			if ( sec !== shownSec ) {
 				shownSec = sec;
-				hudF.textContent = label( cur, sec );
+				szwText( hudF, label( cur, sec ) );
 			}
 		} );
 
@@ -157,8 +170,8 @@
 			showOnly( [ j ] );
 			cur = j;
 			shownSec = -1;
-			hudN.textContent = pad( j + 1 ) + ' / ' + pad( n );
-			hudF.textContent = label( j, 0 );
+			szwText( hudN, pad( j + 1 ) + ' / ' + pad( n ) );
+			szwText( hudF, label( j, 0 ) );
 			bar.style.transform = 'scaleX(0)';
 			shownAt = api.time.t;
 			holding = true;
@@ -230,7 +243,7 @@
 			}
 			holding = false;
 			bar.style.transform = 'scaleX(0)';
-			hudF.textContent = label( 0, 0 );
+			szwText( hudF, label( 0, 0 ) );
 			api.done();
 		}
 

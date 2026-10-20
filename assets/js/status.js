@@ -7,6 +7,19 @@
  */
 ( function () {
 	'use strict';
+	// text written into the existing text node: Elementor re-measures the page (a forced layout)
+	// on every childList change anywhere, and replacing a text node is one; changing its data is not
+	const szwText = ( el, s ) => {
+		s = String( s );
+		const t = el.firstChild;
+		if ( t && t.nodeType === 3 && ! t.nextSibling ) {
+			if ( t.data !== s ) {
+				t.data = s;
+			}
+		} else if ( el.textContent !== s ) {
+			el.textContent = s;
+		}
+	};
 
 	const timers = new WeakMap();
 
@@ -20,7 +33,7 @@
 			pill.classList.add( 'is-available' );
 			const text = pill.querySelector( '.sz-status__text' );
 			if ( text && pill.dataset.available ) {
-				text.textContent = pill.dataset.available;
+				szwText( text, pill.dataset.available );
 			}
 			delete pill.dataset.until;
 		};
@@ -46,7 +59,7 @@
 		const tick = () => {
 			const now = new Date(), text = fmt.format( now ).replace( /\s?(am|pm)$/i, ( m ) => ' ' + m.trim().toUpperCase() );
 			if ( out.textContent !== text ) {
-				out.textContent = text;
+				szwText( out, text );
 			}
 			out.dateTime = now.toISOString();
 			timers.set( pill, setTimeout( tick, 60000 - ( now.getSeconds() * 1000 + now.getMilliseconds() ) + 50 ) );

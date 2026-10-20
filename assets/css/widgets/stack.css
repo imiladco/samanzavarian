@@ -120,8 +120,10 @@
 .sz-stack__hint{position:absolute;left:50%;top:calc(100% + 24px);display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 12px 0 10px;border-radius:99px;
   background:var(--szk-hint);box-shadow:var(--sz-s1);font-size:12px;font-weight:500;line-height:1;white-space:nowrap;color:var(--szk-hint-text);
   transform:translateX(-50%);transition:opacity .35s;pointer-events:none}
-.sz-stack__hint i{flex:none;width:7px;height:7px;border-radius:50%;background:var(--szk-hint-dot);animation:szk-ping 2.2s ease-out infinite}
-@keyframes szk-ping{0%{box-shadow:0 0 0 0 rgba(255,107,44,.5)}70%,100%{box-shadow:0 0 0 7px rgba(255,107,44,0)}}
+.sz-stack__hint i{position:relative;flex:none;width:7px;height:7px;border-radius:50%;background:var(--szk-hint-dot)}
+.sz-stack__hint i::after{content:"";position:absolute;inset:0;border-radius:50%;background:rgba(255,107,44,.5);opacity:0}
+.sz-stack__hint i.is-beat::after{animation:szk-ping 1.6s ease-out}
+@keyframes szk-ping{0%{transform:scale(1);opacity:1}100%{transform:scale(3);opacity:0}}
 .sz-stack__hint > span{display:none}
 .sz-stack__hint > .is-hover{display:inline}
 .sz-stack.is-open .sz-stack__hint > .is-hover{display:none}

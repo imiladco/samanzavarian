@@ -47,7 +47,9 @@
 .sz-status__dot{--d:var(--szp-dot-available);position:relative;flex:none;width:8px;height:8px;border-radius:50%;background:var(--d)}
 .sz-status.is-limited .sz-status__dot{--d:var(--szp-dot-limited)}
 .sz-status.is-booked .sz-status__dot{--d:var(--szp-dot-booked)}
-.sz-status.is-available:not(.no-pulse) .sz-status__dot::after{content:"";position:absolute;inset:-4px;border-radius:50%;background:var(--d);opacity:.25;animation:szp-pulse 2.4s ease-out infinite}
+.sz-status.is-available:not(.no-pulse) .sz-status__dot::after{content:"";position:absolute;inset:-4px;border-radius:50%;background:var(--d);opacity:0}
+/* one pulse per beat (js/loops.js), nothing running in between */
+.sz-status.is-available:not(.no-pulse) .sz-status__dot.is-beat::after{animation:szp-pulse 2.4s ease-out}
 @keyframes szp-pulse{0%{transform:scale(.6);opacity:.4}100%{transform:scale(1.8);opacity:0}}
 .sz-status__clock{display:inline-flex;align-items:center;gap:6px;flex:none}
 .sz-status__sep{width:1px;height:12px;margin-right:3px;background:currentColor;opacity:.25}

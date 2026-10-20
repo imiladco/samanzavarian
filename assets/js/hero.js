@@ -159,16 +159,21 @@
 		}
 	}
 
-	// while the page scrolls, the floats hold still (moving shadows under glass cost frames); they go on after
+	// while the page scrolls, the floats hold still (moving shadows under glass cost frames); they go on
+	// after. Their own class, not one on <html>: that would restyle the whole page twice per scroll.
 	let still = 0;
 	window.addEventListener( 'scroll', () => {
+		const bobs = document.querySelectorAll( '.sz-floats.has-bob:not(.sz-asleep)' );
+		if ( ! bobs.length ) {
+			return;
+		}
 		if ( ! still ) {
-			document.documentElement.classList.add( 'sz-scrolling' );
+			bobs.forEach( ( f ) => f.classList.add( 'is-still' ) );
 		}
 		clearTimeout( still );
 		still = setTimeout( () => {
 			still = 0;
-			document.documentElement.classList.remove( 'sz-scrolling' );
+			document.querySelectorAll( '.sz-floats.is-still' ).forEach( ( f ) => f.classList.remove( 'is-still' ) );
 		}, 160 );
 	}, { passive: true } );
 

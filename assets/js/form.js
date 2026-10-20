@@ -23,6 +23,19 @@
  */
 ( function () {
 	'use strict';
+	// text written into the existing text node: Elementor re-measures the page (a forced layout)
+	// on every childList change anywhere, and replacing a text node is one; changing its data is not
+	const szwText = ( el, s ) => {
+		s = String( s );
+		const t = el.firstChild;
+		if ( t && t.nodeType === 3 && ! t.nextSibling ) {
+			if ( t.data !== s ) {
+				t.data = s;
+			}
+		} else if ( el.textContent !== s ) {
+			el.textContent = s;
+		}
+	};
 
 	const done = new WeakSet();
 	const reduce = window.matchMedia && window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
@@ -132,7 +145,7 @@
 				} );
 				const err = form.elements[ g[ 0 ] ] && document.getElementById( form.elements[ g[ 0 ] ].getAttribute( 'aria-describedby' ) );
 				if ( err ) {
-					err.textContent = say;
+					szwText( err, say );
 				}
 			} );
 			return first;
@@ -228,13 +241,13 @@
 			more.classList.toggle( 'has-picks', picks.length > 0 );
 			if ( msub.textContent !== text ) {
 				if ( reduce ) {
-					msub.textContent = text;
+					szwText( msub, text );
 					return;
 				}
 				msub.classList.add( 'is-swap' );
 				clearTimeout( msub.szT );
 				msub.szT = setTimeout( () => {
-					msub.textContent = text;
+					szwText( msub, text );
 					msub.classList.remove( 'is-swap' );
 				}, 180 );
 			}
@@ -267,7 +280,7 @@
 				return;
 			}
 			const n = msg.value.length;
-			count.textContent = `${ n.toLocaleString( 'en' ) } / ${ max.toLocaleString( 'en' ) }`;
+			szwText( count, `${ n.toLocaleString( 'en' ) } / ${ max.toLocaleString( 'en' ) }` );
 			count.classList.toggle( 'is-on', n >= max * 0.8 );
 			count.classList.toggle( 'is-max', n >= max );
 		};
@@ -279,7 +292,7 @@
 				ex.classList.add( 'is-swap' );
 				setTimeout( () => {
 					k = ( k + 1 ) % cfg.examples.length;
-					ex.textContent = cfg.examples[ k ];
+					szwText( ex, cfg.examples[ k ] );
 					ex.classList.remove( 'is-swap' );
 				}, 350 );
 			};
@@ -357,10 +370,10 @@
 		const busy = ( on ) => {
 			btn.disabled = on;
 			btn.setAttribute( 'aria-busy', on ? 'true' : 'false' );
-			btxt.textContent = on ? L.sending : L.send;
+			szwText( btxt, on ? L.sending : L.send );
 		};
 		const fail = ( text ) => {
-			toast.textContent = text;
+			szwText( toast, text );
 			toast.hidden = false;
 		};
 
@@ -417,12 +430,12 @@
 		function sent( d ) {
 			const first = ( d.name || '' ).split( /\s+/ )[ 0 ];
 			const day = replyDay( cfg.days || 2, cfg.off || [ 5 ], cfg.tz || 'Asia/Tehran' );
-			doneCard.querySelector( '.sz-pf__oktext' ).textContent = ( L.ok_text || '%1$s %2$s' ).replace( '%1$s', first ).replace( '%2$s', day );
+			szwText( doneCard.querySelector( '.sz-pf__oktext' ), ( L.ok_text || '%1$s %2$s' ).replace( '%1$s', first ).replace( '%2$s', day ) );
 			const sum = doneCard.querySelector( '.sz-pf__sum' );
 			sum.innerHTML = '';
 			[ ...( d.services || [] ), d.timeline, d.budget ].filter( Boolean ).forEach( ( t ) => {
 				const li = document.createElement( 'li' );
-				li.textContent = t;
+				szwText( li, t );
 				sum.appendChild( li );
 			} );
 			// the card takes the form's place at the form's height (nothing jumps), then eases to its own size

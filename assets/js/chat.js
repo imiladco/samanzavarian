@@ -13,6 +13,19 @@
  */
 ( function () {
 	'use strict';
+	// text written into the existing text node: Elementor re-measures the page (a forced layout)
+	// on every childList change anywhere, and replacing a text node is one; changing its data is not
+	const szwText = ( el, s ) => {
+		s = String( s );
+		const t = el.firstChild;
+		if ( t && t.nodeType === 3 && ! t.nextSibling ) {
+			if ( t.data !== s ) {
+				t.data = s;
+			}
+		} else if ( el.textContent !== s ) {
+			el.textContent = s;
+		}
+	};
 
 	window.szwTrack = window.szwTrack || function ( event, params ) {
 		try {
@@ -88,7 +101,7 @@
 			send.disabled = ! has;
 			composer.classList.toggle( 'is-ready', has );
 			const rest = max - input.value.length;
-			left.textContent = rest <= 40 ? L.left.replace( '{n}', rest ) : '';
+			szwText( left, rest <= 40 ? L.left.replace( '{n}', rest ) : '' );
 			left.classList.toggle( 'is-low', rest <= 10 );
 		};
 		input.addEventListener( 'input', () => {
@@ -175,8 +188,8 @@
 			sent.innerHTML = '';
 			const p = document.createElement( 'p' ), s = document.createElement( 'small' );
 			p.className = 'sz-chat__out';
-			p.textContent = text;
-			s.textContent = note;
+			szwText( p, text );
+			szwText( s, note );
 			sent.append( p, s );
 			if ( ! reduce && p.animate ) {
 				p.animate( [ { opacity: 0, transform: 'translateY(18px) scale(.94)' }, { opacity: 1, transform: 'none' } ], { duration: 420, easing: 'cubic-bezier(.34,1.4,.64,1)' } );
@@ -226,7 +239,7 @@
 				fill( box, text );
 				const scope = box.form || box.closest( 'form' ) || document;
 				tick( scope, choice );
-				live.textContent = L.moved;
+				szwText( live, L.moved );
 				const go = () => {
 					( box.form || box ).scrollIntoView( { behavior: reduce ? 'auto' : 'smooth', block: 'start' } );
 					setTimeout( () => {

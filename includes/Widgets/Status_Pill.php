@@ -352,7 +352,7 @@ class Status_Pill extends Widget_Base {
 		?>
 		<div class="sz-pillrow sz-w">
 			<<?php echo $tag; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- a or span ?> <?php $this->print_render_attribute_string( 'pill' ); ?>>
-				<i class="sz-status__dot" aria-hidden="true"></i>
+				<i class="sz-status__dot" aria-hidden="true" data-sz-beat="3200"></i>
 				<span class="sz-status__text"><?php echo esc_html( $now['text'] ); ?></span>
 				<?php if ( $clock ) : ?>
 					<span class="sz-status__clock"><span class="sz-status__sep" aria-hidden="true"></span><time class="sz-status__time"><?php echo esc_html( self::clock( (string) $tz, 'yes' === ( $s['hour12'] ?? '' ) ) ); ?></time> <span class="sz-status__place"><?php echo esc_html( (string) ( $s['place'] ?? '' ) ); ?></span></span>

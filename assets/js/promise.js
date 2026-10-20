@@ -8,6 +8,19 @@
  */
 ( function () {
 	'use strict';
+	// text written into the existing text node: Elementor re-measures the page (a forced layout)
+	// on every childList change anywhere, and replacing a text node is one; changing its data is not
+	const szwText = ( el, s ) => {
+		s = String( s );
+		const t = el.firstChild;
+		if ( t && t.nodeType === 3 && ! t.nextSibling ) {
+			if ( t.data !== s ) {
+				t.data = s;
+			}
+		} else if ( el.textContent !== s ) {
+			el.textContent = s;
+		}
+	};
 	const done = new WeakSet();
 	const calm = window.matchMedia && window.matchMedia( '(prefers-reduced-motion: reduce)' ).matches;
 
@@ -56,7 +69,7 @@
 			const b = line.querySelector( 'b' );
 			const day = replyDay( cfg.days || 2, cfg.off || [], cfg.tz || 'Asia/Tehran' );
 			if ( b && b.textContent !== day ) {
-				b.textContent = day;
+				szwText( b, day );
 				line.classList.remove( 'is-swap' );
 				void line.offsetWidth;
 				line.classList.add( 'is-swap' );

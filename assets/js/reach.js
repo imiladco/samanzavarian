@@ -10,6 +10,19 @@
  */
 ( function () {
 	'use strict';
+	// text written into the existing text node: Elementor re-measures the page (a forced layout)
+	// on every childList change anywhere, and replacing a text node is one; changing its data is not
+	const szwText = ( el, s ) => {
+		s = String( s );
+		const t = el.firstChild;
+		if ( t && t.nodeType === 3 && ! t.nextSibling ) {
+			if ( t.data !== s ) {
+				t.data = s;
+			}
+		} else if ( el.textContent !== s ) {
+			el.textContent = s;
+		}
+	};
 	const done = new WeakSet();
 	const fine = () => window.matchMedia && window.matchMedia( '(hover: hover) and (pointer: fine)' ).matches;
 
@@ -129,18 +142,18 @@
 		const confirm = ( row, btn ) => {
 			const sub = row.querySelector( '.sz-reach__sub' ), was = sub.textContent, bt = btn && btn.firstChild, bwas = bt && bt.textContent;
 			row.classList.add( 'is-copied' );
-			sub.textContent = '✓ ' + ( root.dataset.copied || 'Copied' );
+			szwText( sub, '✓ ' + ( root.dataset.copied || 'Copied' ) );
 			if ( btn ) {
 				btn.classList.add( 'is-done' );
-				bt.textContent = root.dataset.copied || 'Copied';
+				szwText( bt, root.dataset.copied || 'Copied' );
 			}
 			window.szwTrack && window.szwTrack( 'sz_reach_copy', {} );
 			setTimeout( () => {
 				row.classList.remove( 'is-copied' );
-				sub.textContent = was;
+				szwText( sub, was );
 				if ( btn ) {
 					btn.classList.remove( 'is-done' );
-					bt.textContent = bwas;
+					szwText( bt, bwas );
 				}
 			}, 1800 );
 		};

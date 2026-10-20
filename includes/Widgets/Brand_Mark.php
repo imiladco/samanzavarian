@@ -82,13 +82,19 @@ class Brand_Mark extends Widget_Base {
 		);
 		$this->update_control( 'motion_note', [ 'raw' => esc_html__( 'Visitors who ask their device for less motion always get none.', 'samanzavarian-widgets' ) ] );
 		$this->start_injection( [ 'of' => 'idle' ] );
-		$this->add_control( 'idle_every', [ 'label' => esc_html__( 'Every (seconds)', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SLIDER, 'size_units' => [ 'px' ], 'range' => [ 'px' => [ 'min' => 4, 'max' => 20 ] ], 'default' => [ 'unit' => 'px', 'size' => 8 ], 'selectors' => [ '{{WRAPPER}} .sz-brand' => '--sz-loop: {{SIZE}}s;' ], 'condition' => [ 'idle' => 'yes' ] ] );
+		$this->add_control( 'idle_every', [ 'label' => esc_html__( 'Every (seconds)', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SLIDER, 'size_units' => [ 'px' ], 'range' => [ 'px' => [ 'min' => 4, 'max' => 20 ] ], 'default' => [ 'unit' => 'px', 'size' => 8 ], 'condition' => [ 'idle' => 'yes' ] ] );
 		$this->end_injection();
 	}
 
 	protected function render(): void {
 		$s = $this->get_settings_for_display();
-		$this->add_render_attribute( 'a', [ 'class' => 'sz-brand sz-w' . ( 'yes' === ( $s['idle'] ?? 'yes' ) ? ' has-idle' : '' ), 'aria-label' => (string) ( $s['label'] ?? '' ) ] );
+		$idle = 'yes' === ( $s['idle'] ?? 'yes' );
+		$lens = 'lens' === Icon_Library::glyph_name( $s['icon']['value'] ?? '' );
+		$this->add_render_attribute( 'a', [ 'class' => 'sz-brand sz-w' . ( $idle ? ' has-idle' : '' ) . ( $lens ? ' is-lens' : '' ), 'aria-label' => (string) ( $s['label'] ?? '' ) ] );
+		if ( $idle ) {
+			$every = max( 4, min( 20, (int) ( $s['idle_every']['size'] ?? 8 ) ) );
+			$this->add_render_attribute( 'a', [ 'data-sz-beat' => $every * 1000, 'data-sz-beat-delay' => 2600 ] );
+		}
 		if ( ! empty( $s['link']['url'] ) ) {
 			$this->add_link_attributes( 'a', $s['link'] );
 		}

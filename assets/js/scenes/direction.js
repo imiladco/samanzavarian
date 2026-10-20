@@ -13,6 +13,19 @@
  */
 ( function () {
 	'use strict';
+	// text written into the existing text node: Elementor re-measures the page (a forced layout)
+	// on every childList change anywhere, and replacing a text node is one; changing its data is not
+	const szwText = ( el, s ) => {
+		s = String( s );
+		const t = el.firstChild;
+		if ( t && t.nodeType === 3 && ! t.nextSibling ) {
+			if ( t.data !== s ) {
+				t.data = s;
+			}
+		} else if ( el.textContent !== s ) {
+			el.textContent = s;
+		}
+	};
 
 	const shuffle = ( a ) => {
 		for ( let i = a.length - 1; i > 0; i-- ) {
@@ -112,7 +125,7 @@
 
 		async function show( route, letter, count ) {
 			const map = { letter, count, name: route.name };
-			head.textContent = fill( L.dir_route_title, map );
+			szwText( head, fill( L.dir_route_title, map ) );
 			say( fill( L.dir_say_route, map ), route.pal[ 1 ] || '#FF6B2C' );
 			swap( nt, route.note, 'span' );
 			palette( route.pal );
@@ -130,7 +143,7 @@
 			await api.time.wait( 400 );
 			for ( ;; ) {
 				// 1. before direction
-				head.textContent = L.dir_note_title;
+				szwText( head, L.dir_note_title );
 				say( L.dir_say_before, cfg.before.pal[ 1 ] );
 				swap( nt, `<em>${ cfg.before.note }</em>`, 'span' );
 				palette( cfg.before.pal );
@@ -149,7 +162,7 @@
 				const k = cfg.choice ? Math.min( cfg.choice, count ) - 1 : Math.floor( Math.random() * count );
 				const pick = cfg.routes[ order[ k ] ];
 				const map = { letter: 'ABCDEFGH'[ k ], count, name: pick.name };
-				head.textContent = fill( L.dir_chosen, map );
+				szwText( head, fill( L.dir_chosen, map ) );
 				say( fill( L.dir_say_chosen, map ), '#1F9D60' );
 				swap( nt, pick.note, 'span' );
 				palette( pick.pal );

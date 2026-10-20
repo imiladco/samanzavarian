@@ -4,6 +4,38 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.38.0 — The lag since the header: found and fixed
+**The cause.** Elementor watches the whole page for any change to its
+elements (a MutationObserver on <body>), and on every one it re-measures
+where each `#` link's target is (offsetTop up the tree: a forced layout).
+With no `#` links on a page this costs nothing, so the page was fine; the
+header brought `#services`, `#work`, `#about`, and from then on every text
+the widgets update (a counter, a clock, a scene's timer, a position)
+forced a full layout. Measured on a long page: Elementor's getScrollPosition
+was the largest script while scrolling (195ms of 3s); now it no longer shows.
+
+**The fixes.**
+- Changing text: every widget writes it into the existing text node (its
+  `data`), which looks the same but is not a change Elementor reacts to
+  (48 places), and the two counters that rebuilt their markup each step now
+  rewrite text in place.
+- Nothing animates where it cannot be seen: a shared watcher (js/loops.js)
+  pauses every animation inside a widget that is off screen. A running
+  animation, even an invisible one, costs a restyle every frame.
+- Decorative loops rest between beats instead of looping forever: the
+  status pill's pulse, the photo stack's hint, the brand's light play once,
+  then nothing runs until the next beat. The chat's typing dots only move
+  while the typing bubble shows (they ran on, invisible). The stack hint's
+  ring is drawn with transform, not box-shadow (no repaint).
+- The header reads the page height once (and on resize), not on every
+  scroll frame; the floats' "hold still while scrolling" class is on the
+  floats, not on <html> (which restyled the whole page twice per scroll).
+
+**Measured** (a long page with the header and every widget, twice):
+normal CPU, slowest 5% of frames 33ms → 16.8ms (steady 60fps), layout time
+halved; 4× slower CPU, late frames 75–81% → about 70% (a much heavier page
+than a real one).
+
 ## 0.37.0 — Smooth scrolling, header defaults, the lens catches the light
 **Scrolling no longer stutters.** Measured frame by frame (CPU slowed 4×):
 9–13% of frames were late, the slowest 5% at 33ms; now 1–5%, the slowest 5%

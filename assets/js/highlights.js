@@ -17,6 +17,19 @@
  */
 ( function () {
 	'use strict';
+	// text written into the existing text node: Elementor re-measures the page (a forced layout)
+	// on every childList change anywhere, and replacing a text node is one; changing its data is not
+	const szwText = ( el, s ) => {
+		s = String( s );
+		const t = el.firstChild;
+		if ( t && t.nodeType === 3 && ! t.nextSibling ) {
+			if ( t.data !== s ) {
+				t.data = s;
+			}
+		} else if ( el.textContent !== s ) {
+			el.textContent = s;
+		}
+	};
 
 	const instances = new WeakMap();
 	const media = ( q ) => window.matchMedia && window.matchMedia( q ).matches;
@@ -201,7 +214,7 @@
 			}
 			const old = this.roll.lastElementChild, nu = document.createElement( 'span' );
 			nu.className = 'sz-hl__i';
-			nu.textContent = String( j + 1 );
+			szwText( nu, String( j + 1 ) );
 			this.roll.appendChild( nu );
 			if ( this.reduce || typeof nu.animate !== 'function' ) {
 				old.remove();

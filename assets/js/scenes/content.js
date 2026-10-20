@@ -26,6 +26,19 @@
  */
 ( function () {
 	'use strict';
+	// text written into the existing text node: Elementor re-measures the page (a forced layout)
+	// on every childList change anywhere, and replacing a text node is one; changing its data is not
+	const szwText = ( el, s ) => {
+		s = String( s );
+		const t = el.firstChild;
+		if ( t && t.nodeType === 3 && ! t.nextSibling ) {
+			if ( t.data !== s ) {
+				t.data = s;
+			}
+		} else if ( el.textContent !== s ) {
+			el.textContent = s;
+		}
+	};
 
 	const DAYMS = 864e5;
 	const H0 = 6;
@@ -189,7 +202,7 @@
 			e.classList.toggle( 'is-ready', 'ready' === i.status );
 			e.classList.toggle( 'is-live', 'live' === i.status );
 			e.style.setProperty( '--p', 'prod' === i.status ? i.p.toFixed( 3 ) : 1 );
-			e.lastChild.textContent = fmtH( i.h );
+			szwText( e.lastChild, fmtH( i.h ) );
 		}
 		function ring( c, n, quiet ) {
 			const r = document.createElement( 'i' );
@@ -205,7 +218,7 @@
 			const c = document.createElement( 'div' );
 			c.className = 'szs-cp__day';
 			c.innerHTML = '<b></b>';
-			c.firstChild.textContent = DAYS[ wd( D ) ];
+			szwText( c.firstChild, DAYS[ wd( D ) ] );
 			c.dataset.unplanned = L.content_unplanned;
 			c.style.left = D * STEP + 'px';
 			c.style.width = COL + 'px';
@@ -261,7 +274,7 @@
 			cols.forEach( ( c, D ) => {
 				c.classList.toggle( 'is-today', D === today );
 				c.classList.toggle( 'is-past', live && D < today );
-				c.firstChild.textContent = live && D === today ? L.content_today : DAYS[ wd( D ) ];
+				szwText( c.firstChild, live && D === today ? L.content_today : DAYS[ wd( D ) ] );
 			} );
 		}
 		function roll( ms ) {
@@ -413,7 +426,7 @@
 				const old = wno.lastElementChild;
 				const nu = document.createElement( 'span' );
 				nu.className = 'b-in';
-				nu.textContent = fill( L.content_week_label, { n: weekNo( weekOf( today ) ) } );
+				szwText( nu, fill( L.content_week_label, { n: weekNo( weekOf( today ) ) } ) );
 				wno.appendChild( nu );
 				void nu.offsetWidth;
 				nu.classList.remove( 'b-in' );
@@ -436,7 +449,7 @@
 			const dh = ( rate * dt ) / 1000;
 			hour = Math.min( 24, hour + dh );
 			if ( clock ) {
-				clock.textContent = DAYS[ wd( today ) ] + ' ' + fmtH( Math.floor( hour * 4 ) / 4 );
+				szwText( clock, DAYS[ wd( today ) ] + ' ' + fmtH( Math.floor( hour * 4 ) / 4 ) );
 			}
 			produce( dh );
 			for ( const i of items ) {
@@ -477,7 +490,7 @@
 		roll( 0 );
 		setToday( false );
 		if ( cfg.live && wno && wno.firstElementChild ) {
-			wno.firstElementChild.textContent = fill( L.content_week_label, { n: weekNo( 0 ) } );
+			szwText( wno.firstElementChild, fill( L.content_week_label, { n: weekNo( 0 ) } ) );
 		}
 
 		return {

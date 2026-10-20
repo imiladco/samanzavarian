@@ -80,8 +80,10 @@ final class Assets {
 			wp_register_style( $handle, self::url( $file ), [ self::BASE ], self::version( 'css/' . $file ) );
 		}
 
+		// every widget script brings the shared loop keeper (js/loops.js)
+		wp_register_script( 'sz-loops', SZW_URL . 'assets/js/loops.js', [], self::version( 'js/loops.js' ), [ 'in_footer' => true, 'strategy' => 'defer' ] );
 		foreach ( self::WIDGET_SCRIPTS as $handle => $file ) {
-			wp_register_script( $handle, SZW_URL . 'assets/js/' . $file, [], self::version( 'js/' . $file ), [ 'in_footer' => true, 'strategy' => 'defer' ] );
+			wp_register_script( $handle, SZW_URL . 'assets/js/' . $file, [ 'sz-loops' ], self::version( 'js/' . $file ), [ 'in_footer' => true, 'strategy' => 'defer' ] );
 		}
 
 		// One script and one stylesheet per scene, on top of the panel's; a

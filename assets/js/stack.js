@@ -23,6 +23,19 @@
  */
 ( function () {
 	'use strict';
+	// text written into the existing text node: Elementor re-measures the page (a forced layout)
+	// on every childList change anywhere, and replacing a text node is one; changing its data is not
+	const szwText = ( el, s ) => {
+		s = String( s );
+		const t = el.firstChild;
+		if ( t && t.nodeType === 3 && ! t.nextSibling ) {
+			if ( t.data !== s ) {
+				t.data = s;
+			}
+		} else if ( el.textContent !== s ) {
+			el.textContent = s;
+		}
+	};
 
 	window.szwTrack = window.szwTrack || function ( event, params ) {
 		try {
@@ -337,7 +350,7 @@
 			}
 			this.root.classList.add( 'is-taught' );
 			if ( this.live ) {
-				this.live.textContent = this.meta[ card ].title + ' ' + this.labels.front;
+				szwText( this.live, this.meta[ card ].title + ' ' + this.labels.front );
 			}
 			if ( from === 'key' ) {
 				this.cards[ card ].focus( { preventScroll: true } );
