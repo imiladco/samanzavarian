@@ -4,6 +4,18 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.41.1 — The header bar fits narrow phones
+With "Let's chat" on the bar, the bar's items did not shrink, so on narrow
+phones they ran past the right edge of the screen.
+- The items may now shrink. The menu button and "Let's chat" stay whole, and
+  the name gives way first.
+- At 420px and below, "Let's chat" goes compact.
+- At 350px and below, the name is set a little smaller, so it shows in full
+  instead of being cut.
+
+Checked at 390, 360, 340, 320 and 300px wide, at the top of the page and
+after scrolling: nothing runs past the screen.
+
 ## 0.41.0 — Wordmark: the footer's name, fitted to the width
 **Wordmark** (the design's `.word`).
 - The name always fills the width of its box exactly. Its width is measured
