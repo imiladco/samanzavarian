@@ -321,7 +321,7 @@ final class Post_Edit extends Scene {
 		for ( $k = (int) floor( ( $view_t - 3 ) * 2 ); $k / 2 * self::PPS <= $right; $k++ ) {
 			$t      = $k / 2;
 			$whole  = 0 === $k % 2;
-			$label  = $whole && 0 === $k % 4 ? '<b>' . sprintf( '%02d:%02d', intdiv( (int) $t, 60 ) % 60, (int) $t % 60 ) . '</b>' : '';
+			$label  = $whole && 0 === $k % 4 ? '<b>' . sprintf( '%02d:%02d', intdiv( (int) $t, 60 ) % 60, (int) $t % 60 ) . '</b>' : '<b hidden> </b>';
 			$ticks .= '<i class="szs-pe__tick' . ( $whole ? ' is-s' : '' ) . '" style="translate:' . round( $t * self::PPS, 1 ) . 'px 0">' . $label . '</i>';
 		}
 		$pattern = [ [ 118, 64, 150, 96, 180, 72, 140 ], [ 70, 160, 88, 130, 60, 140, 110 ], [ 190, 130, 220, 160, 140 ] ];

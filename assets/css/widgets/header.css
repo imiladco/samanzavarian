@@ -139,3 +139,12 @@
 @keyframes szb-breathe{0%,35%{transform:scale(1)}55%{transform:scale(.86)}100%{transform:scale(1)}}
 .sz-brand.is-off .sz-brand__app::after,.sz-brand.is-off .sz-brand__app svg,.sz-brand.is-off .sz-brand__app svg circle{animation-play-state:paused}
 @media (prefers-reduced-motion:reduce){.sz-brand.has-idle .sz-brand__app::after,.sz-brand.has-idle .sz-brand__app svg,.sz-brand.has-idle .sz-brand__app svg circle{animation:none !important}}
+
+/* "Let's chat" on the bar: the design's dark pill, the last thing on the right */
+.sz-nav .sz-nav__go,.sz-nav .sz-nav__go:is(:hover,:focus,:visited){display:inline-flex;align-items:center;justify-content:center;flex:none;height:40px;margin-left:4px;padding:0 16px;border-radius:99px;
+  background:var(--sz-navy);color:#fff;font-family:var(--sz-font);font-size:14px;font-weight:600;line-height:1;text-decoration:none;white-space:nowrap;
+  box-shadow:0 10px 24px -10px rgba(13,27,42,.6);transition:transform .35s var(--sz-spring),background-color .2s,box-shadow .3s}
+@media (hover:hover){.sz-nav .sz-nav__go:hover{background:var(--sz-navy-2);transform:translateY(-1px);box-shadow:0 14px 28px -10px rgba(13,27,42,.6)}}
+.sz-nav .sz-nav__go:active{transform:scale(.96)}
+.sz-nav .sz-nav__go:focus-visible{outline:2.5px solid rgba(255,107,44,.85);outline-offset:3px}
+@media (max-width:767px){.sz-nav.is-phone-menu .sz-nav__menu{margin-right:2px}}

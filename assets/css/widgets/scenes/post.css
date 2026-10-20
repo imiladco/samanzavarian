@@ -72,3 +72,7 @@
   .szs--post .szs-pe__tl{left:28px;top:262px}
   .szs--post .szs-pe__hint{display:none}
 }
+/* the scene's pool (js/scenes/post.js): a resting element is out of the layout; a reused one
+   is placed without its slide for its first frame */
+.szs--post [hidden]{display:none !important}
+.szs--post .is-fresh{transition:none !important}

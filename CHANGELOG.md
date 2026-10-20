@@ -4,6 +4,22 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.39.0 — "Let's chat" on the bar; the Post-production scene at rest
+**Nav Menu: "Let's chat" built in.** The bar now ends in the design's dark
+pill (40px, `#contact`), on desktop and on phones, with no separate Button
+widget needed. It is on by default ("Content → "Let's chat" button on the
+bar"), and its text and link are shared with the optional button at the foot
+of the phone menu, which stays off. There are two new Style sections (box and
+text), with the design's values filled in.
+
+**Post-production scene.** Clips, ruler ticks, the razor and the snap marks
+used to be created and removed all the time while the timeline rolled, about
+90 page changes every 20 s. Each one woke Elementor's page re-measure. They
+now come from a pool: an element that leaves the view is hidden and reused,
+and ruler labels change only their text. The server renders every tick with
+its label element, so nothing is added after a short warm-up: 0 removals, and
+about 3 one-time additions.
+
 ## 0.38.0 — The lag since the header: found and fixed
 **The cause.** Elementor watches the whole page for any change to its
 elements (a MutationObserver on <body>), and on every one it re-measures

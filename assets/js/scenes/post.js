@@ -192,20 +192,44 @@
 		let maxT = T;
 		let cam = { mode: 'page' };
 
+		// A pool: an element that leaves the view is hidden and handed to the next clip, tick
+		// or mark. Nothing is added to the page or taken out while the scene plays, so
+		// Elementor (which re-measures the page on every such change) is never woken.
+		const pools = new Map();
+		const take = ( parent, cls ) => {
+			const pool = pools.get( parent ) || [];
+			let e = pool.pop();
+			if ( e ) {
+				// placed where it belongs at once: no slide in from where it last was
+				e.className = cls + ' is-fresh';
+				e.removeAttribute( 'style' );
+				e.hidden = false;
+				requestAnimationFrame( () => requestAnimationFrame( () => e.classList.remove( 'is-fresh' ) ) );
+			} else {
+				e = document.createElement( 'i' );
+				e.className = cls;
+				parent.appendChild( e );
+			}
+			pools.set( parent, pool );
+			return e;
+		};
+		const drop = ( parent, e ) => {
+			e.hidden = true;
+			( pools.get( parent ) || pools.set( parent, [] ).get( parent ) ).push( e );
+		};
+
 		// Placed with `translate`, not `left`: edits move clips without moving layout.
 		const place = ( c ) => {
 			c.e.style.translate = c.x + 'px 0';
 			c.e.style.width = c.w + 'px';
 		};
 		function addClip( L, x, w, extra, like ) {
-			const e = document.createElement( 'i' );
-			e.className = 'szs-pe__clip' + ( L.audio ? ' is-audio' : '' ) + ( extra ? ' ' + extra : '' );
+			const e = take( L.el, 'szs-pe__clip' + ( L.audio ? ' is-audio' : '' ) + ( extra ? ' ' + extra : '' ) );
 			if ( ! L.audio ) {
 				e.style.backgroundColor = like ? like.e.style.backgroundColor : pick( L.colors );
 			}
 			const c = { x, w, e };
 			place( c );
-			L.el.appendChild( e );
 			L.clips.push( c );
 			L.clips.sort( ( p, q ) => p.x - q.x );
 			return c;
@@ -222,25 +246,30 @@
 					addClip( L, L.cursor, w );
 					L.cursor += w + 5;
 				}
-				L.clips = L.clips.filter( ( c ) => ( c.x + c.w < left ? ( c.e.remove(), false ) : true ) );
+				L.clips = L.clips.filter( ( c ) => ( c.x + c.w < left ? ( drop( L.el, c.e ), false ) : true ) );
 			}
 			while ( tickAt / 2 < ( right + 200 ) / PPS ) {
 				const t = tickAt / 2;
-				const e = document.createElement( 'i' );
 				const whole = tickAt % 2 === 0;
-				e.className = 'szs-pe__tick' + ( whole ? ' is-s' : '' );
-				if ( whole && tickAt % 4 === 0 ) {
-					const b = document.createElement( 'b' );
-					b.textContent = `${ pad( Math.floor( t / 60 ) % 60 ) }:${ pad( t % 60 ) }`;
+				const e = take( lanesEl, 'szs-pe__tick' + ( whole ? ' is-s' : '' ) );
+				// every tick keeps its label element; only the text changes (empty when unlabelled)
+				let b = e.firstChild;
+				if ( ! b ) {
+					b = document.createElement( 'b' );
 					e.appendChild( b );
 				}
+				if ( ! b.firstChild ) {
+					b.appendChild( document.createTextNode( '' ) ); // the server's empty label
+				}
+				const label = whole && tickAt % 4 === 0 ? `${ pad( Math.floor( t / 60 ) % 60 ) }:${ pad( t % 60 ) }` : '';
+				b.firstChild.data = label;
+				b.hidden = ! label;
 				e.style.translate = t * PPS + 'px 0';
-				lanesEl.appendChild( e );
 				ticks.push( { x: t * PPS, e } );
 				tickAt++;
 			}
 			while ( ticks.length && ticks[ 0 ].x < left - 60 ) {
-				ticks.shift().e.remove();
+				drop( lanesEl, ticks.shift().e );
 			}
 		}
 
@@ -422,16 +451,14 @@
 					return;
 				}
 				const x = T * PPS;
-				const r = document.createElement( 'i' );
-				r.className = 'szs-pe__razor';
+				const r = take( lane.el, 'szs-pe__razor' );
 				r.style.translate = x + 'px 0';
-				lane.el.appendChild( r );
 				void r.offsetWidth;
 				r.classList.add( 'is-on' );
 				await wait( 300 );
 				split( lane, c, x );
 				r.style.opacity = '0';
-				setTimeout( () => r.remove(), 300 );
+				setTimeout( () => drop( lane.el, r ), 300 );
 				await edited();
 				await review( 1.4 );
 			},
@@ -451,10 +478,8 @@
 				const d = ri( 20, 46 );
 				c.w -= d;
 				place( c );
-				const snap = document.createElement( 'i' );
-				snap.className = 'szs-pe__snap';
+				const snap = take( lane.el, 'szs-pe__snap' );
 				snap.style.translate = c.x + c.w + 2.5 + 'px 0';
-				lane.el.appendChild( snap );
 				await seek( ( c.x + c.w ) / PPS, 480 ); // the head rides the edit point
 				lane.clips.filter( ( o ) => o.x > c.x ).forEach( ( o ) => {
 					o.x -= d;
@@ -464,7 +489,7 @@
 				snap.classList.add( 'is-on' );
 				await wait( 380 );
 				snap.classList.remove( 'is-on' );
-				setTimeout( () => snap.remove(), 250 );
+				setTimeout( () => drop( lane.el, snap ), 250 );
 				c.e.classList.remove( 'is-sel' );
 				await edited();
 				await review( 1.6 );

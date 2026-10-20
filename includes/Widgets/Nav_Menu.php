@@ -78,9 +78,10 @@ class Nav_Menu extends Widget_Base {
 			]
 		);
 		$this->add_control( 'menu_label', [ 'label' => esc_html__( 'Menu button (phones)', 'samanzavarian-widgets' ), 'type' => Controls_Manager::TEXT, 'default' => 'Menu' ] );
-		$this->add_control( 'cta', [ 'label' => esc_html__( 'Button at the foot of the phone menu', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SWITCHER, 'default' => '', 'return_value' => 'yes', 'separator' => 'before' ] );
-		$this->add_control( 'cta_text', [ 'label' => esc_html__( 'Button text', 'samanzavarian-widgets' ), 'type' => Controls_Manager::TEXT, 'default' => "Let's chat", 'condition' => [ 'cta' => 'yes' ] ] );
-		$this->add_control( 'cta_link', [ 'label' => esc_html__( 'Button link', 'samanzavarian-widgets' ), 'type' => Controls_Manager::URL, 'default' => [ 'url' => '#contact' ], 'dynamic' => [ 'active' => true ], 'condition' => [ 'cta' => 'yes' ] ] );
+		$this->add_control( 'bar_cta', [ 'label' => esc_html__( '"Let\'s chat" button on the bar', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'separator' => 'before', 'description' => esc_html__( 'After the links, on the right of the bar (on phones too). No separate Button widget needed.', 'samanzavarian-widgets' ) ] );
+		$this->add_control( 'cta', [ 'label' => esc_html__( 'Also at the foot of the phone menu', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SWITCHER, 'default' => '', 'return_value' => 'yes' ] );
+		$this->add_control( 'cta_text', [ 'label' => esc_html__( 'Button text', 'samanzavarian-widgets' ), 'type' => Controls_Manager::TEXT, 'default' => "Let's chat" ] );
+		$this->add_control( 'cta_link', [ 'label' => esc_html__( 'Button link', 'samanzavarian-widgets' ), 'type' => Controls_Manager::URL, 'default' => [ 'url' => '#contact' ], 'dynamic' => [ 'active' => true ] ] );
 		$this->add_control( 'phone', [ 'label' => esc_html__( 'On phones', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SELECT, 'default' => 'menu', 'options' => [ 'menu' => esc_html__( 'A menu button', 'samanzavarian-widgets' ), 'hide' => esc_html__( 'Hidden (as in the design)', 'samanzavarian-widgets' ), 'show' => esc_html__( 'Shown as on a computer', 'samanzavarian-widgets' ) ] ] );
 		$this->end_controls_section();
 
@@ -94,6 +95,8 @@ class Nav_Menu extends Widget_Base {
 		Style_Controls::text( $this, 'st_link', esc_html__( 'Links', 'samanzavarian-widgets' ), '{{WRAPPER}} .sz-nav__a', [ 'no_margin' => true, 'hover' => '{{WRAPPER}} .sz-nav__a:hover' ] );
 		Style_Controls::box( $this, 'st_pill', esc_html__( 'Pill under the pointer', 'samanzavarian-widgets' ), '{{WRAPPER}} .sz-nav__glide' );
 		Style_Controls::box( $this, 'st_here', esc_html__( 'Link of the section on screen', 'samanzavarian-widgets' ), '{{WRAPPER}} .sz-nav__a.is-here', [ 'extra' => [ 'c' => [ 'label' => esc_html__( 'Text colour', 'samanzavarian-widgets' ), 'type' => Controls_Manager::COLOR, 'selectors' => [ '{{WRAPPER}} .sz-nav__a.is-here' => 'color: {{VALUE}};' ] ] ] ] );
+		Style_Controls::box( $this, 'st_go', esc_html__( '"Let\'s chat" on the bar', 'samanzavarian-widgets' ), '{{WRAPPER}} .sz-nav .sz-nav__go', [ 'hover' => '{{WRAPPER}} .sz-nav .sz-nav__go:hover', 'condition' => [ 'bar_cta' => 'yes' ] ] );
+		Style_Controls::text( $this, 'st_go_t', esc_html__( '"Let\'s chat" on the bar: text', 'samanzavarian-widgets' ), '{{WRAPPER}} .sz-nav .sz-nav__go', [ 'no_margin' => true, 'hover' => '{{WRAPPER}} .sz-nav .sz-nav__go:hover', 'condition' => [ 'bar_cta' => 'yes' ] ] );
 		Style_Controls::box( $this, 'st_cta', esc_html__( 'Phone menu button', 'samanzavarian-widgets' ), '{{WRAPPER}} .sz-nav .sz-nav__cta', [ 'condition' => [ 'cta' => 'yes' ], 'extra' => [ 'c' => [ 'label' => esc_html__( 'Text colour', 'samanzavarian-widgets' ), 'type' => Controls_Manager::COLOR, 'selectors' => [ '{{WRAPPER}} .sz-nav .sz-nav__cta' => 'color: {{VALUE}};' ] ] ] ] );
 		Style_Controls::box( $this, 'st_sheet', esc_html__( 'Phone menu sheet', 'samanzavarian-widgets' ), '{{WRAPPER}} .sz-nav__sheet' );
 		Style_Controls::box( $this, 'st_bar', esc_html__( 'Glass bar', 'samanzavarian-widgets' ), '.sz-navbar:has({{WRAPPER}})', [ 'condition' => [ 'glass' => 'yes' ] ] );
@@ -127,6 +130,14 @@ class Nav_Menu extends Widget_Base {
 			}
 			echo '<a ' . $this->get_render_attribute_string( 'cta' ) . '><span class="sz-nav__cta-app sz-app sz-app--orange" aria-hidden="true">' . \Samanzavarian_Widgets\Icon_Library::svg( 'chat' ) . '</span><span>' . esc_html( $s['cta_text'] ) . '</span></a>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Elementor escapes; static svg
 		}
-		echo '</div></nav>';
+		echo '</div>';
+		if ( 'yes' === ( $s['bar_cta'] ?? 'yes' ) && '' !== trim( (string) ( $s['cta_text'] ?? '' ) ) ) {
+			$this->add_render_attribute( 'go', 'class', 'sz-nav__go' );
+			if ( ! empty( $s['cta_link']['url'] ) ) {
+				$this->add_link_attributes( 'go', $s['cta_link'] );
+			}
+			echo '<a ' . $this->get_render_attribute_string( 'go' ) . '>' . esc_html( $s['cta_text'] ) . '</a>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Elementor escapes
+		}
+		echo '</nav>';
 	}
 }

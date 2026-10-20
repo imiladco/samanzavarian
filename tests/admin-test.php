@@ -114,6 +114,7 @@ $h = szw_render( [], 'sz-brand' );
 szw_ok( false !== strpos( $h, 'class="sz-brand' ) && false !== strpos( $h, '<b>Zavarian</b>' ) && false !== strpos( $h, 'href="#top"' ) && false !== strpos( $h, 'aria-label="Saman Zavarian, back to top"' ), 'Brand Mark: the name, the orange word, back to top, a name for screen readers' );
 $n = szw_render( [], 'sz-nav' );
 szw_ok( 3 === substr_count( $n, 'class="sz-nav__a"' ) && false !== strpos( $n, 'aria-controls="sz-nav-' ) && false === strpos( $n, 'data-hide' ) && false !== strpos( $n, 'sz-nav-glass-yes' ) && false === strpos( $n, 'sz-nav__cta' ), 'Nav Menu: three links, a phone menu button tied to its sheet, the glass bar that stays put, no button in the sheet' );
+szw_ok( false !== strpos( $n, 'class="sz-nav__go" href="#contact">Let&#039;s chat</a></nav>' ), 'Nav Menu: "Let\'s chat" on the bar by default, last in it' );
 szw_ok( false === strpos( szw_render( [ 'phone' => 'hide' ], 'sz-nav' ), 'sz-nav__menu' ), 'Nav Menu: no menu button when phones hide the links' );
 $n2 = szw_render( [ 'cta' => 'yes', 'hide' => 'yes' ], 'sz-nav' );
 szw_ok( false !== strpos( $n2, 'class="sz-nav__cta" href="#contact"' ) && false !== strpos( $n2, 'data-hide' ), 'Nav Menu: the sheet\'s button and stepping aside, when switched on' );
