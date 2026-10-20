@@ -108,5 +108,22 @@ class Hero_Title extends Widget_Base {
 			echo $word( trim( (string) $s['second'] ), 'sz-htitle__w is-o' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped above
 		}
 		printf( '</%s>', esc_attr( $tag ) );
+		if ( 'yes' === ( $s['fit_m'] ?? 'yes' ) ) {
+			self::render_fit_probe();
+		}
+	}
+
+	/**
+	 * Phones: the name fills its box from the first paint. This runs while the page is still
+	 * being read, right after the title, and sets the size that makes the name exactly as wide
+	 * as the room it has (hero.js does it again only on a real resize). While the site's font
+	 * is still loading the title waits unseen (two and a half seconds at most), so the swap from the fallback
+	 * font is not seen either. Delayed by an optimiser, currentScript is null: the try swallows
+	 * it and hero.js measures instead.
+	 */
+	private static function render_fit_probe(): void {
+		?>
+		<script>(function(me){try{var fit=window.szwFitTitle||(window.szwFitTitle=function(t){if(!t||!window.matchMedia('(max-width:767px)').matches)return;t.style.fontSize='';var w=t.querySelectorAll(':scope>.sz-htitle__w'),l=1e9,r=-1e9,i,k;for(k=0;k<3;k++){l=1e9;r=-1e9;for(i=0;i<w.length;i++){l=Math.min(l,w[i].offsetLeft);r=Math.max(r,w[i].offsetLeft+w[i].offsetWidth)}var wd=t.closest('.elementor-widget')||t,p=wd.parentElement||t,cs=getComputedStyle(p),room=Math.max(t.clientWidth,p.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight));if(!(r>l)||!room||Math.abs(r-l-room)<=1)break;t.style.fontSize=(parseFloat(getComputedStyle(t).fontSize)*room/(r-l)*.995).toFixed(2)+'px'}});var t=me.previousElementSibling;fit(t);if(document.fonts&&document.fonts.status!=='loaded'&&window.matchMedia('(max-width:767px)').matches){t.classList.add('is-fitting');var go=function(){fit(t);t.classList.remove('is-fitting')};document.fonts.ready.then(go);setTimeout(go,2500)}}catch(e){}})(document.currentScript);</script>
+		<?php
 	}
 }

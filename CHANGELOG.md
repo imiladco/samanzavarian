@@ -4,6 +4,22 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.45.2 — Hero Title: the right size from the first paint (no jump)
+In 0.45.1 the title's fit on phones ran once the page had loaded, so the name
+showed at its CSS size first and changed a moment later.
+- A small script printed right after the title measures it while the page is
+  still being read, and sets the size that fills the room before the first
+  paint. The room is measured from the container around the widget, not from
+  the title's own box, which only wraps its words.
+- While the site's font is still loading, the title waits unseen (2.5s at
+  most), so the swap from the fallback font is not seen either.
+- hero.js measures again only when the fonts are in or when the width really
+  changes. A phone's address bar changes the height alone and never triggers
+  it.
+
+Measured at 390px and 340px: it fills the room to within 5px, and the title
+causes no layout shift (CLS 0), also with fonts delayed 1.5s.
+
 ## 0.45.1 — Hero Title fills a phone's width; Reach stays inside it
 **Hero Title**
 - New switch, "Fill the width on phones" (on). On a phone the name sits on

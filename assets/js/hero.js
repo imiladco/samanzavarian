@@ -185,36 +185,49 @@
 	 */
 	function fitTitle( t ) {
 		const phone = () => window.matchMedia( '(max-width: 767px)' ).matches;
+		const fills = () => phone() && t.dataset.fit === '1';
 		const run = () => {
+			// phones: the probe printed after the title did it before the first paint; a new
+			// measure is only needed once the fonts are in, or when the screen crosses into phone
+			if ( fills() ) {
+				if ( window.szwFitTitle ) {
+					window.szwFitTitle( t );
+				}
+				t.classList.remove( 'is-fitting' );
+				return;
+			}
 			t.style.fontSize = '';
 			const box = t.clientWidth;
 			if ( ! box ) {
 				return;
 			}
-			const oneLine = getComputedStyle( t ).flexWrap === 'nowrap';
-			const fill = oneLine && phone() && t.dataset.fit === '1';
 			const words = [ ...t.querySelectorAll( '.sz-htitle__w' ) ];
-			const parts = [ ...t.querySelectorAll( ':scope > .sz-htitle__w, :scope > .sz-htitle__app' ) ];
-			// one line: from the first part's left edge to the last one's right (scrollWidth never reads less than the box)
-			// layout boxes, not getBoundingClientRect: the entrance moves the words with transforms
-			const span = () => Math.max( ...parts.map( ( el ) => el.offsetLeft + el.offsetWidth ) ) - Math.min( ...parts.map( ( el ) => el.offsetLeft ) );
-			const need = () => ( oneLine ? ( parts.length ? span() : 0 ) : Math.max( 0, ...words.map( ( w ) => w.offsetWidth ) ) );
-			// a few rounds: the icon tile between the words does not scale with the type
-			for ( let k = 0; k < 5; k++ ) {
-				const n = need();
-				if ( ! n || ( fill ? Math.abs( n - box ) <= 1 : n <= box + 1 ) ) {
-					break;
-				}
-				t.style.fontSize = ( parseFloat( getComputedStyle( t ).fontSize ) * ( box / n ) * ( fill ? 0.995 : 0.98 ) ).toFixed( 2 ) + 'px';
+			const need = () => Math.max( 0, ...words.map( ( w ) => w.offsetWidth ) );
+			// elsewhere only smaller, when a word would run wider than the box (a few rounds:
+			// the icon tile does not scale with the type)
+			for ( let k = 0; k < 5 && need() > box + 1; k++ ) {
+				t.style.fontSize = ( parseFloat( getComputedStyle( t ).fontSize ) * ( box / need() ) * 0.98 ).toFixed( 2 ) + 'px';
 			}
 		};
-		let raf = 0;
+		let raf = 0, was = fills();
 		const queue = () => ( raf = raf || requestAnimationFrame( () => {
 			raf = 0;
 			run();
 		} ) );
-		run();
-		window.addEventListener( 'resize', queue, { passive: true } );
+		// the probe may have been delayed by an optimiser: then measure now
+		if ( ! fills() || ! t.style.fontSize ) {
+			run();
+		}
+		// only a real change of width (a turned phone, a resized window); a phone's address bar
+		// changes the height alone and must not re-measure mid-scroll
+		let lastW = window.innerWidth;
+		window.addEventListener( 'resize', () => {
+			if ( window.innerWidth !== lastW || fills() !== was ) {
+				lastW = window.innerWidth;
+				was = fills();
+				queue();
+			}
+		}, { passive: true } );
 		if ( document.fonts && document.fonts.ready ) {
 			document.fonts.ready.then( queue );
 		}

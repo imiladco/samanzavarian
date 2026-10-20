@@ -23,6 +23,9 @@
   .sz-htitle{flex-wrap:nowrap;gap:.22em;font-size:clamp(44px,14.2vw,60px)}
   .sz-htitle__app{display:none}
 }
+/* phones, "Fill the width on phones": the probe after the title sets its size before the first paint;
+   while the site's font is still loading it waits unseen */
+@media (max-width:767px){.sz-htitle.is-fitting{visibility:hidden}}
 
 /* ---------- Hero Lead ---------- */
 .sz-lead{max-width:30ch;margin:0 auto;font-size:clamp(18px,1.9vw,22px);line-height:1.5;letter-spacing:-.012em;color:var(--sz-t2);text-align:center;text-wrap:balance;animation:szh-up .8s .25s var(--sz-ease) backwards}
