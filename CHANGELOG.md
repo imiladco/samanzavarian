@@ -4,6 +4,30 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.44.0 — Scroll-driven, part 3: Experience on phones
+**Career Timeline** is scroll-driven on phones by default (Content →
+Scroll-driven). Scrolling is the playhead.
+- The section holds 80px under the header while the page's scroll plays the
+  career from the first role to now, the way Play does: equal scroll for
+  every role, whatever its length.
+- The playhead crosses each role and its flag reads the month as it travels.
+  The card follows the role under it, with its usual slide.
+- The timeline pans so the playhead stays in the middle. Scrolling up runs
+  it back exactly.
+- Tapping a clip or the arrows takes the page to that role's first frame.
+- Dragging the playhead leaves the page where it was let go, so the next
+  scroll carries on from there.
+- Play scrolls the page by itself at Play's pace, and any touch, wheel or key
+  takes over.
+- On a phone too short for the whole box (a stage taller than the screen) it
+  stays as it was. Phones have no settle: a finger's momentum is left alone.
+- Each frame only writes (the playhead's place, the pan, the month). All the
+  geometry is read when sizes change.
+
+Measured at 390×844: roles 1→6 going down and exactly 6→1 going up, the stage
+at exactly 80px, a tap on a clip lands on it, and Play advances and stops on
+a touch.
+
 ## 0.43.0 — Scroll-driven, part 2: What I do
 **Service Tabs** is scroll-driven on desktop by default (Content →
 Scroll-driven: devices, scroll for each step, distance from the top).

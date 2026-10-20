@@ -183,3 +183,6 @@
   .sz-cr .sz-cr__lane .sz-cr__clip,.sz-cr__clip::before,.sz-cr__clip::after,.sz-cr__knob,.sz-cr__flag{transition:none}
   .sz-cr.is-seen .sz-cr__flag i{animation:none}
 }
+
+/* scroll-driven: the scroll is the hand on the timeline, so the swipe hint has nothing to say */
+.sz-cr.is-pinned .sz-cr__swipe{visibility:hidden}

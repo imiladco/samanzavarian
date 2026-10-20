@@ -73,6 +73,98 @@
 			this.edges();
 			this.near();
 			this.watch();
+			this.bindPin();
+		}
+
+		/* ---------------- scroll-driven (Pin_Controls, js/pin.js) ---------------- */
+
+		/**
+		 * Scrolling is the playhead. The section holds still and the page's
+		 * scroll plays the career from the first role to now, as Play does:
+		 * equal scroll for every role, the playhead crossing it, the card
+		 * following the role under it, the narrow timeline panning along. Up
+		 * runs it back. Everything it needs is measured when sizes change; a
+		 * frame only writes (the playhead's place, the pan, the flag's month).
+		 */
+		bindPin() {
+			const wrap = this.root.parentElement && this.root.parentElement.closest( '.sz-pin' );
+			if ( ! wrap || ! window.szwPin || this.editor || ! this.head ) {
+				return;
+			}
+			const n = this.clips.length, step = +wrap.dataset.szPinStep || 45, edge = +wrap.dataset.szPinEdge || 10;
+			const unit = ( len ) => len / ( n * step + 2 * edge );
+			this.pinAt = ( raw ) => ( edge + raw * step ) * unit( this.pin.length );
+			const geo = () => {
+				const s = this.scroller;
+				this.geo = { aL: this.area.offsetLeft, aW: this.area.offsetWidth, nowX: this.now ? this.now.offsetLeft : -1e9, hw: this.heads ? this.heads.offsetWidth : 0, sW: s.clientWidth, max: s.scrollWidth - s.clientWidth };
+			};
+			this.pinRaw = 0;
+			this.pin = window.szwPin( wrap, {
+				update: ( px, len ) => {
+					if ( ! this.geo ) {
+						geo();
+					}
+					const raw = Math.max( 0, Math.min( n, ( px / unit( len ) - edge ) / step ) );
+					this.pinRaw = raw;
+					const k = Math.min( n - 1, Math.floor( raw ) ), p = raw - k;
+					const s = this.span[ k ][ 0 ], e = k < n - 1 ? Math.max( s + 0.05, this.span[ k + 1 ][ 0 ] ) : Math.max( s + 0.05, this.tNow );
+					const t = Math.min( this.tNow, s + ( e - s ) * p );
+					if ( k !== this.cur ) {
+						this.pick( k, { auto: true, keepHead: true, keepView: true } );
+					}
+					// the playhead: its place, its month while it travels, the year at rest on a role
+					const x = ( ( t - this.t0 ) / ( this.t1 - this.t0 ) ) * this.geo.aW;
+					this.head.style.left = this.pct( t );
+					this.head.setAttribute( 'aria-valuenow', t.toFixed( 2 ) );
+					szwText( this.knob, p > 0.02 && raw < n ? this.month( t ) : String( Math.floor( t ) ) );
+					this.root.classList.toggle( 'is-near', Math.abs( x - this.geo.nowX ) < 64 );
+					// the timeline pans so the playhead stays in the middle
+					this.panning = false;
+					if ( this.geo.max > 0 ) {
+						this.scroller.scrollLeft = Math.max( 0, Math.min( this.geo.max, this.geo.aL + x - ( this.geo.sW + this.geo.hw ) / 2 ) );
+					}
+				},
+				live: ( on ) => {
+					this.root.classList.toggle( 'is-pinned', on );
+					geo();
+				},
+			} );
+			this.on( window, 'resize', geo, { passive: true } );
+		}
+
+		/** Play, pinned: the page scrolls itself through the rest of the career, at Play's pace. */
+		playPinned() {
+			const len = this.pin.length, speed = this.pinAt( 1 ) - this.pinAt( 0 ); // px per role
+			if ( this.pin.at >= len - 2 ) {
+				this.pin.to( 0, false );
+			}
+			this.playing = true;
+			this.playBtn.setAttribute( 'aria-pressed', 'true' );
+			szwText( this.playBtn.lastChild, this.labels.pause );
+			// a hand anywhere takes over (not the Play button itself: its click toggles)
+			const hand = ( e ) => {
+				if ( ! ( e.target && e.target.closest && e.target.closest( '.sz-cr__play' ) ) ) {
+					this.stop( false );
+				}
+			};
+			const kinds = [ 'wheel', 'touchstart', 'pointerdown', 'keydown' ];
+			kinds.forEach( ( k ) => window.addEventListener( k, hand, { passive: true, capture: true } ) );
+			this.unhand = () => kinds.forEach( ( k ) => window.removeEventListener( k, hand, { capture: true } ) );
+			let last = performance.now(), y = this.pin.at;
+			const tick = ( now ) => {
+				if ( ! this.playing ) {
+					return;
+				}
+				y = Math.min( len, y + ( ( now - last ) / DWELL ) * speed );
+				last = now;
+				this.pin.to( y, false );
+				if ( y >= len ) {
+					this.stop( false );
+					return;
+				}
+				this.raf = requestAnimationFrame( tick );
+			};
+			this.raf = requestAnimationFrame( tick );
 		}
 
 		on( t, type, fn, opts ) {
@@ -264,6 +356,14 @@
 			if ( ! opts.auto ) {
 				this.stop( true );
 			}
+			// pinned: the page goes to the role's first frame, and the scroll does the rest
+			if ( this.pin && this.pin.live && ! opts.auto && i >= 0 && i < n ) {
+				this.pin.to( this.pinAt( i ), true );
+				if ( opts.focus ) {
+					this.clips[ i ].focus( { preventScroll: true } );
+				}
+				return;
+			}
 			if ( i < 0 || i >= n ) {
 				return;
 			}
@@ -352,8 +452,10 @@
 			this.root.classList.add( 'is-scrub' );
 			this.root.classList.remove( 'is-skim' );
 			this.head.getAnimations().forEach( ( a ) => a.cancel() );
+			let last = null;
 			const move = ( ev ) => {
 				const t = this.timeAt( ev.clientX );
+				last = t;
 				this.setHead( t, { label: this.month( t ) } );
 				const i = this.roleAt( t );
 				if ( i !== this.cur ) {
@@ -366,6 +468,13 @@
 				el.removeEventListener( 'pointercancel', up );
 				this.scrubbing = false;
 				this.root.classList.remove( 'is-scrub' );
+				// pinned: the page takes the place let go, so the next scroll goes on from there
+				if ( this.pin && this.pin.live && last !== null ) {
+					const k = this.cur, n = this.clips.length, s = this.span[ k ][ 0 ];
+					const e = k < n - 1 ? Math.max( s + 0.05, this.span[ k + 1 ][ 0 ] ) : Math.max( s + 0.05, this.tNow );
+					this.pin.to( this.pinAt( k + Math.max( 0, Math.min( 0.999, ( last - s ) / ( e - s ) ) ) ), false );
+					return;
+				}
 				// settle on the role's first frame
 				this.setHead( this.span[ this.cur ][ 0 ], { glide: true } );
 				this.center( this.cur );
@@ -380,6 +489,10 @@
 
 		play() {
 			if ( ! this.head || this.playing ) {
+				return;
+			}
+			if ( this.pin && this.pin.live ) {
+				this.playPinned();
 				return;
 			}
 			const last = this.clips.length - 1;
@@ -436,10 +549,14 @@
 			}
 			this.playing = false;
 			cancelAnimationFrame( this.raf );
+			if ( this.unhand ) {
+				this.unhand();
+				this.unhand = null;
+			}
 			this.playBtn.setAttribute( 'aria-pressed', 'false' );
 			szwText( this.playBtn.lastChild, this.labels.play );
 			this.pos && this.pos.setAttribute( 'aria-live', 'polite' );
-			if ( reset ) {
+			if ( reset && ! ( this.pin && this.pin.live ) ) {
 				this.setHead( this.span[ this.cur ][ 0 ], { label: null } );
 			}
 		}

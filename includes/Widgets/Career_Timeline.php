@@ -118,6 +118,7 @@ class Career_Timeline extends Widget_Base {
 		);
 
 		$this->end_controls_section();
+		Pin_Controls::controls( $this, [ 'mobile' ], 45, esc_html__( 'Scrolling is the playhead: the section holds still while the page\'s scroll plays the career from the first role to now, the card following the role under the playhead, and runs it back when scrolling up. Play scrolls the page by itself.', 'samanzavarian-widgets' ) );
 
 		$this->start_controls_section( 'section_timeline', [ 'label' => esc_html__( 'Timeline', 'samanzavarian-widgets' ) ] );
 		$this->add_control( 'title', [ 'label' => esc_html__( 'Title', 'samanzavarian-widgets' ), 'type' => Controls_Manager::TEXT, 'default' => esc_html__( 'Career timeline', 'samanzavarian-widgets' ), 'label_block' => true ] );
@@ -429,6 +430,9 @@ class Career_Timeline extends Widget_Base {
 				'style'       => '--szc-years:' . ( $t1 - $t0 ) . ';--szc-lanes:' . $lay['lanes'],
 			]
 		);
+		// the path: a step per role (the playhead crosses it) and a lead-in and lead-out
+		$step = (int) Pin_Controls::step( $s, 45 );
+		echo Pin_Controls::open( $s, 'calc(' . $n . ' * ' . $step . 'svh + 20svh)', 'timeline', [ 'step' => $step, 'edge' => 10, 'n' => $n ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside
 		?>
 		<div <?php $this->print_render_attribute_string( 'root' ); ?>>
 			<div class="sz-cr__bar">
@@ -524,5 +528,6 @@ class Career_Timeline extends Widget_Base {
 			<?php endif; ?>
 		</div>
 		<?php
+		echo Pin_Controls::close( $s ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static
 	}
 }

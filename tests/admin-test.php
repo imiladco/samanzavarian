@@ -140,6 +140,8 @@ szw_ok( false === strpos( szw_render( [ 'pin_on' => [] ], 'sz-work' ), 'sz-pin' 
 szw_ok( 'on-d on-m' === \Samanzavarian_Widgets\Widgets\Pin_Controls::classes( [ 'pin_on' => [ 'mobile', 'desktop' ] ] ) && '60svh' === \Samanzavarian_Widgets\Widgets\Pin_Controls::step( [], 60 ), 'Scroll-driven: device classes and step length' );
 $pt = szw_render( [ 'tabs' => [ [ 'tab_title' => 'A' ], [ 'tab_title' => 'B' ], [ 'tab_title' => 'C' ], [ 'tab_title' => 'D' ] ] ], 'sz-service-tabs' );
 szw_ok( false !== strpos( $pt, 'data-sz-pin="tabs" data-sz-pin-step="60" data-sz-pin-edge="15" data-sz-pin-n="4" style="--szp-top:80px;--szp-len:calc(3 * 60svh + 30svh)"' ), 'What I do: scroll-driven on desktop, its path set from the first paint (three steps and the lead-in and lead-out)' );
+$pc = szw_render( [], 'sz-career' );
+szw_ok( preg_match( '#<div class="sz-pin on-m" data-sz-pin="timeline" data-sz-pin-step="45" data-sz-pin-edge="10" data-sz-pin-n="(\d+)" style="--szp-top:80px;--szp-len:calc\(\1 \* 45svh \+ 20svh\)"><div class="sz-pin__stage">\s*<div class="sz-cr #', $pc ), 'Experience: scroll-driven on phones only, a step per role, its path set from the first paint' );
 $star = \Samanzavarian_Widgets\Inline_Icons::convert( '<p>since 2020.{star}</p>' );
 szw_ok( false !== strpos( $star, '2020.<span class="sz-star" aria-hidden="true"><svg' ) && false === strpos( $star, '{star}' ), 'The {star} code becomes the footer\'s star' );
 
