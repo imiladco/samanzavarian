@@ -194,3 +194,8 @@
   .sz-tabs .sz-tabs__chev,
   .sz-tabs .sz-tabs__stage > .sz-tabs__panel{transition:none;animation:none}
 }
+
+/* scroll-driven: a line down the open tab's edge fills toward the next tab (service-tabs.js) */
+.sz-tabs.is-pinned .sz-tabs__hl::after{content:"";position:absolute;left:3px;top:18px;bottom:18px;width:3px;border-radius:3px;background:var(--sz-orange);
+  transform-origin:top;transform:scaleY(var(--szt-fill,0));opacity:.9}
+.sz-tabs.is-pinned .sz-tabs__hl::before{content:"";position:absolute;left:3px;top:18px;bottom:18px;width:3px;border-radius:3px;background:rgba(13,27,42,.07)}

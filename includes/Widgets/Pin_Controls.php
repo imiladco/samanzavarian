@@ -61,15 +61,20 @@ final class Pin_Controls {
 	 *
 	 * @param string $len  CSS length of the scroll path ('' when js/pin.js sets it)
 	 * @param string $kind what drives it, for js ("tabs", "rail", "timeline")
+	 * @param array  $data data-sz-pin-* attributes for js (step sizes and the like)
 	 */
-	public static function open( array $s, string $len, string $kind ): string {
+	public static function open( array $s, string $len, string $kind, array $data = [] ): string {
 		$cls = self::classes( $s );
 		if ( '' === $cls ) {
 			return '';
 		}
 		$top   = max( 0, (int) ( $s['pin_top']['size'] ?? 80 ) );
 		$style = '--szp-top:' . $top . 'px' . ( '' !== $len ? ';--szp-len:' . $len : '' );
-		return '<div class="sz-pin ' . esc_attr( $cls ) . '" data-sz-pin="' . esc_attr( $kind ) . '" style="' . esc_attr( $style ) . '"><div class="sz-pin__stage">';
+		$more = '';
+		foreach ( $data as $k => $v ) {
+			$more .= ' data-sz-pin-' . esc_attr( $k ) . '="' . esc_attr( (string) $v ) . '"';
+		}
+		return '<div class="sz-pin ' . esc_attr( $cls ) . '" data-sz-pin="' . esc_attr( $kind ) . '"' . $more . ' style="' . esc_attr( $style ) . '"><div class="sz-pin__stage">';
 	}
 
 	public static function close( array $s ): string {

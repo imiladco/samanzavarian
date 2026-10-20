@@ -4,6 +4,29 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.43.0 — Scroll-driven, part 2: What I do
+**Service Tabs** is scroll-driven on desktop by default (Content →
+Scroll-driven: devices, scroll for each step, distance from the top).
+- The section holds 80px under the header while the page's scroll opens one
+  service after another, and back again when scrolling up. The path is a
+  lead-in, one step per tab (60% of the screen) and a lead-out. Its length
+  is set in CSS from the number of tabs, so the page has its final height
+  from the first paint.
+- Hysteresis: a tab changes half-way between two resting points plus a
+  margin of 12% of a step. A reader who stops right on the line never sees
+  two tabs flicker; in the test, ±40px around the boundary never switched.
+- A line down the open tab's edge fills toward the next tab.
+- Settle: once the scroll stops close to a tab's resting point, it rests on
+  it.
+- A tab chosen by click, by keys or by link (#post-production) takes the page
+  to that tab's resting point, so scroll and tab always agree. Tabs passed on
+  the way are not opened in between.
+- Each tab's scene starts when its tab opens, as before.
+
+Measured: the stage holds at exactly 80px, the order is 0→1→2→3 and exactly
+the reverse going up, and a click and a #link both land on the expected
+pixel. With 4× slower CPU it is no slower than without the pin.
+
 ## 0.42.0 — Scroll-driven, part 1: Selected work
 **The engine** (js/pin.js, Pin_Controls, shared by the coming parts).
 Scroll-linked, never scroll-jacked: the page's own scroll is only read.

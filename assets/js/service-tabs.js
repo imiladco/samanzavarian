@@ -79,6 +79,7 @@
 			this.onHash( null, true );
 			this.sync();
 			this.place();
+			this.bindPin();
 
 			// Fonts change tab sizes; place again once they are in, then let the
 			// highlight animate from here on.
@@ -90,6 +91,57 @@
 
 		tabs() {
 			return Array.from( this.list.querySelectorAll( TABS ) );
+		}
+
+		/* ---------------- scroll-driven (Pin_Controls, js/pin.js) ---------------- */
+
+		/**
+		 * The page's scroll opens one tab after another: a lead-in, a step per
+		 * tab, a lead-out. A tab changes half-way between two resting points,
+		 * plus a margin (hysteresis), so a reader who stops right on the line
+		 * never sees the two tabs flicker. The open tab's line fills toward the
+		 * next. A tab chosen any other way (click, keys, #link) takes the page
+		 * to its resting point, so scroll and tab always agree.
+		 */
+		bindPin() {
+			const wrap = this.root.parentElement && this.root.parentElement.closest( '.sz-pin' );
+			if ( ! wrap || ! window.szwPin || ( window.elementorFrontend && window.elementorFrontend.isEditMode && window.elementorFrontend.isEditMode() ) ) {
+				return;
+			}
+			const n = +wrap.dataset.szPinN || this.tabs().length, step = +wrap.dataset.szPinStep || 60, edge = +wrap.dataset.szPinEdge || 15;
+			const H = 0.12; // hysteresis, in steps
+			// lengths in px follow the path's measured length (it is in svh)
+			const unit = ( len ) => len / ( ( n - 1 ) * step + 2 * edge );
+			const at = ( i, len ) => ( edge + i * step ) * unit( len );
+			let cur = this.current();
+			this.pinMute = 0;
+			this.pin = window.szwPin( wrap, {
+				update: ( px, len ) => {
+					const u = unit( len ), raw = ( px / u - edge ) / step;
+					if ( raw >= cur + 0.5 + H || raw <= cur - 0.5 - H ) {
+						cur = Math.max( 0, Math.min( n - 1, Math.round( raw ) ) );
+					}
+					if ( performance.now() > this.pinMute && cur !== this.current() ) {
+						this.select( cur, { scroll: true } );
+					}
+					// the open tab's line: from where it opened to where the next one opens
+					const a = cur === 0 ? -edge / step : cur - 0.5, b = cur === n - 1 ? n - 1 + edge / step : cur + 0.5;
+					this.root.style.setProperty( '--szt-fill', Math.max( 0, Math.min( 1, ( raw - a ) / ( b - a ) ) ).toFixed( 3 ) );
+				},
+				stops: ( len ) => this.tabs().map( ( t, i ) => at( i, len ) ),
+				settle: true,
+				live: ( on ) => this.root.classList.toggle( 'is-pinned', on ),
+			} );
+			this.pinGo = ( i, smooth ) => {
+				cur = i;
+				this.pinMute = performance.now() + ( smooth ? 900 : 50 );
+				this.pin.to( at( i, this.pin.length ), smooth );
+			};
+			// opened from the address (#post-production): the page goes to that tab's place
+			if ( this.pin.live && location.hash && this.current() > 0 ) {
+				const i = this.current();
+				requestAnimationFrame( () => this.pinGo( i, false ) );
+			}
 		}
 
 		panels() {
@@ -117,6 +169,11 @@
 
 			index = Math.max( 0, Math.min( tabs.length - 1, index | 0 ) );
 			const changed = index !== this.current();
+
+			// pinned, and chosen by hand: the page goes to the tab's place
+			if ( this.pin && this.pin.live && ! opts.scroll && ( opts.user || opts.hash ) ) {
+				this.pinGo( index, ! opts.instant );
+			}
 
 			tabs.forEach( ( tab, i ) => {
 				const on = i === index;
@@ -251,9 +308,9 @@
 				return;
 			}
 
-			this.select( index, { instant: initial } );
+			this.select( index, { instant: initial, hash: ! initial } );
 
-			if ( ! initial ) {
+			if ( ! initial && ! ( this.pin && this.pin.live ) ) {
 				this.root.scrollIntoView( { block: 'start', behavior: matchMedia( '(prefers-reduced-motion: reduce)' ).matches ? 'auto' : 'smooth' } );
 			}
 		}

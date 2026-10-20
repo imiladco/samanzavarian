@@ -156,6 +156,7 @@ class Service_Tabs extends Widget_Nested_Base {
 		$this->content_tabs();
 		$this->content_note();
 		$this->content_settings();
+		Pin_Controls::controls( $this, [ 'desktop' ], 60, esc_html__( 'The section holds still while the page\'s scroll opens one service after another, and back again when scrolling up. A tab clicked takes the page to its place.', 'samanzavarian-widgets' ) );
 
 		$this->style_layout();
 		$this->style_list();
@@ -810,6 +811,9 @@ class Service_Tabs extends Widget_Nested_Base {
 	 * Render
 	 * ================================================================= */
 
+	/** Lead-in and lead-out of the scroll-driven path, in hundredths of the screen height. */
+	private const PIN_EDGE = 15;
+
 	protected function render(): void {
 		$settings = $this->get_settings_for_display();
 		$tabs     = isset( $settings['tabs'] ) && is_array( $settings['tabs'] ) ? array_values( $settings['tabs'] ) : [];
@@ -832,6 +836,9 @@ class Service_Tabs extends Widget_Nested_Base {
 		);
 
 		$this->panels = [];
+		// the path: a step per tab after the first, and a lead-in and lead-out (half a step's worth each)
+		$step = (int) Pin_Controls::step( $settings, 60 );
+		echo Pin_Controls::open( $settings, 'calc(' . ( count( $tabs ) - 1 ) . ' * ' . $step . 'svh + ' . self::PIN_EDGE * 2 . 'svh)', 'tabs', [ 'step' => $step, 'edge' => self::PIN_EDGE, 'n' => count( $tabs ) ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside
 		?>
 		<div <?php $this->print_render_attribute_string( 'root' ); ?>>
 			<div class="sz-tabs__nav">
@@ -862,6 +869,7 @@ class Service_Tabs extends Widget_Nested_Base {
 			</div>
 		</div>
 		<?php
+		echo Pin_Controls::close( $settings ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static
 	}
 
 	/**
