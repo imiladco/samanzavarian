@@ -4,6 +4,27 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.33.0 — Header: Brand Mark and Nav Menu
+Two widgets for the design's glass header; with a Button ("Let's chat")
+they make the bar.
+
+- **Brand Mark:** the app-icon tile and the name in the display face, the
+  second word orange. Links to #top (smoothly, even with no #top on the
+  page) or home; the tile turns a little under the pointer. Full Style tab.
+- **Nav Menu:** the links. Under the pointer one soft pill glides from link
+  to link; the link of the section on screen keeps its own pill (and
+  aria-current). On phones, where the design hid the links, a menu button
+  (just its icon on narrow phones) opens them in a sheet; Escape, a tap
+  outside or a link closes it. Or: hidden, or shown as on a computer.
+- **Glass bar** (on by default): the container holding the menu becomes the
+  design's frosted pill, floating 14px from the top, 640px wide (both
+  adjustable). A little more glass once the page scrolls; out of the way
+  while scrolling down, back on the first scroll up (and whenever it holds
+  keyboard focus). Drawn in CSS, so it is right before any script; in the
+  Elementor editor it stays in place to be edited.
+
+Put the Brand Mark, the Nav Menu and a Button in one row container.
+
 ## 0.32.0 — The Style tab speaks pixels
 Every size control of every widget now offers px first in its unit menu,
 and one with no value yet starts on px instead of em, % or vw (1,887

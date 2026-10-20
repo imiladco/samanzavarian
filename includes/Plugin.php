@@ -31,6 +31,8 @@ final class Plugin {
 		Widgets\Button::class,
 		Widgets\Hero_Floats::class,
 		Widgets\Dock::class,
+		Widgets\Brand_Mark::class,
+		Widgets\Nav_Menu::class,
 	];
 
 	public const CATEGORY = 'samanzavarian';

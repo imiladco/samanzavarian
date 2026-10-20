@@ -1,0 +1,78 @@
+/* =====================================================================
+   Header: Brand Mark and Nav Menu. Markup: Widgets/Brand_Mark.php,
+   Nav_Menu.php; behaviour: js/header.js.
+   ===================================================================== */
+
+/* ---------- Brand Mark ---------- */
+.sz-brand,.sz-brand:is(:hover,:focus,:visited){display:inline-flex;align-items:center;gap:8px;padding:0 12px 0 6px;font-family:var(--sz-font-mark);font-size:21px;font-weight:400;line-height:1;letter-spacing:.03em;color:var(--sz-navy);text-decoration:none;white-space:nowrap}
+.sz-brand b{font-weight:400;color:var(--sz-orange)}
+.sz-brand__app{width:30px;height:30px;border-radius:9px;font-size:16px;transition:transform .6s var(--sz-spring)}
+.sz-brand__app svg,.sz-brand__app i{width:1em;height:1em}
+@media (hover:hover){.sz-brand:hover .sz-brand__app{transform:rotate(-12deg) scale(1.06)}}
+.sz-brand:focus-visible{outline:2.5px solid rgba(255,107,44,.85);outline-offset:3px;border-radius:99px}
+
+/* ---------- Nav Menu ---------- */
+.sz-nav{position:relative;display:flex;align-items:center}
+.sz-nav__sheet{position:relative;display:flex;align-items:center;gap:2px;isolation:isolate}
+.sz-nav .sz-nav__a,.sz-nav .sz-nav__a:is(:hover,:focus,:visited){position:relative;padding:9px 12px;border-radius:99px;font-size:14px;font-weight:500;line-height:1.3;color:var(--sz-t2);text-decoration:none;white-space:nowrap;transition:color .2s}
+.sz-nav .sz-nav__a:hover{color:var(--sz-ink)}
+.sz-nav .sz-nav__a:focus-visible{outline:2.5px solid rgba(255,107,44,.85);outline-offset:0}
+/* the section on screen: its own soft pill */
+.sz-nav .sz-nav__a.is-here{color:var(--sz-ink);background:rgba(13,27,42,.06)}
+/* the pill that follows the pointer (js sets its place) */
+.sz-nav__glide{position:absolute;z-index:-1;top:0;left:0;height:100%;width:0;border-radius:99px;background:rgba(13,27,42,.05);opacity:0;pointer-events:none;transition:transform .45s var(--sz-spring),width .45s var(--sz-spring),opacity .2s}
+.sz-nav.is-gliding .sz-nav__glide{opacity:1}
+.sz-nav.is-instant .sz-nav__glide{transition:opacity .2s}
+
+/* phone: a menu button and a sheet */
+.sz-nav__menu{display:none}
+@media (max-width:767px){
+  .sz-nav.is-phone-hide{display:none}
+  .sz-nav.is-phone-menu .sz-nav__menu,.sz-nav.is-phone-menu .sz-nav__menu:is(:hover,:focus,:active){display:inline-flex;align-items:center;gap:8px;height:40px;min-height:0;margin:0;padding:0 14px 0 12px;border:0;border-radius:99px;background:rgba(13,27,42,.05);box-shadow:none;
+    font-family:var(--sz-font);font-size:14px;font-weight:600;line-height:1;color:var(--sz-ink);text-transform:none;letter-spacing:normal;cursor:pointer}
+  .sz-nav__burger{position:relative;width:16px;height:10px}
+  .sz-nav__burger i{position:absolute;left:0;right:0;height:2px;border-radius:2px;background:currentColor;transition:transform .35s var(--sz-spring),top .35s var(--sz-spring)}
+  .sz-nav__burger i:first-child{top:0}.sz-nav__burger i:last-child{top:8px}
+  .sz-nav.is-open .sz-nav__burger i:first-child{top:4px;transform:rotate(45deg)}
+  .sz-nav.is-open .sz-nav__burger i:last-child{top:4px;transform:rotate(-45deg)}
+  .sz-nav.is-phone-menu .sz-nav__sheet{position:absolute;top:calc(100% + 14px);right:-6px;z-index:50;display:grid;gap:2px;min-width:200px;padding:8px;border-radius:22px;
+    background:#fff;box-shadow:0 0 0 1px rgba(13,27,42,.05),0 20px 44px -16px rgba(13,27,42,.3);
+    opacity:0;visibility:hidden;transform:translateY(-6px) scale(.97);transform-origin:top right;transition:opacity .2s,transform .35s var(--sz-spring),visibility 0s .35s}
+  .sz-nav.is-phone-menu.is-open .sz-nav__sheet{opacity:1;visibility:visible;transform:none;transition:opacity .2s,transform .35s var(--sz-spring)}
+  .sz-nav.is-phone-menu .sz-nav__a,.sz-nav.is-phone-menu .sz-nav__a:is(:hover,:focus,:visited){padding:12px 14px;font-size:16px;border-radius:14px}
+  .sz-nav.is-phone-menu .sz-nav__glide{display:none}
+  .sz-nav.is-phone-menu.is-open .sz-nav__a{animation:szn-in .4s var(--sz-ease) backwards}
+  .sz-nav.is-phone-menu.is-open .sz-nav__a:nth-child(3){animation-delay:.04s}.sz-nav.is-phone-menu.is-open .sz-nav__a:nth-child(4){animation-delay:.08s}.sz-nav.is-phone-menu.is-open .sz-nav__a:nth-child(5){animation-delay:.12s}.sz-nav.is-phone-menu.is-open .sz-nav__a:nth-child(6){animation-delay:.16s}
+}
+/* a narrow phone: the menu button is its icon alone (its name stays for screen readers) */
+@media (max-width:420px){
+  .sz-nav.is-phone-menu .sz-nav__menu,.sz-nav.is-phone-menu .sz-nav__menu:is(:hover,:focus,:active){width:40px;padding:0;justify-content:center}
+  .sz-nav__menu > span:last-child{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+}
+@keyframes szn-in{from{opacity:0;transform:translateY(-4px)}}
+
+/* ---------- the glass bar: the container that holds a Nav Menu with "Glass bar" on ----------
+   Drawn with :has(), so it is right before any script; js only adds .sz-navbar (for the
+   Style tab's bar settings) and the hide-on-scroll classes. */
+:is(.e-con,.elementor-section):has(> .elementor-widget-sz-nav.sz-nav-glass-yes, > .e-con-inner > .elementor-widget-sz-nav.sz-nav-glass-yes, > .elementor-container > .elementor-column > .elementor-widget-wrap > .elementor-widget-sz-nav.sz-nav-glass-yes){
+  position:fixed !important;top:var(--sz-bar-top,14px);left:50%;z-index:40;width:min(var(--sz-bar-w,640px),calc(100% - 20px)) !important;max-width:none;margin:0 !important;
+  display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:2px;padding:6px !important;border-radius:99px;
+  background:rgba(255,255,255,.62);-webkit-backdrop-filter:saturate(180%) blur(24px);backdrop-filter:saturate(180%) blur(24px);
+  box-shadow:0 0 0 1px rgba(13,27,42,.05),0 8px 30px -10px rgba(13,27,42,.15);
+  transform:translateX(-50%);transition:transform .5s var(--sz-ease),background-color .3s,box-shadow .3s}
+:is(.e-con,.elementor-section):has(> .e-con-inner > .elementor-widget-sz-nav.sz-nav-glass-yes) > .e-con-inner{display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:2px;width:100%;max-width:none;padding:0}
+/* the brand takes the room on the left; the rest sits on the right */
+:is(.e-con,.e-con-inner):has(> .elementor-widget-sz-nav.sz-nav-glass-yes) > .elementor-widget-sz-brand{margin-right:auto}
+:is(.e-con,.e-con-inner):has(> .elementor-widget-sz-nav.sz-nav-glass-yes) > .elementor-widget{width:auto;flex:none}
+:is(.e-con,.e-con-inner):has(> .elementor-widget-sz-nav.sz-nav-glass-yes) .sz-btn{height:40px;padding:0 16px;font-size:14px}
+/* after scrolling: a little more glass; scrolling down: out of the way */
+.sz-navbar.is-scrolled{background:rgba(255,255,255,.78);box-shadow:0 0 0 1px rgba(13,27,42,.06),0 12px 34px -12px rgba(13,27,42,.22)}
+.sz-navbar.is-away{transform:translate(-50%,calc(-100% - 30px))}
+.sz-navbar.is-away:focus-within{transform:translateX(-50%)}
+/* in the Elementor editor the bar stays where it is placed, so it can be edited */
+.elementor-editor-active :is(.e-con,.elementor-section):has(> .elementor-widget-sz-nav.sz-nav-glass-yes, > .e-con-inner > .elementor-widget-sz-nav.sz-nav-glass-yes){position:relative !important;top:auto;left:auto;transform:none;margin:14px auto !important}
+
+@media (prefers-reduced-motion:reduce){
+  .sz-nav__glide,.sz-nav__sheet,.sz-nav__burger i,.sz-brand__app,.sz-navbar{transition:none !important}
+  .sz-nav__a{animation:none !important}
+}

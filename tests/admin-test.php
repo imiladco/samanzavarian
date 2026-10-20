@@ -109,6 +109,13 @@ szw_ok( 4 === substr_count( $f, 'class="sz-float ' ) && false !== strpos( $f, 's
 $d = szw_render( [], 'sz-dock' );
 szw_ok( 4 === substr_count( $d, '<a class="sz-dock__a' ) && 1 === substr_count( $d, 'sz-dock__sep' ) && false !== strpos( $d, 'data-sz-dock' ), 'Dock: four items, a separator before Behance, the swell on' );
 
+// header
+$h = szw_render( [], 'sz-brand' );
+szw_ok( false !== strpos( $h, 'class="sz-brand' ) && false !== strpos( $h, '<b>Zavarian</b>' ) && false !== strpos( $h, 'href="#top"' ) && false !== strpos( $h, 'aria-label="Saman Zavarian, back to top"' ), 'Brand Mark: the name, the orange word, back to top, a name for screen readers' );
+$n = szw_render( [], 'sz-nav' );
+szw_ok( 3 === substr_count( $n, 'class="sz-nav__a"' ) && false !== strpos( $n, 'aria-controls="sz-nav-' ) && false !== strpos( $n, 'data-hide' ) && false !== strpos( $n, 'sz-nav-glass-yes' ), 'Nav Menu: three links, a phone menu button tied to its sheet, the glass bar that steps aside' );
+szw_ok( false === strpos( szw_render( [ 'phone' => 'hide' ], 'sz-nav' ), 'sz-nav__menu' ), 'Nav Menu: no menu button when phones hide the links' );
+
 // the Style tab's defaults: the design's values, fluid ones as formulas, the phone one apart
 $sd = require SZW_PATH . 'includes/style-defaults.php';
 $fs = $sd['sz-htitle']['st_all_type_font_size'] ?? [];
