@@ -133,6 +133,11 @@ szw_ok( '' === szw_render( [ 'email' => 'not an address' ], 'sz-mailrow' ) && fa
 $wd = szw_render( [], 'sz-word' );
 szw_ok( 13 === substr_count( $wd, 'class="sz-word__ch"' ) && false !== strpos( $wd, '<span class="sz-word__b">' ) && false !== strpos( $wd, 'aria-hidden="true"' ) && false !== strpos( $wd, 'is-fit' ) && preg_match( '/--szw-k:0\.1[0-9]+/', $wd ), 'Wordmark: a letter at a time, the second word apart, fitted from the first paint, silent for screen readers' );
 szw_ok( false !== strpos( szw_render( [ 'label' => 'yes' ], 'sz-word' ), 'aria-label="SAMAN ZAVARIAN"' ) && '' === szw_render( [ 'first' => '', 'second' => '' ], 'sz-word' ), 'Wordmark: read aloud when asked; nothing when empty' );
+// scroll-driven
+$pw = szw_render( [], 'sz-work' );
+szw_ok( preg_match( '#<div class="sz-pin on-d" data-sz-pin="rail" style="--szp-top:80px"><div class="sz-pin__stage">\s*<div class="sz-work #', $pw ) && preg_match( '#</script>\s*</div>\s*</div></div>#', $pw ), 'Selected work: scroll-driven on desktop by default, the rail inside the sticky stage' );
+szw_ok( false === strpos( szw_render( [ 'pin_on' => [] ], 'sz-work' ), 'sz-pin' ), 'Selected work: no wrapper at all when scroll-driven is off everywhere' );
+szw_ok( 'on-d on-m' === \Samanzavarian_Widgets\Widgets\Pin_Controls::classes( [ 'pin_on' => [ 'mobile', 'desktop' ] ] ) && '60svh' === \Samanzavarian_Widgets\Widgets\Pin_Controls::step( [], 60 ), 'Scroll-driven: device classes and step length' );
 $star = \Samanzavarian_Widgets\Inline_Icons::convert( '<p>since 2020.{star}</p>' );
 szw_ok( false !== strpos( $star, '2020.<span class="sz-star" aria-hidden="true"><svg' ) && false === strpos( $star, '{star}' ), 'The {star} code becomes the footer\'s star' );
 

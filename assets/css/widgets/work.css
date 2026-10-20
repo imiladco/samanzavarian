@@ -211,3 +211,8 @@
   .sz-work *,.sz-work *::before,.sz-work *::after{transition-duration:.01ms!important;animation:none!important}
   .sz-work__card:hover .sz-work__media > *{transform:none}
 }
+
+/* scroll-driven: the page's scroll moves the rail (work.js), so no snapping of its own;
+   the pictures are a little larger, for the parallax to move within */
+.sz-work.is-pinned .sz-work__rail{scroll-snap-type:none !important}
+.sz-work.is-pinned .sz-work__media > *{scale:1.14;will-change:translate}

@@ -94,6 +94,7 @@ class Work_Rail extends Widget_Base {
 		$this->content_profile();
 		$this->content_end();
 		$this->content_settings();
+		Pin_Controls::controls( $this, [ 'desktop' ], null, esc_html__( 'The section holds still while the page\'s scroll slides the cards, all the way to the last; scrolling up runs them back. The arrows, the bar, dragging and the filters keep working.', 'samanzavarian-widgets' ) );
 		$this->content_labels();
 
 		$this->style_layout();
@@ -1157,6 +1158,7 @@ class Work_Rail extends Widget_Base {
 			]
 		);
 		?>
+		<?php echo Pin_Controls::open( $s, '', 'rail' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside ?>
 		<div <?php $this->print_render_attribute_string( 'root' ); ?>>
 			<?php $this->render_top( $s, $filters, $uid, $prefix, $l, $profile ); ?>
 			<div class="sz-work__box">
@@ -1184,6 +1186,7 @@ class Work_Rail extends Widget_Base {
 			<?php self::render_bleed_probe( $s ); ?>
 		</div>
 		<?php
+		echo Pin_Controls::close( $s ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static
 	}
 
 	/**

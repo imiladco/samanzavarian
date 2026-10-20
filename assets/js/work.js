@@ -84,6 +84,7 @@
 			this.bindDrag();
 			this.bindCards();
 			this.bindHash();
+			this.bindPin();
 
 			if ( 'ResizeObserver' in window ) {
 				this.ro = new ResizeObserver( this.layoutAll );
@@ -138,6 +139,88 @@
 			this.moveThumb( true );
 			this.edges();
 			this.sync();
+			if ( this.pinFit ) {
+				this.pinFit();
+			}
+		}
+
+		/* ---------------- scroll-driven (Pin_Controls, js/pin.js) ---------------- */
+
+		/**
+		 * The page's scroll slides the rail, all the way to its end, and back.
+		 * The rail's own moves (arrows, drag, the scrubber, keys, a swipe) move
+		 * the page with them, so the two never disagree. The path is the rail's
+		 * travel ÷ K: the cards go a little faster than the page.
+		 */
+		bindPin() {
+			const wrap = this.root.parentElement && this.root.parentElement.closest( '.sz-pin' );
+			if ( ! wrap || ! window.szwPin || this.edit ) {
+				return;
+			}
+			const K = 1.3;
+			let written = -1;
+			this.pinMute = 0;
+			this.pinMax = 0;
+			const fit = () => {
+				this.pinMax = Math.max( 0, this.rail.scrollWidth - this.rail.clientWidth );
+				wrap.style.setProperty( '--szp-len', Math.round( this.pinMax / K ) + 'px' );
+			};
+			fit();
+			this.pin = window.szwPin( wrap, {
+				update: ( px ) => {
+					const x = Math.min( this.pinMax, px * K );
+					written = x;
+					this.rail.scrollLeft = x;
+					this.parallax( x );
+				},
+				stops: () => this.starts().map( ( x ) => Math.min( this.pinMax, x ) / K ).concat( this.pinMax / K ),
+				settle: true,
+				live: ( on ) => {
+					this.root.classList.toggle( 'is-pinned', on );
+					this.depth( on );
+				},
+			} );
+			this.pinFit = () => {
+				fit();
+				this.depth( this.pin.live );
+				this.pin.refit();
+			};
+			this.on( this.rail, 'scroll', () => {
+				if ( ! this.pin.live || performance.now() < this.pinMute ) {
+					return;
+				}
+				const x = this.rail.scrollLeft;
+				if ( Math.abs( x - written ) > 2 ) {
+					written = x;
+					this.pin.to( x / K, false );
+				}
+			}, { passive: true } );
+		}
+
+		/** Parallax: where each card and its picture are, read once per layout, never per frame. */
+		depth( on ) {
+			this.deep = on && ! this.reduce ? this.visible().map( ( c ) => ( { c: c.offsetLeft + c.offsetWidth / 2, w: c.offsetWidth, m: c.querySelector( '.sz-work__media > *' ) } ) ).filter( ( d ) => d.m ) : [];
+			this.railW = this.rail.clientWidth;
+			if ( ! on ) {
+				this.cards.forEach( ( c ) => {
+					const m = c.querySelector( '.sz-work__media > *' );
+					if ( m ) {
+						m.style.translate = '';
+					}
+				} );
+			}
+		}
+
+		/** The picture moves a little slower than its card: a window onto it, with depth. */
+		parallax( x ) {
+			if ( ! this.deep || ! this.deep.length ) {
+				return;
+			}
+			const mid = x + this.railW / 2;
+			this.deep.forEach( ( d ) => {
+				const k = Math.max( -1.5, Math.min( 1.5, ( d.c - mid ) / this.railW ) );
+				d.m.style.translate = ( -k * d.w * 0.06 ).toFixed( 1 ) + 'px 0';
+			} );
 		}
 
 		visible() {
@@ -190,6 +273,11 @@
 		 * and the smooth scroll never happens.
 		 */
 		go( x ) {
+			// pinned: the page carries the rail, so move the page (a smooth rail scroll would be undone by it)
+			if ( this.pin && this.pin.live ) {
+				this.pin.to( Math.min( this.pinMax, x ) / 1.3, true );
+				return;
+			}
 			const rail = this.rail;
 			rail.style.scrollSnapType = 'none';
 			rail.scrollTo( { left: x, behavior: this.reduce ? 'auto' : 'smooth' } );
@@ -391,14 +479,26 @@
 
 			this.stopPreviews();
 
+			// pinned and part-way along: the page glides back to the rail's start first
+			if ( this.pin && this.pin.live && this.pin.at > 0 ) {
+				this.pinMute = performance.now() + 1000;
+				this.pin.to( 0, true );
+			}
+
 			if ( ! animate ) {
 				this.layout( f );
 				this.rail.scrollLeft = 0;
 				this.name();
 				this.sync();
+				if ( this.pinFit ) {
+					this.pinFit();
+				}
 				return;
 			}
 			this.flip( f, before );
+			if ( this.pinFit ) {
+				this.pinFit();
+			}
 		}
 
 		/** Where the shown cards are now, relative to the rail's box. */

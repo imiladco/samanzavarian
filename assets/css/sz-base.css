@@ -117,3 +117,25 @@
    js/loops.js puts .sz-asleep on a widget that is off screen: nothing inside it animates
    (a running animation, even an invisible one, costs a restyle every frame). */
 .sz-asleep,.sz-asleep *,.sz-asleep *::before,.sz-asleep *::after{animation-play-state:paused !important}
+
+/* ---------- Scroll-driven sections (Pin_Controls, js/pin.js) ----------
+   A tall wrapper whose ::after (inside its content box, where sticky can travel) is the scroll path, around a sticky stage. Whether it pins is
+   decided here, so the page has its final height from the first paint. js only adds
+   .is-off when it cannot work (a clipping parent, a stage taller than the screen). */
+.sz-pin{--szp-top:80px;--szp-len:0px;position:relative}
+@media (prefers-reduced-motion:no-preference){
+  @media (min-width:1025px){
+    body:not(.elementor-editor-active) .sz-pin.on-d:not(.is-off)::after{content:"";display:block;height:var(--szp-len)}
+    body:not(.elementor-editor-active) .sz-pin.on-d:not(.is-off) > .sz-pin__stage{position:sticky;top:var(--szp-top)}
+  }
+  @media (min-width:768px) and (max-width:1024px){
+    body:not(.elementor-editor-active) .sz-pin.on-t:not(.is-off)::after{content:"";display:block;height:var(--szp-len)}
+    body:not(.elementor-editor-active) .sz-pin.on-t:not(.is-off) > .sz-pin__stage{position:sticky;top:var(--szp-top)}
+  }
+  @media (max-width:767px){
+    body:not(.elementor-editor-active) .sz-pin.on-m:not(.is-off)::after{content:"";display:block;height:var(--szp-len)}
+    body:not(.elementor-editor-active) .sz-pin.on-m:not(.is-off) > .sz-pin__stage{position:sticky;top:var(--szp-top)}
+  }
+}
+/* how far along: a hairline the widget may place (transform only) */
+.sz-pin__bar{display:block;height:2px;border-radius:2px;background:var(--sz-orange);transform-origin:left;transform:scaleX(var(--szp-p,0))}

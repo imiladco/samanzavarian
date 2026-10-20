@@ -4,6 +4,36 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.42.0 — Scroll-driven, part 1: Selected work
+**The engine** (js/pin.js, Pin_Controls, shared by the coming parts).
+Scroll-linked, never scroll-jacked: the page's own scroll is only read.
+- A tall wrapper around a sticky stage. Whether it pins is decided in CSS (by
+  screen width, by reduced motion, and outside the editor), so the page has
+  its final height from the first paint.
+- Per frame there is one subtraction. Where the section starts and how long
+  its path is are measured only when sizes change.
+- It switches itself off when it cannot work: a parent container that clips,
+  or a stage taller than the screen.
+- Settle: once the scroll stops, a position within 20% of a resting point
+  glides onto it. This is for fine pointers only, never on touch.
+
+**Selected work** is scroll-driven on desktop by default (Content →
+Scroll-driven: devices, distance from the top).
+- The section holds 80px under the header while the page's scroll slides the
+  cards to the very last, and back again when scrolling up.
+- The rail goes 1.3× the page's travel, so it feels light. It comes to rest
+  on a card.
+- The arrows, the progress bar, dragging, keys and filters keep working.
+  They move the page, and the page moves the rail, so the two never
+  disagree. Choosing a filter glides back to the start of the rail and
+  re-measures the path.
+- Parallax: each picture moves 6% slower than its card, like a window onto it.
+
+Measured: it holds at exactly 80px, it is the exact reverse when scrolling
+up, and the end lands on the last card. With 4× slower CPU it is no slower
+than without the pin (p50 16.7ms, 38% vs 41% late frames). On the live site
+no parent container clips any of the three sections.
+
 ## 0.41.1 — The header bar fits narrow phones
 With "Let's chat" on the bar, the bar's items did not shrink, so on narrow
 phones they ran past the right edge of the screen.

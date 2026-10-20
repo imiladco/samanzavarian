@@ -39,6 +39,9 @@ final class Assets {
 		'sz-footer'        => 'widgets/footer.css',
 	];
 
+	/** Scripts of widgets with a "Scroll-driven" section. */
+	private const PINNED = [ 'sz-work', 'sz-service-tabs', 'sz-career' ];
+
 	/** handle => path under assets/js. Frontend scripts, loaded in the footer, no jQuery. */
 	private const WIDGET_SCRIPTS = [
 		'sz-service-tabs'  => 'service-tabs.js',
@@ -84,8 +87,11 @@ final class Assets {
 
 		// every widget script brings the shared loop keeper (js/loops.js)
 		wp_register_script( 'sz-loops', SZW_URL . 'assets/js/loops.js', [], self::version( 'js/loops.js' ), [ 'in_footer' => true, 'strategy' => 'defer' ] );
+		// the scroll-driven engine (js/pin.js), for the widgets that can pin
+		wp_register_script( 'sz-pin', SZW_URL . 'assets/js/pin.js', [], self::version( 'js/pin.js' ), [ 'in_footer' => true, 'strategy' => 'defer' ] );
 		foreach ( self::WIDGET_SCRIPTS as $handle => $file ) {
-			wp_register_script( $handle, SZW_URL . 'assets/js/' . $file, [ 'sz-loops' ], self::version( 'js/' . $file ), [ 'in_footer' => true, 'strategy' => 'defer' ] );
+			$deps = in_array( $handle, self::PINNED, true ) ? [ 'sz-loops', 'sz-pin' ] : [ 'sz-loops' ];
+			wp_register_script( $handle, SZW_URL . 'assets/js/' . $file, $deps, self::version( 'js/' . $file ), [ 'in_footer' => true, 'strategy' => 'defer' ] );
 		}
 
 		// One script and one stylesheet per scene, on top of the panel's; a
