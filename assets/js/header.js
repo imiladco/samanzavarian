@@ -115,7 +115,7 @@
 			}
 		} );
 		document.addEventListener( 'pointerdown', ( e ) => ! nav.contains( e.target ) && set( false ) );
-		nav.querySelectorAll( '.sz-nav__a' ).forEach( ( a ) => a.addEventListener( 'click', () => set( false ) ) );
+		nav.querySelectorAll( '.sz-nav__a, .sz-nav__cta' ).forEach( ( a ) => a.addEventListener( 'click', () => set( false ) ) );
 	}
 
 	function bar( nav ) {

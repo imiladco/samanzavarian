@@ -4,6 +4,12 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.35.0 — "Let's chat" in the phone menu
+The phone menu ends with the design's dark "Let's chat" pill, full width,
+with its orange chat tile: the next step right under the links. It comes in
+just after them, closes the menu when tapped, and has its own text, link and
+Style section (on by default; off in Nav Menu → Links).
+
 ## 0.34.0 — Header, down to the details
 - The bar drops gently in when the page opens.
 - A hairline of orange along the bar's bottom edge shows how far down the

@@ -105,3 +105,14 @@
   .sz-nav.is-phone-menu .sz-nav__a.is-here{background:var(--sz-fill)}
   .sz-nav.is-phone-menu .sz-nav__a.is-here::after{border-color:var(--sz-orange)}
 }
+/* "Let's chat" at the foot of the phone sheet: the design's dark pill, full width */
+.sz-nav__cta{display:none}
+@media (max-width:767px){
+  .sz-nav.is-phone-menu .sz-nav__cta,.sz-nav.is-phone-menu .sz-nav__cta:is(:hover,:focus,:visited){display:flex;align-items:center;justify-content:center;gap:10px;height:52px;margin:6px 0 0;border-radius:99px;background:var(--sz-navy);color:#fff;
+    font-size:16px;font-weight:600;line-height:1;text-decoration:none;box-shadow:0 10px 24px -10px rgba(13,27,42,.6);transition:transform .3s var(--sz-spring)}
+  .sz-nav.is-phone-menu .sz-nav__cta:active{transform:scale(.97)}
+  .sz-nav.is-phone-menu .sz-nav__cta:focus-visible{outline:2.5px solid rgba(255,107,44,.85);outline-offset:3px}
+  .sz-nav__cta-app{width:28px;height:28px;margin-left:-8px;border-radius:8px;font-size:15px}
+  .sz-nav__cta-app svg{width:1em;height:1em}
+  .sz-nav.is-phone-menu.is-open .sz-nav__cta{animation:szn-in .45s .14s var(--sz-ease) backwards}
+}

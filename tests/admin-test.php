@@ -115,6 +115,7 @@ szw_ok( false !== strpos( $h, 'class="sz-brand' ) && false !== strpos( $h, '<b>Z
 $n = szw_render( [], 'sz-nav' );
 szw_ok( 3 === substr_count( $n, 'class="sz-nav__a"' ) && false !== strpos( $n, 'aria-controls="sz-nav-' ) && false !== strpos( $n, 'data-hide' ) && false !== strpos( $n, 'sz-nav-glass-yes' ), 'Nav Menu: three links, a phone menu button tied to its sheet, the glass bar that steps aside' );
 szw_ok( false === strpos( szw_render( [ 'phone' => 'hide' ], 'sz-nav' ), 'sz-nav__menu' ), 'Nav Menu: no menu button when phones hide the links' );
+szw_ok( false !== strpos( $n, 'class="sz-nav__cta" href="#contact"' ) && false !== strpos( $n, "Let&#039;s chat" ) && false === strpos( szw_render( [ 'cta' => '' ], 'sz-nav' ), 'sz-nav__cta' ), 'Nav Menu: "Let\'s chat" at the foot of the phone menu, and it can be switched off' );
 
 // the Style tab's defaults: the design's values, fluid ones as formulas, the phone one apart
 $sd = require SZW_PATH . 'includes/style-defaults.php';
