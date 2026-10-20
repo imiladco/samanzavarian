@@ -119,3 +119,17 @@
   .sz-totop.has-spin .sz-totop__ring,.sz-totop__arrow,.sz-mailrow__env{animation:none!important}
   .sz-flinks.is-armed .sz-flinks__h,.sz-flinks.is-armed .sz-flinks__a,.sz-totop.is-armed{opacity:1;translate:none;transform:none}
 }
+
+/* ---------------- Wordmark ---------------- */
+/* the box is a size container: a fitted name is k × its width, k measured once (footer.js) */
+.sz-word{--szw-k:.15;--szw-cut:.1em;container-type:inline-size;position:relative;display:block;margin-top:28px;color:#fff;user-select:none;-webkit-user-select:none;
+  clip-path:inset(-50% -5% 0 -5%)} /* only the bottom edge cuts */
+.sz-word-fade-yes .sz-word{-webkit-mask-image:linear-gradient(#000 40%,rgba(0,0,0,.3));mask-image:linear-gradient(#000 40%,rgba(0,0,0,.3))}
+.sz-word__line{display:inline-block;margin-left:-.04em;white-space:nowrap;font-family:var(--sz-font-mark);font-size:132px;font-weight:400;line-height:.74;letter-spacing:0;text-transform:none;transform:translateY(var(--szw-cut))}
+.sz-word.is-fit>.sz-word__line{font-size:calc(var(--szw-k) * 100cqi)!important}
+.sz-word .sz-word__b{color:var(--sz-orange)}
+.sz-word__ch{display:inline-block;transform:translateY(var(--l,0px));transition:transform .3s var(--sz-ease)}
+/* first time in view: the letters rise from below the cut, one after another */
+.sz-word.is-armed .sz-word__ch{transform:translateY(105%)}
+.sz-word.is-lit .sz-word__ch{transition:transform .9s var(--sz-spring);transition-delay:calc(var(--i,0) * 40ms)}
+@media (prefers-reduced-motion:reduce){.sz-word.is-armed .sz-word__ch{transform:none}.sz-word__ch{transition:none}}

@@ -4,6 +4,22 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.41.0 — Wordmark: the footer's name, fitted to the width
+**Wordmark** (the design's `.word`).
+- The name always fills the width of its box exactly. Its width is measured
+  once per font and kept as a ratio, and the size is a container-query
+  length. So the browser keeps it fitted at every width and on every resize,
+  with no script running and no jump. Before the measure, a ratio estimated
+  on the server already comes close.
+- The bottom edge cuts the letters' foot (adjustable), with the design's
+  fade toward the bottom (a switch).
+- The first time it is seen, the letters rise from below the cut one after
+  another.
+- Under the pointer the letters near it lift, the nearest most, like a dock
+  (mouse only, nothing at rest).
+- Fill the width can be switched off for a fixed size. There are colours for
+  each word, full typography, and the space above.
+
 ## 0.40.0 — The footer: Footer Links, Back to Top, Mail Row, and {star}
 **Footer Links** (one widget for "On this page" and "Elsewhere"). It is one
 list where a heading starts a new column, so the columns share one grid and

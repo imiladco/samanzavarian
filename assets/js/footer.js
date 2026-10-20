@@ -153,6 +153,65 @@
 		} );
 	}
 
+	/* Wordmark: k = size ÷ width, so the CSS (k × 100cqi) fills the box at any width */
+	function word( el ) {
+		const line = el.querySelector( '.sz-word__line' );
+		const fit = () => {
+			if ( ! el.classList.contains( 'is-fit' ) || ! line.offsetWidth ) {
+				return;
+			}
+			// the line is k × the box wide's worth of font; scale k so the line is the box (less a hair)
+			const k = parseFloat( getComputedStyle( el ).getPropertyValue( '--szw-k' ) ) * ( el.clientWidth / line.getBoundingClientRect().width ) * 0.995;
+			if ( isFinite( k ) && k > 0 ) {
+				el.style.setProperty( '--szw-k', k.toFixed( 5 ) );
+			}
+		};
+		fit();
+		if ( document.fonts && document.fonts.ready ) {
+			document.fonts.ready.then( fit );
+		}
+		if ( el.classList.contains( 'has-rise' ) ) {
+			entrance( el, 2000 );
+		}
+		if ( ! el.classList.contains( 'has-lift' ) ) {
+			return;
+		}
+		// letters near the pointer lift, the nearest most; centres taken once per visit
+		const chars = [ ...el.querySelectorAll( '.sz-word__ch' ) ];
+		let mid = [], raf = 0, x = 0, size = 0;
+		const apply = () => {
+			raf = 0;
+			const reach = size * 0.9;
+			chars.forEach( ( c, n ) => {
+				const t = Math.max( 0, 1 - Math.abs( x - mid[ n ] ) / reach );
+				c.style.setProperty( '--l', ( -size * 0.09 * ( 1 - Math.cos( t * Math.PI ) ) / 2 ).toFixed( 1 ) + 'px' );
+			} );
+		};
+		el.addEventListener( 'pointerenter', ( e ) => {
+			if ( e.pointerType !== 'mouse' || calm() || el.classList.contains( 'is-armed' ) ) {
+				return;
+			}
+			size = parseFloat( getComputedStyle( line ).fontSize );
+			mid = chars.map( ( c ) => {
+				const r = c.getBoundingClientRect();
+				return r.left + r.width / 2;
+			} );
+		} );
+		el.addEventListener( 'pointermove', ( e ) => {
+			if ( ! mid.length ) {
+				return;
+			}
+			x = e.clientX;
+			raf = raf || requestAnimationFrame( apply );
+		} );
+		el.addEventListener( 'pointerleave', () => {
+			cancelAnimationFrame( raf );
+			raf = 0;
+			mid = [];
+			chars.forEach( ( c ) => c.style.setProperty( '--l', '0px' ) );
+		} );
+	}
+
 	function mount( el ) {
 		if ( ! el || done.has( el ) ) {
 			return;
@@ -160,6 +219,8 @@
 		done.add( el );
 		if ( el.hasAttribute( 'data-sz-totop' ) ) {
 			totop( el );
+		} else if ( el.hasAttribute( 'data-sz-word' ) ) {
+			word( el );
 		} else if ( el.hasAttribute( 'data-sz-mailrow' ) ) {
 			mailrow( el );
 		} else if ( el.hasAttribute( 'data-sz-flinks' ) && el.classList.contains( 'has-rise' ) ) {
@@ -167,10 +228,10 @@
 		}
 	}
 
-	const SEL = '[data-sz-flinks],[data-sz-totop],[data-sz-mailrow]';
+	const SEL = '[data-sz-flinks],[data-sz-totop],[data-sz-mailrow],[data-sz-word]';
 	const all = () => document.querySelectorAll( SEL ).forEach( mount );
 	window.addEventListener( 'elementor/frontend/init', () => {
-		[ 'sz-flinks', 'sz-totop', 'sz-mailrow' ].forEach( ( w ) => window.elementorFrontend.hooks.addAction( `frontend/element_ready/${ w }.default`, ( $el ) => $el[ 0 ].querySelectorAll( SEL ).forEach( mount ) ) );
+		[ 'sz-flinks', 'sz-totop', 'sz-mailrow', 'sz-word' ].forEach( ( w ) => window.elementorFrontend.hooks.addAction( `frontend/element_ready/${ w }.default`, ( $el ) => $el[ 0 ].querySelectorAll( SEL ).forEach( mount ) ) );
 	} );
 	if ( document.readyState === 'loading' ) {
 		document.addEventListener( 'DOMContentLoaded', all );

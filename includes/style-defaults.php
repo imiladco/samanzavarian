@@ -573,6 +573,16 @@ return [
 		'size' => [ 's' => 'st_sticker', 'd' => [ 'unit' => 'px', 'size' => 96 ], 'm' => [ 'unit' => 'px', 'size' => 76 ] ],
 		'speed' => [ 's' => 'st_sticker', 'd' => [ 'unit' => 'px', 'size' => 22 ] ],
 	],
+	'sz-word' => [
+		'type_font_size' => [ 's' => 'st_text', 'p' => [ 'size' => 215.21, 'unit' => 'px' ] ],
+		'type_font_weight' => [ 's' => 'st_text', 'd' => '400' ],
+		'type_typography' => [ 's' => 'st_text', 'd' => 'custom' ],
+		'type_text_transform' => [ 's' => 'st_text', 'd' => 'none' ],
+		'type_line_height' => [ 's' => 'st_text', 'p' => [ 'size' => 159.25, 'unit' => 'px' ] ],
+		'type_word_spacing' => [ 's' => 'st_text', 'p' => [ 'size' => 0, 'unit' => 'px' ] ],
+		'c1' => [ 's' => 'st_text', 'd' => '#FFFFFF' ],
+		'c2' => [ 's' => 'st_text', 'd' => '#FF6B2C' ],
+	],
 	'sz-work' => [
 		'filter_typo_font_size' => [ 's' => 'style_filters', 'd' => [ 'unit' => 'px', 'size' => 14 ] ],
 		'filter_typo_typography' => [ 's' => 'style_filters', 'd' => 'custom' ],

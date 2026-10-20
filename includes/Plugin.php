@@ -36,6 +36,7 @@ final class Plugin {
 		Widgets\Footer_Links::class,
 		Widgets\Back_To_Top::class,
 		Widgets\Mail_Row::class,
+		Widgets\Wordmark::class,
 	];
 
 	public const CATEGORY = 'samanzavarian';

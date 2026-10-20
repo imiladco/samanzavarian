@@ -130,6 +130,9 @@ szw_ok( 16 === substr_count( \Samanzavarian_Widgets\Widgets\Back_To_Top::scallop
 $mr = szw_render( [], 'sz-mailrow' );
 szw_ok( false !== strpos( $mr, 'href="mailto:saman.zavarian@gmail.com"' ) && false !== strpos( $mr, 'data-copy="saman.zavarian@gmail.com"' ) && false !== strpos( $mr, 'role="status"' ) && false === strpos( $mr, 'has-copy-phone' ), 'Mail Row: the pill opens mail, Copy copies and says so, hidden on phones by default' );
 szw_ok( '' === szw_render( [ 'email' => 'not an address' ], 'sz-mailrow' ) && false === strpos( szw_render( [ 'copy' => '' ], 'sz-mailrow' ), 'sz-mailrow__copy' ), 'Mail Row: nothing without an address; no Copy when switched off' );
+$wd = szw_render( [], 'sz-word' );
+szw_ok( 13 === substr_count( $wd, 'class="sz-word__ch"' ) && false !== strpos( $wd, '<span class="sz-word__b">' ) && false !== strpos( $wd, 'aria-hidden="true"' ) && false !== strpos( $wd, 'is-fit' ) && preg_match( '/--szw-k:0\.1[0-9]+/', $wd ), 'Wordmark: a letter at a time, the second word apart, fitted from the first paint, silent for screen readers' );
+szw_ok( false !== strpos( szw_render( [ 'label' => 'yes' ], 'sz-word' ), 'aria-label="SAMAN ZAVARIAN"' ) && '' === szw_render( [ 'first' => '', 'second' => '' ], 'sz-word' ), 'Wordmark: read aloud when asked; nothing when empty' );
 $star = \Samanzavarian_Widgets\Inline_Icons::convert( '<p>since 2020.{star}</p>' );
 szw_ok( false !== strpos( $star, '2020.<span class="sz-star" aria-hidden="true"><svg' ) && false === strpos( $star, '{star}' ), 'The {star} code becomes the footer\'s star' );
 
