@@ -177,10 +177,66 @@
 		}, 160 );
 	}, { passive: true } );
 
+	/**
+	 * The title's width. On a phone (where it stays on one line) with "Fill the width on phones"
+	 * on, the name is set to fill its box exactly, edge to edge, larger or smaller. Elsewhere it
+	 * only gets smaller, when a word would run wider than the box. Measured when sizes or fonts
+	 * change, from the size the Style tab gives it; never per frame.
+	 */
+	function fitTitle( t ) {
+		const phone = () => window.matchMedia( '(max-width: 767px)' ).matches;
+		const run = () => {
+			t.style.fontSize = '';
+			const box = t.clientWidth;
+			if ( ! box ) {
+				return;
+			}
+			const oneLine = getComputedStyle( t ).flexWrap === 'nowrap';
+			const fill = oneLine && phone() && t.dataset.fit === '1';
+			const words = [ ...t.querySelectorAll( '.sz-htitle__w' ) ];
+			const parts = [ ...t.querySelectorAll( ':scope > .sz-htitle__w, :scope > .sz-htitle__app' ) ];
+			// one line: from the first part's left edge to the last one's right (scrollWidth never reads less than the box)
+			// layout boxes, not getBoundingClientRect: the entrance moves the words with transforms
+			const span = () => Math.max( ...parts.map( ( el ) => el.offsetLeft + el.offsetWidth ) ) - Math.min( ...parts.map( ( el ) => el.offsetLeft ) );
+			const need = () => ( oneLine ? ( parts.length ? span() : 0 ) : Math.max( 0, ...words.map( ( w ) => w.offsetWidth ) ) );
+			// a few rounds: the icon tile between the words does not scale with the type
+			for ( let k = 0; k < 5; k++ ) {
+				const n = need();
+				if ( ! n || ( fill ? Math.abs( n - box ) <= 1 : n <= box + 1 ) ) {
+					break;
+				}
+				t.style.fontSize = ( parseFloat( getComputedStyle( t ).fontSize ) * ( box / n ) * ( fill ? 0.995 : 0.98 ) ).toFixed( 2 ) + 'px';
+			}
+		};
+		let raf = 0;
+		const queue = () => ( raf = raf || requestAnimationFrame( () => {
+			raf = 0;
+			run();
+		} ) );
+		run();
+		window.addEventListener( 'resize', queue, { passive: true } );
+		if ( document.fonts && document.fonts.ready ) {
+			document.fonts.ready.then( queue );
+		}
+	}
+	const titles = new WeakSet();
+	const fitTitles = ( scope ) => ( scope || document ).querySelectorAll( '.sz-htitle' ).forEach( ( t ) => {
+		if ( ! titles.has( t ) ) {
+			titles.add( t );
+			fitTitle( t );
+		}
+	} );
+
 	const SEL = '[data-sz-floats],[data-sz-dock],[data-sz-magnet]';
-	const all = () => document.querySelectorAll( SEL ).forEach( mount );
+	const all = () => {
+		document.querySelectorAll( SEL ).forEach( mount );
+		fitTitles();
+	};
 	window.addEventListener( 'elementor/frontend/init', () => {
-		[ 'sz-floats', 'sz-dock', 'sz-htitle', 'sz-btn' ].forEach( ( w ) => window.elementorFrontend.hooks.addAction( `frontend/element_ready/${ w }.default`, ( $el ) => $el[ 0 ].querySelectorAll( SEL ).forEach( mount ) ) );
+		[ 'sz-floats', 'sz-dock', 'sz-htitle', 'sz-btn' ].forEach( ( w ) => window.elementorFrontend.hooks.addAction( `frontend/element_ready/${ w }.default`, ( $el ) => {
+			$el[ 0 ].querySelectorAll( SEL ).forEach( mount );
+			fitTitles( $el[ 0 ] );
+		} ) );
 	} );
 	if ( document.readyState === 'loading' ) {
 		document.addEventListener( 'DOMContentLoaded', all );

@@ -4,6 +4,24 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.45.1 — Hero Title fills a phone's width; Reach stays inside it
+**Hero Title**
+- New switch, "Fill the width on phones" (on). On a phone the name sits on
+  one line from edge to edge, larger or smaller as the screen, the font and
+  the words require.
+- Elsewhere the title only gets smaller, and only when a word would run wider
+  than its box.
+- It is measured from layout boxes (the entrance moves the words with
+  transforms), when sizes or fonts change, never per frame.
+- Measured with the design's font and with a wider one, from 440px to 320px:
+  it ends 0 to 5px from the box's edge, and the page never scrolls sideways.
+
+**Reach**
+- The list's column could be no narrower than its rows' text. At 390px and
+  below the rows (363px) widened the page.
+- The column may now be narrower than its text, and long addresses end in "…"
+  inside the row, as designed.
+
 ## 0.45.0 — The header bar makes room by measuring, and never hides the name
 On a phone the bar still ran past the screen when the name's font was wider
 than the design's (440px wide, with the site's own font). The fixed widths

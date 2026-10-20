@@ -84,3 +84,8 @@
   .sz-reach__row,.sz-reach__go,.sz-reach__tile,.sz-reach__glide,.sz-reach__verb{transition:none}
   .sz-reach.is-armed .sz-reach__row{opacity:1;transform:none}
 }
+
+/* the column may be narrower than its rows' text: long addresses end in "…" inside the row,
+   instead of widening the list (and the page) on a phone */
+.sz-reach{grid-template-columns:minmax(0,1fr)}
+.sz-reach__row{min-width:0}

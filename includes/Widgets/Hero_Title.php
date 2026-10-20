@@ -63,6 +63,7 @@ class Hero_Title extends Widget_Base {
 		$this->add_control( 'entrance', [ 'label' => esc_html__( 'Entrance', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SELECT, 'default' => 'words', 'options' => [ 'words' => esc_html__( 'Word by word', 'samanzavarian-widgets' ), 'letters' => esc_html__( 'Letter by letter', 'samanzavarian-widgets' ), 'none' => esc_html__( 'None', 'samanzavarian-widgets' ) ] ] );
 		$this->add_control( 'tag', [ 'label' => esc_html__( 'HTML tag', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SELECT, 'default' => 'h1', 'options' => [ 'h1' => 'H1', 'h2' => 'H2', 'div' => 'div' ], 'description' => esc_html__( 'One H1 per page: the hero\'s title is usually it.', 'samanzavarian-widgets' ) ] );
 		$this->add_responsive_control( 'size', [ 'label' => esc_html__( 'Size', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SLIDER, 'size_units' => [ 'px', 'vw' ], 'range' => [ 'px' => [ 'min' => 32, 'max' => 220 ] ], 'selectors' => [ '{{WRAPPER}} .sz-htitle' => 'font-size: {{SIZE}}{{UNIT}};' ] ] );
+		$this->add_control( 'fit_m', [ 'label' => esc_html__( 'Fill the width on phones', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'description' => esc_html__( 'On a phone the name sits on one line from edge to edge, whatever the screen, font or words. Elsewhere it only gets smaller when a word would not fit.', 'samanzavarian-widgets' ) ] );
 		$this->add_responsive_control( 'align', [ 'label' => esc_html__( 'Alignment', 'samanzavarian-widgets' ), 'type' => Controls_Manager::CHOOSE, 'options' => [ 'flex-start' => [ 'title' => esc_html__( 'Left', 'samanzavarian-widgets' ), 'icon' => 'eicon-text-align-left' ], 'center' => [ 'title' => esc_html__( 'Center', 'samanzavarian-widgets' ), 'icon' => 'eicon-text-align-center' ], 'flex-end' => [ 'title' => esc_html__( 'Right', 'samanzavarian-widgets' ), 'icon' => 'eicon-text-align-right' ] ], 'default' => 'center', 'selectors' => [ '{{WRAPPER}} .sz-htitle' => 'justify-content: {{VALUE}};' ] ] );
 		$this->end_controls_section();
 		$this->register_style();
@@ -84,7 +85,7 @@ class Hero_Title extends Widget_Base {
 		$tag  = in_array( $s['tag'] ?? 'h1', [ 'h1', 'h2', 'div' ], true ) ? $s['tag'] : 'h1';
 		$icon = ! empty( $s['icon']['value'] ) ? Icon_Library::html( $s['icon'] ) : '';
 		$mode = in_array( $s['entrance'] ?? 'words', [ 'words', 'letters', 'none' ], true ) ? $s['entrance'] : 'words';
-		printf( '<%s class="sz-htitle sz-w is-%s">', esc_attr( $tag ), esc_attr( $mode ) );
+		printf( '<%s class="sz-htitle sz-w is-%s"%s>', esc_attr( $tag ), esc_attr( $mode ), 'yes' === ( $s['fit_m'] ?? 'yes' ) ? ' data-fit="1"' : '' );
 		$n    = 0;
 		// letter by letter: each letter its own span, counted across both words (read aloud as the word: aria-label)
 		$word = static function ( string $text, string $cls ) use ( $mode, &$n ): string {
