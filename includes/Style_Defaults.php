@@ -25,6 +25,8 @@ final class Style_Defaults {
 		if ( ! apply_filters( 'szw_style_defaults', true ) ) {
 			return;
 		}
+		add_action( 'elementor/element/before_section_end', [ self::class, 'pixels_first' ], 5, 2 );
+
 		$map = require __DIR__ . '/style-defaults.php';
 		foreach ( (array) $map as $widget => $controls ) {
 			$by_section = [];
@@ -54,6 +56,50 @@ final class Style_Defaults {
 					}
 				);
 			}
+		}
+	}
+
+	/**
+	 * Every size control of these widgets speaks pixels: px first in the
+	 * unit menu, and a control with no value yet starts on px rather than
+	 * em, % or vw. A control that already holds a value (a default, or what
+	 * was saved) keeps its own unit.
+	 *
+	 * @param \Elementor\Controls_Stack $element
+	 */
+	public static function pixels_first( $element, string $section_id ): void {
+		if ( 0 !== strpos( (string) $element->get_name(), 'sz-' ) ) {
+			return;
+		}
+		foreach ( $element->get_controls() as $name => $c ) {
+			if ( ( $c['section'] ?? '' ) !== $section_id || empty( $c['size_units'] ) || ! in_array( $c['type'] ?? '', [ 'slider', 'dimensions', 'gaps' ], true ) ) {
+				continue;
+			}
+			// only where px is a size at all (not a gradient's stops or angle)
+			if ( ! in_array( 'px', (array) $c['size_units'], true ) || preg_match( '/_(stop|angle)(_tablet|_mobile)?$/', $name ) ) {
+				continue;
+			}
+			$units = array_values( array_unique( array_merge( [ 'px' ], (array) $c['size_units'] ) ) );
+			$args  = [ 'size_units' => $units ];
+			$def   = (array) ( $c['default'] ?? [] );
+			$empty = 'slider' === $c['type'] ? '' === (string) ( $def['size'] ?? '' ) : '' === implode( '', array_map( 'strval', array_intersect_key( $def, array_flip( [ 'top', 'right', 'bottom', 'left', 'row', 'column' ] ) ) ) );
+			if ( $empty ) {
+				$args['default'] = [ 'unit' => 'px' ] + $def;
+				$args['default']['unit'] = 'px';
+				$ph = (array) ( $c['placeholder'] ?? [] );
+				if ( isset( $ph['unit'] ) && 'px' !== $ph['unit'] ) {
+					$args['placeholder'] = ''; // a placeholder in another unit would read wrong beside px
+				}
+			}
+			// the tablet and phone copies are built from these in the editor
+			foreach ( [ 'tablet_default', 'mobile_default' ] as $k ) {
+				$dd = (array) ( $c[ $k ] ?? [] );
+				if ( isset( $c[ $k ] ) && '' === (string) ( $dd['size'] ?? '' ) && 'px' !== ( $dd['unit'] ?? 'px' ) ) {
+					$dd['unit']  = 'px';
+					$args[ $k ] = $dd;
+				}
+			}
+			$element->update_control( $name, $args );
 		}
 	}
 }

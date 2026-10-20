@@ -4,6 +4,14 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.32.0 — The Style tab speaks pixels
+Every size control of every widget now offers px first in its unit menu,
+and one with no value yet starts on px instead of em, % or vw (1,887
+controls; the tablet and phone copies too). A control that already holds a
+value keeps its own unit, so nothing on any page changes (full-page
+screenshots identical). Not touched: a gradient's stops and angle, and a
+background image's 100% width, where pixels mean nothing.
+
 ## 0.31.0 — Line heights in pixels too
 The Style tab's line heights are now pixels as well, per device like the
 sizes (the hero title: 116.156 / 86.5 / 48.719px). Each is written on the
