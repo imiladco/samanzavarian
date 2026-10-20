@@ -4,6 +4,31 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.45.3 — Hero Title on phones: never seen at a wrong size
+Live, the title still changed size after it was shown. Three causes, each
+reproduced on the test site with WP Meteor installed and checked frame by
+frame:
+- **WP Meteor** (on the site) held back every inline script, the probe too,
+  until the page had loaded. The probe now carries the markers that WP
+  Meteor, LiteSpeed, WP Rocket, Autoptimize and Cloudflare leave alone.
+- **A frame can be painted before any script runs**, even between the title
+  and the script right after it. hero.css now keeps the title unseen on a
+  phone until it has been fitted (.is-fit). Should every script be held back,
+  it is shown after 3s in any case.
+- **document.fonts.status reads "loaded" before the title's font has even
+  started.** The title now checks and waits for its own font
+  (fonts.check / fonts.load).
+- On a very slow line, if the font is not in after 2.5s, the title keeps
+  the fallback font for that visit, fitted, rather than change size in front
+  of the reader (the way font-display: optional works).
+- If the probe is held back anyway, hero.js carries the same fit.
+
+Test (tools/rig/titlejudge.js): at 430, 390 and 360px, each under normal
+load, a font 1.2s late, a font 4s late, a 4× slower CPU, and with the probe
+removed. In all 15 scenarios, twice in a row, no frame shows the title at
+any size but its final one, it fills its room, and the page never scrolls
+sideways. Desktop is untouched: never hidden, one size throughout.
+
 ## 0.45.2 — Hero Title: the right size from the first paint (no jump)
 In 0.45.1 the title's fit on phones ran once the page had loaded, so the name
 showed at its CSS size first and changed a moment later.

@@ -114,16 +114,19 @@ class Hero_Title extends Widget_Base {
 	}
 
 	/**
-	 * Phones: the name fills its box from the first paint. This runs while the page is still
-	 * being read, right after the title, and sets the size that makes the name exactly as wide
-	 * as the room it has (hero.js does it again only on a real resize). While the site's font
-	 * is still loading the title waits unseen (two and a half seconds at most), so the swap from the fallback
-	 * font is not seen either. Delayed by an optimiser, currentScript is null: the try swallows
-	 * it and hero.js measures instead.
+	 * Phones: the name fills its box from the first paint. hero.css keeps the title unseen on a
+	 * phone until it has been fitted (.is-fit), so no frame ever shows it at a wrong size, not
+	 * even one painted while the page is still being read. This script, printed right after the
+	 * title, fits it once the site's font is in and shows it. If the font is not in after 2.5s
+	 * (a very slow line), the title keeps the fallback font for this visit, fitted, rather than
+	 * change size before the reader's eyes when the font arrives (like font-display: optional). It is marked
+	 * for the optimisers (WP Meteor, LiteSpeed, WP Rocket, Autoptimize, Cloudflare) to leave it
+	 * alone; if one delays it all the same, hero.js fits and shows it, and hero.css shows it
+	 * after three seconds in any case.
 	 */
 	private static function render_fit_probe(): void {
 		?>
-		<script>(function(me){try{var fit=window.szwFitTitle||(window.szwFitTitle=function(t){if(!t||!window.matchMedia('(max-width:767px)').matches)return;t.style.fontSize='';var w=t.querySelectorAll(':scope>.sz-htitle__w'),l=1e9,r=-1e9,i,k;for(k=0;k<3;k++){l=1e9;r=-1e9;for(i=0;i<w.length;i++){l=Math.min(l,w[i].offsetLeft);r=Math.max(r,w[i].offsetLeft+w[i].offsetWidth)}var wd=t.closest('.elementor-widget')||t,p=wd.parentElement||t,cs=getComputedStyle(p),room=Math.max(t.clientWidth,p.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight));if(!(r>l)||!room||Math.abs(r-l-room)<=1)break;t.style.fontSize=(parseFloat(getComputedStyle(t).fontSize)*room/(r-l)*.995).toFixed(2)+'px'}});var t=me.previousElementSibling;fit(t);if(document.fonts&&document.fonts.status!=='loaded'&&window.matchMedia('(max-width:767px)').matches){t.classList.add('is-fitting');var go=function(){fit(t);t.classList.remove('is-fitting')};document.fonts.ready.then(go);setTimeout(go,2500)}}catch(e){}})(document.currentScript);</script>
+		<script data-wpmeteor-nooptimize="true" data-no-optimize="1" data-no-defer="1" data-noptimize="1" data-cfasync="false" nowprocket>(function(me){try{var fit=window.szwFitTitle||(window.szwFitTitle=function(t){if(!t||!window.matchMedia('(max-width:767px)').matches)return;t.style.fontSize='';var w=t.querySelectorAll(':scope>.sz-htitle__w'),l=1e9,r=-1e9,i,k;for(k=0;k<3;k++){l=1e9;r=-1e9;for(i=0;i<w.length;i++){l=Math.min(l,w[i].offsetLeft);r=Math.max(r,w[i].offsetLeft+w[i].offsetWidth)}var wd=t.closest('.elementor-widget')||t,p=wd.parentElement||t,cs=getComputedStyle(p),room=Math.max(t.clientWidth,p.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight));if(!(r>l)||!room||Math.abs(r-l-room)<=1)break;t.style.fontSize=(parseFloat(getComputedStyle(t).fontSize)*room/(r-l)*.995).toFixed(2)+'px'}});var t=me.previousElementSibling,done=0,go=function(){if(done)return;done=1;fit(t);t.classList.add('is-fit')},F=document.fonts,font=getComputedStyle(t).font;if(F&&F.check&&!F.check(font)&&window.matchMedia('(max-width:767px)').matches){F.load(font).then(go,go);setTimeout(function(){if(done)return;var ff=getComputedStyle(t).fontFamily.split(',');if(ff.length>1){t.style.fontFamily=ff.slice(1).join(',');t.dataset.fb='1'}go()},2500)}else{go()}}catch(e){me.previousElementSibling&&me.previousElementSibling.classList.add('is-fit')}})(document.currentScript);</script>
 		<?php
 	}
 }

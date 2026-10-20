@@ -183,6 +183,28 @@
 	 * only gets smaller, when a word would run wider than the box. Measured when sizes or fonts
 	 * change, from the size the Style tab gives it; never per frame.
 	 */
+	// the same fit as Hero_Title's probe, for when an optimiser held the probe back
+	window.szwFitTitle = window.szwFitTitle || function ( t ) {
+		if ( ! t || ! window.matchMedia( '(max-width:767px)' ).matches ) {
+			return;
+		}
+		t.style.fontSize = '';
+		const w = t.querySelectorAll( ':scope>.sz-htitle__w' );
+		const wd = t.closest( '.elementor-widget' ) || t, p = wd.parentElement || t, cs = getComputedStyle( p );
+		const room = Math.max( t.clientWidth, p.clientWidth - parseFloat( cs.paddingLeft ) - parseFloat( cs.paddingRight ) );
+		for ( let k = 0; k < 3; k++ ) {
+			let l = 1e9, r = -1e9;
+			w.forEach( ( x ) => {
+				l = Math.min( l, x.offsetLeft );
+				r = Math.max( r, x.offsetLeft + x.offsetWidth );
+			} );
+			if ( ! ( r > l ) || ! room || Math.abs( r - l - room ) <= 1 ) {
+				break;
+			}
+			t.style.fontSize = ( parseFloat( getComputedStyle( t ).fontSize ) * room / ( r - l ) * 0.995 ).toFixed( 2 ) + 'px';
+		}
+	};
+
 	function fitTitle( t ) {
 		const phone = () => window.matchMedia( '(max-width: 767px)' ).matches;
 		const fills = () => phone() && t.dataset.fit === '1';
@@ -190,10 +212,16 @@
 			// phones: the probe printed after the title did it before the first paint; a new
 			// measure is only needed once the fonts are in, or when the screen crosses into phone
 			if ( fills() ) {
+				// shown in the fallback font after a very slow font: it stays as it is
+				if ( t.dataset.fb === '1' && t.classList.contains( 'is-fit' ) ) {
+					return;
+				}
 				if ( window.szwFitTitle ) {
 					window.szwFitTitle( t );
 				}
-				t.classList.remove( 'is-fitting' );
+				if ( ! document.fonts || ! document.fonts.check || document.fonts.check( getComputedStyle( t ).font ) ) {
+					t.classList.add( 'is-fit' );
+				}
 				return;
 			}
 			t.style.fontSize = '';
@@ -208,6 +236,7 @@
 			for ( let k = 0; k < 5 && need() > box + 1; k++ ) {
 				t.style.fontSize = ( parseFloat( getComputedStyle( t ).fontSize ) * ( box / need() ) * 0.98 ).toFixed( 2 ) + 'px';
 			}
+			t.classList.add( 'is-fit' );
 		};
 		let raf = 0, was = fills();
 		const queue = () => ( raf = raf || requestAnimationFrame( () => {
@@ -228,7 +257,9 @@
 				queue();
 			}
 		}, { passive: true } );
-		if ( document.fonts && document.fonts.ready ) {
+		// the title's own font (document.fonts.ready can be "ready" before that font has even started)
+		if ( document.fonts && document.fonts.load ) {
+			document.fonts.load( getComputedStyle( t ).font ).then( queue, queue );
 			document.fonts.ready.then( queue );
 		}
 	}
