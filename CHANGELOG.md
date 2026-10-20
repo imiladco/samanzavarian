@@ -4,6 +4,24 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.34.0 — Header, down to the details
+- The bar drops gently in when the page opens.
+- A hairline of orange along the bar's bottom edge shows how far down the
+  page you are.
+- Once the page scrolls, the bar narrows a touch (24px) and its glass
+  thickens; a 1px light edge along its top makes it read as glass.
+- One indicator instead of two: the white pill rests on the link of the
+  section on screen, glides off to follow the pointer, and comes back.
+- Links give under the finger; the brand's tile turns once on its way to
+  the top.
+- Phones: the menu opens as a full-width sheet under the bar (larger
+  targets, a quiet arrow on each link, the section on screen marked), the
+  page behind dims and softens, and a tap on it closes the menu; the bar
+  turns solid while it is open.
+- The bar is centred without transform now, so its entrance and stepping
+  aside cannot fight over it. Style defaults regenerated: the pill's colour
+  now changes with a state (resting), so it is left to the design.
+
 ## 0.33.0 — Header: Brand Mark and Nav Menu
 Two widgets for the design's glass header; with a Button ("Let's chat")
 they make the bar.
