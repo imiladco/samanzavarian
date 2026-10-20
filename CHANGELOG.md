@@ -4,6 +4,30 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.37.0 — Smooth scrolling, header defaults, the lens catches the light
+**Scrolling no longer stutters.** Measured frame by frame (CPU slowed 4×):
+9–13% of frames were late, the slowest 5% at 33ms; now 1–5%, the slowest 5%
+at 16.8ms (a steady 60fps). The causes, each tested on its own:
+- the glass blur re-blurring what moves behind it on every frame: lighter
+  blur (12px; the dock 14px), and once the page has scrolled the bar is
+  nearly solid (94%) without the blur, as iOS bars become on scroll;
+- the floating hero cards' gentle float moving big shadows under the glass:
+  it holds still while the page scrolls and goes on after;
+- the reading-progress line restyled the whole bar each frame: it is now its
+  own element, moved by transform only.
+
+**Header Style defaults.** Besides what the tool fills, by hand where it
+rightly stops: the links' colour together with their hover and section
+colours (each state keeps its own rule), the glass bar's background (its
+scrolled and open states still win), the phone sheet's radius and padding
+(phone only), the phone button's colours. Checked state by state.
+
+**Brand Mark: the lens catches the light.** Every 8 seconds (adjustable,
+or off), a soft glint crosses the tile's glass and, as it reaches the lens,
+the ring pulls focus and settles with a small overshoot (another icon
+breathes as a whole). The words stay still. It starts once the bar has
+arrived, pauses off screen, and is off for reduced motion.
+
 ## 0.36.0 — The header stays; "Let's chat" only on the bar
 - The glass header no longer steps aside while scrolling down: it is always
   at the top. ("Step aside while scrolling down" is still there, off.)

@@ -64,22 +64,23 @@
 :is(.e-con,.elementor-section):has(> .elementor-widget-sz-nav.sz-nav-glass-yes, > .e-con-inner > .elementor-widget-sz-nav.sz-nav-glass-yes, > .elementor-container > .elementor-column > .elementor-widget-wrap > .elementor-widget-sz-nav.sz-nav-glass-yes){
   position:fixed !important;top:var(--sz-bar-top,14px);left:0;right:0;z-index:40;width:min(var(--sz-bar-w,640px),calc(100% - 20px)) !important;max-width:none;margin:0 auto !important;
   display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:2px;padding:6px !important;border-radius:99px;
-  background:rgba(255,255,255,.62);-webkit-backdrop-filter:saturate(180%) blur(24px);backdrop-filter:saturate(180%) blur(24px);
+  background:rgba(255,255,255,.72);-webkit-backdrop-filter:saturate(170%) blur(12px);backdrop-filter:saturate(170%) blur(12px);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.75),0 0 0 1px rgba(13,27,42,.05),0 8px 30px -10px rgba(13,27,42,.15);
   transition:transform .55s var(--sz-ease),width .55s var(--sz-ease),background-color .3s,box-shadow .3s;
   animation:szn-drop .9s .15s var(--sz-spring) backwards}
 @keyframes szn-drop{from{opacity:0;transform:translateY(-18px) scale(.97)}}
 /* how far down the page: a hairline along the bar's straight bottom edge (js sets --sz-p) */
-.sz-navbar::after{content:"";position:absolute;left:30px;right:30px;bottom:0;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--sz-orange),#FF9A6B);transform:scaleX(var(--sz-p,0));transform-origin:left;opacity:0;transition:opacity .3s;pointer-events:none}
-.sz-navbar.is-scrolled::after{opacity:1}
+.sz-nav-progress{position:absolute;left:30px;right:30px;bottom:0;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--sz-orange),#FF9A6B);transform:scaleX(0);transform-origin:left;opacity:0;transition:opacity .3s;pointer-events:none;will-change:transform}
+.sz-navbar.is-scrolled .sz-nav-progress{opacity:1}
 :is(.e-con,.elementor-section):has(> .e-con-inner > .elementor-widget-sz-nav.sz-nav-glass-yes) > .e-con-inner{display:flex;flex-direction:row;flex-wrap:nowrap;align-items:center;gap:2px;width:100%;max-width:none;padding:0}
 /* the brand takes the room on the left; the rest sits on the right */
 :is(.e-con,.e-con-inner):has(> .elementor-widget-sz-nav.sz-nav-glass-yes) > .elementor-widget-sz-brand{margin-right:auto}
 :is(.e-con,.e-con-inner):has(> .elementor-widget-sz-nav.sz-nav-glass-yes) > .elementor-widget{width:auto;flex:none}
 :is(.e-con,.e-con-inner):has(> .elementor-widget-sz-nav.sz-nav-glass-yes) .sz-btn{height:40px;padding:0 16px;font-size:14px}
-/* after scrolling: a little more glass; scrolling down: out of the way */
+/* after scrolling: nearly solid, without the blur (re-blurring what moves behind it on every
+   frame is what made scrolling stutter); scrolling down: out of the way, if asked */
 /* :not(#sz-x): enough weight to win over the bar's own :has() rule above */
-.sz-navbar.is-scrolled:not(#sz-x){width:min(calc(var(--sz-bar-w,640px) - 24px),calc(100% - 20px)) !important;background:rgba(255,255,255,.8);box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 0 0 1px rgba(13,27,42,.06),0 12px 34px -12px rgba(13,27,42,.24)}
+.sz-navbar.is-scrolled:not(#sz-x){width:min(calc(var(--sz-bar-w,640px) - 24px),calc(100% - 20px)) !important;background:rgba(255,255,255,.94);-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.8),0 0 0 1px rgba(13,27,42,.06),0 12px 34px -12px rgba(13,27,42,.24)}
 .sz-navbar.is-away:not(#sz-x){transform:translateY(calc(-100% - 30px))}
 .sz-navbar.is-away:not(#sz-x):focus-within{transform:none}
 /* in the Elementor editor the bar stays where it is placed, so it can be edited */
@@ -116,3 +117,20 @@
   .sz-nav__cta-app svg{width:1em;height:1em}
   .sz-nav.is-phone-menu.is-open .sz-nav__cta{animation:szn-in .45s .14s var(--sz-ease) backwards}
 }
+
+/* ---------- Brand Mark at rest: the lens catches the light ----------
+   One cycle every --sz-loop (8s): in its first ~14% a soft glint crosses the tile and the
+   lens ring pulls focus; the rest of the cycle is stillness. Starts once the bar has arrived;
+   paused off screen (.is-off, js) and for reduced motion. */
+.sz-brand.has-idle .sz-brand__app{position:relative;overflow:hidden;isolation:isolate}
+.sz-brand.has-idle .sz-brand__app::after{content:"";position:absolute;inset:-40%;z-index:1;pointer-events:none;
+  background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.18) 42%,rgba(255,255,255,.62) 50%,rgba(255,255,255,.18) 58%,transparent 70%);
+  transform:translateX(-120%);animation:szb-glint var(--sz-loop,8s) 2.6s cubic-bezier(.45,0,.3,1) infinite}
+@keyframes szb-glint{0%{transform:translateX(-120%)}16%,100%{transform:translateX(120%)}}
+/* the lens ring (the icon's inner circle) pulls focus; another icon breathes as a whole */
+.sz-brand.has-idle .sz-brand__app svg circle:last-child{transform-origin:12px 12px;transform-box:view-box;animation:szb-focus var(--sz-loop,8s) 2.6s infinite}
+.sz-brand.has-idle .sz-brand__app svg:not(:has(circle + circle)){transform-origin:center;animation:szb-breathe var(--sz-loop,8s) 2.6s infinite}
+@keyframes szb-focus{0%,7%{transform:scale(1);animation-timing-function:cubic-bezier(.5,0,.75,0)}11%{transform:scale(.66);animation-timing-function:cubic-bezier(.34,1.6,.64,1)}20%,100%{transform:scale(1)}}
+@keyframes szb-breathe{0%,7%{transform:scale(1)}11%{transform:scale(.86)}20%,100%{transform:scale(1)}}
+.sz-brand.is-off .sz-brand__app::after,.sz-brand.is-off .sz-brand__app svg,.sz-brand.is-off .sz-brand__app svg circle{animation-play-state:paused}
+@media (prefers-reduced-motion:reduce){.sz-brand.has-idle .sz-brand__app::after,.sz-brand.has-idle .sz-brand__app svg,.sz-brand.has-idle .sz-brand__app svg circle{animation:none !important}}

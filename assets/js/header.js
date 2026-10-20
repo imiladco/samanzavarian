@@ -11,7 +11,7 @@
  *   brand's tile turns once on the way.
  * - One indicator: the pill rests on the section's link and glides away to
  *   follow the pointer, then back.
- * - The bar shows how far down the page you are (--sz-p).
+ * - The bar shows how far down the page you are (a line moved by transform).
  * - Phones: a scrim behind the open menu; a tap on it closes the menu.
  */
 ( function () {
@@ -128,6 +128,10 @@
 			return;
 		}
 		host.classList.add( 'sz-navbar' );
+		const line = document.createElement( 'span' );
+		line.className = 'sz-nav-progress';
+		line.setAttribute( 'aria-hidden', 'true' );
+		host.appendChild( line );
 		let last = window.scrollY, raf = 0;
 		const hide = nav.hasAttribute( 'data-hide' );
 		const tick = () => {
@@ -135,7 +139,8 @@
 			const y = window.scrollY;
 			host.classList.toggle( 'is-scrolled', y > 8 );
 			const max = document.documentElement.scrollHeight - window.innerHeight;
-			host.style.setProperty( '--sz-p', max > 0 ? Math.min( 1, y / max ).toFixed( 4 ) : 0 );
+			// transform only: no restyle of the bar on every frame
+			line.style.transform = `scaleX(${ max > 0 ? Math.min( 1, y / max ).toFixed( 4 ) : 0 })`;
 			if ( hide && ! nav.classList.contains( 'is-open' ) ) {
 				if ( y > last + 4 && y > 120 ) {
 					host.classList.add( 'is-away' );
@@ -176,7 +181,19 @@
 		}
 	} );
 
-	const all = () => document.querySelectorAll( '[data-sz-nav]' ).forEach( mount );
+	// the brand's light: only while it is on screen (CSS animations otherwise run on, off screen)
+	const idle = () => {
+		if ( ! ( 'IntersectionObserver' in window ) ) {
+			return;
+		}
+		const io = new IntersectionObserver( ( es ) => es.forEach( ( x ) => x.target.classList.toggle( 'is-off', ! x.isIntersecting ) ) );
+		document.querySelectorAll( '.sz-brand.has-idle' ).forEach( ( b ) => ! done.has( b ) && ( done.add( b ), io.observe( b ) ) );
+	};
+
+	const all = () => {
+		document.querySelectorAll( '[data-sz-nav]' ).forEach( mount );
+		idle();
+	};
 	window.addEventListener( 'elementor/frontend/init', () => {
 		window.elementorFrontend.hooks.addAction( 'frontend/element_ready/sz-nav.default', ( $el ) => mount( $el[ 0 ].querySelector( '[data-sz-nav]' ) ) );
 	} );

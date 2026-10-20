@@ -159,6 +159,19 @@
 		}
 	}
 
+	// while the page scrolls, the floats hold still (moving shadows under glass cost frames); they go on after
+	let still = 0;
+	window.addEventListener( 'scroll', () => {
+		if ( ! still ) {
+			document.documentElement.classList.add( 'sz-scrolling' );
+		}
+		clearTimeout( still );
+		still = setTimeout( () => {
+			still = 0;
+			document.documentElement.classList.remove( 'sz-scrolling' );
+		}, 160 );
+	}, { passive: true } );
+
 	const SEL = '[data-sz-floats],[data-sz-dock],[data-sz-magnet]';
 	const all = () => document.querySelectorAll( SEL ).forEach( mount );
 	window.addEventListener( 'elementor/frontend/init', () => {

@@ -13,6 +13,11 @@ defined( 'ABSPATH' ) || exit;
  * Brand Mark — the header's name: an app-icon tile, then the name in the
  * display face, the second word orange. It links home (or to the top of
  * the page, smoothly); the tile turns a little under the pointer.
+ *
+ * At rest, every few seconds, the tile catches the light like a lens: a
+ * soft glint crosses the glass while the lens ring pulls focus (tightens,
+ * then settles with a small overshoot). The words stay still. It waits for
+ * the header to arrive, pauses off screen, and can be switched off.
  */
 class Brand_Mark extends Widget_Base {
 
@@ -68,11 +73,22 @@ class Brand_Mark extends Widget_Base {
 		$this->add_responsive_control( 'gap', [ 'label' => esc_html__( 'Space after the tile', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SLIDER, 'size_units' => [ 'px' ], 'range' => [ 'px' => [ 'min' => 0, 'max' => 30 ] ], 'selectors' => [ '{{WRAPPER}} .sz-brand' => 'gap: {{SIZE}}{{UNIT}};' ] ] );
 		$this->add_responsive_control( 'pad', [ 'label' => esc_html__( 'Padding', 'samanzavarian-widgets' ), 'type' => Controls_Manager::DIMENSIONS, 'size_units' => [ 'px' ], 'selectors' => [ '{{WRAPPER}} .sz-brand' => 'padding: {{TOP}}{{UNIT}} {{RIGHT}}{{UNIT}} {{BOTTOM}}{{UNIT}} {{LEFT}}{{UNIT}};' ] ] );
 		$this->end_controls_section();
+
+		Style_Controls::motion(
+			$this,
+			[
+				'idle' => [ 'label' => esc_html__( 'The tile catches the light now and then', 'samanzavarian-widgets' ) ],
+			]
+		);
+		$this->update_control( 'motion_note', [ 'raw' => esc_html__( 'Visitors who ask their device for less motion always get none.', 'samanzavarian-widgets' ) ] );
+		$this->start_injection( [ 'of' => 'idle' ] );
+		$this->add_control( 'idle_every', [ 'label' => esc_html__( 'Every (seconds)', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SLIDER, 'size_units' => [ 'px' ], 'range' => [ 'px' => [ 'min' => 4, 'max' => 20 ] ], 'default' => [ 'unit' => 'px', 'size' => 8 ], 'selectors' => [ '{{WRAPPER}} .sz-brand' => '--sz-loop: {{SIZE}}s;' ], 'condition' => [ 'idle' => 'yes' ] ] );
+		$this->end_injection();
 	}
 
 	protected function render(): void {
 		$s = $this->get_settings_for_display();
-		$this->add_render_attribute( 'a', [ 'class' => 'sz-brand sz-w', 'aria-label' => (string) ( $s['label'] ?? '' ) ] );
+		$this->add_render_attribute( 'a', [ 'class' => 'sz-brand sz-w' . ( 'yes' === ( $s['idle'] ?? 'yes' ) ? ' has-idle' : '' ), 'aria-label' => (string) ( $s['label'] ?? '' ) ] );
 		if ( ! empty( $s['link']['url'] ) ) {
 			$this->add_link_attributes( 'a', $s['link'] );
 		}

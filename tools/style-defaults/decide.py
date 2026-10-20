@@ -116,6 +116,31 @@ for w, ctrls in C.items():
         mb = re.match(r'(.*_bg(?:_h)?)_color$', cn)
         if mb and t == 'color':
             out[w][mb.group(1) + '_background'] = {'s': c['section'], 'd': 'classic'}
+# By hand, where the tool rightly stops: a state that has its own control can be filled
+# together with that control (each state then keeps its own, more specific rule), and the
+# bar's background, whose scrolled and open states win with an id-weighted rule.
+MANUAL = {
+    'sz-nav': {
+        'st_link_color': '#525A65', 'st_link_color_h': '#111318', 'st_here_c': '#111318',
+        'st_bar_bg_background': 'classic', 'st_bar_bg_color': 'rgba(255,255,255,0.72)',
+        'st_sheet_radius': {'d': None, 'm': {'top': '24', 'right': '24', 'bottom': '24', 'left': '24', 'unit': 'px', 'isLinked': True}},
+        'st_sheet_pad': {'d': None, 'm': {'top': '8', 'right': '8', 'bottom': '8', 'left': '8', 'unit': 'px', 'isLinked': True}},
+        'st_cta_bg_background': 'classic', 'st_cta_bg_color': '#0D1B2A', 'st_cta_c': '#FFFFFF',
+        'st_cta_radius': {'top': '99', 'right': '99', 'bottom': '99', 'left': '99', 'unit': 'px', 'isLinked': True},
+    },
+}
+for w, items in MANUAL.items():
+    for cn, v in items.items():
+        sec = C.get(w, {}).get(cn, {}).get('section')
+        if not sec:
+            # group gates (…_background) are not in the dump: take the section of their colour
+            sec = next((c['section'] for k, c in C.get(w, {}).items() if k.startswith(cn.rsplit('_', 1)[0])), None)
+        if not sec: print('no section for', w, cn, file=sys.stderr); continue
+        if isinstance(v, dict) and 'm' in v:
+            out.setdefault(w, {})[cn] = {'s': sec, 'd': v['d'] if v['d'] is not None else {'unit': 'px', 'isLinked': True}, 'm': v['m']}
+        else:
+            out.setdefault(w, {})[cn] = {'s': sec, 'd': v}
+        stats['manual'] = stats.get('manual', 0) + 1
 print(stats, file=sys.stderr)
 
 def php(v, ind='\t\t'):

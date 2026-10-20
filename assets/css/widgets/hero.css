@@ -98,7 +98,7 @@
 
 /* ---------- Dock ---------- */
 .elementor-widget-sz-dock.sz-dock-pin-yes{position:absolute !important;left:50%;bottom:30px;z-index:3;width:auto !important;max-width:calc(100% - 32px);margin:0 !important;transform:translateX(-50%)}
-.sz-dock{display:flex;align-items:flex-end;justify-content:center;gap:6px;width:max-content;max-width:100%;margin:0 auto;padding:8px;border-radius:26px;background:rgba(255,255,255,.62);-webkit-backdrop-filter:saturate(180%) blur(24px);backdrop-filter:saturate(180%) blur(24px);
+.sz-dock{display:flex;align-items:flex-end;justify-content:center;gap:6px;width:max-content;max-width:100%;margin:0 auto;padding:8px;border-radius:26px;background:rgba(255,255,255,.62);-webkit-backdrop-filter:saturate(170%) blur(14px);backdrop-filter:saturate(170%) blur(14px);
   box-shadow:0 0 0 1px rgba(13,27,42,.05),0 18px 40px -18px rgba(13,27,42,.3);animation:szh-up .8s .45s var(--sz-ease) backwards}
 .sz-dock .sz-dock__a,.sz-dock .sz-dock__a:is(:hover,:focus,:visited){position:relative;display:grid;justify-items:center;gap:6px;padding:6px 10px 4px;border-radius:18px;color:var(--sz-t2);text-decoration:none;transition:background-color .2s}
 .sz-dock .sz-dock__a:hover{background:rgba(13,27,42,.04)}
@@ -151,7 +151,7 @@
 @media (hover:hover){.sz-floats.has-lift .sz-float:hover{rotate:0deg;scale:1.05;z-index:5;box-shadow:0 4px 8px rgba(13,27,42,.08),0 40px 70px -20px rgba(13,27,42,.4)}}
 .sz-floats.has-bob .sz-float{animation:szh-float-in 1.1s var(--sz-spring) backwards,szh-bob 7s calc(1.3s + var(--i,0) * .6s) ease-in-out infinite}
 .sz-floats.has-bob .sz-float.is-n2{--i:1}.sz-floats.has-bob .sz-float.is-n3{--i:2}.sz-floats.has-bob .sz-float.is-n4{--i:3}.sz-floats.has-bob .sz-float.is-n5{--i:4}.sz-floats.has-bob .sz-float.is-n6{--i:5}
-.sz-floats.has-bob.is-away .sz-float{animation-play-state:paused}
+.sz-floats.has-bob.is-away .sz-float,html.sz-scrolling .sz-floats.has-bob .sz-float{animation-play-state:paused}
 @keyframes szh-bob{50%{transform:translateY(-12px)}}
 @media (max-width:767px){.sz-floats.has-bob .sz-float{animation:szh-float-in 1.1s var(--sz-spring) backwards}}
 
