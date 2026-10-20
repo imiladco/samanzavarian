@@ -4,6 +4,23 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.45.0 — The header bar makes room by measuring, and never hides the name
+On a phone the bar still ran past the screen when the name's font was wider
+than the design's (440px wide, with the site's own font). The fixed widths
+(420px, 350px) guessed at a font the site does not use.
+- header.js now measures what the bar's items need against the room it has,
+  and takes the first state that fits. It does this when the size or fonts
+  change, never while scrolling, and against the narrower scrolled bar, so
+  scrolling never changes the state. In steps:
+  1. The menu button keeps its icon and its word goes (screen readers still
+     hear it).
+  2. The menu button goes.
+  3. The name stacks: first name above, last name below.
+- The name is never cut with an ellipsis or shrunk by a breakpoint any more.
+
+Measured with the design's font and with a wider one, from 480px down to
+290px: "Let's chat" stays inside the bar and the page never scrolls sideways.
+
 ## 0.44.0 — Scroll-driven, part 3: Experience on phones
 **Career Timeline** is scroll-driven on phones by default (Content →
 Scroll-driven). Scrolling is the playhead.

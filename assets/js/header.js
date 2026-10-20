@@ -160,6 +160,63 @@
 		};
 		window.addEventListener( 'scroll', () => ( raf = raf || requestAnimationFrame( tick ) ), { passive: true } );
 		tick();
+		fit( host );
+	}
+
+	/**
+	 * Room on the bar: the first state in which everything fits, measured, not guessed from
+	 * the screen width (the name's font and length are the site's to choose). In steps: the
+	 * menu button's word goes, then the button, then the name stacks on two lines; the name
+	 * is never cut. Measured against the narrower scrolled bar, so scrolling never changes it.
+	 */
+	/** What the bar's items take side by side: each one's own content (it may be squeezed), plus the gaps. */
+	function need( host ) {
+		const row = host.querySelector( ':scope > .e-con-inner' ) || host;
+		const items = [ ...row.children ].filter( ( el ) => {
+			const cs = getComputedStyle( el );
+			return cs.display !== 'none' && cs.position !== 'absolute' && cs.position !== 'fixed';
+		} );
+		const gap = parseFloat( getComputedStyle( row ).columnGap ) || 0;
+		return items.reduce( ( sum, el ) => sum + Math.max( el.scrollWidth, el.offsetWidth ), 0 ) + gap * Math.max( 0, items.length - 1 );
+	}
+
+	/** The bar's inner width. */
+	function room( host ) {
+		const cs = getComputedStyle( host );
+		return host.clientWidth - parseFloat( cs.paddingLeft ) - parseFloat( cs.paddingRight );
+	}
+
+	function fit( host ) {
+		const STEPS = [ '', 'sz-fit-1', 'sz-fit-1 sz-fit-2', 'sz-fit-1 sz-fit-2 sz-fit-3' ];
+		const all = [ 'sz-fit-1', 'sz-fit-2', 'sz-fit-3' ];
+		let raf = 0, busy = false;
+		const run = () => {
+			raf = 0;
+			busy = true;
+			const slack = host.classList.contains( 'is-scrolled' ) ? 0 : 24;
+			let i = 0;
+			for ( ; i < STEPS.length; i++ ) {
+				host.classList.remove( ...all );
+				if ( STEPS[ i ] ) {
+					host.classList.add( ...STEPS[ i ].split( ' ' ) );
+				}
+				if ( need( host ) <= room( host ) - slack + 1 ) {
+					break;
+				}
+			}
+			busy = false;
+		};
+		const queue = () => {
+			if ( ! busy ) {
+				raf = raf || requestAnimationFrame( run );
+			}
+		};
+		run();
+		window.addEventListener( 'resize', queue, { passive: true } );
+		if ( document.fonts && document.fonts.ready ) {
+			document.fonts.ready.then( queue );
+		}
+		window.addEventListener( 'load', queue );
 	}
 
 	function mount( el ) {

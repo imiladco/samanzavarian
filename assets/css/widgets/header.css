@@ -51,11 +51,6 @@
   .sz-nav.is-phone-menu.is-open .sz-nav__a{animation:szn-in .4s var(--sz-ease) backwards}
   .sz-nav.is-phone-menu.is-open .sz-nav__a:nth-child(3){animation-delay:.04s}.sz-nav.is-phone-menu.is-open .sz-nav__a:nth-child(4){animation-delay:.08s}.sz-nav.is-phone-menu.is-open .sz-nav__a:nth-child(5){animation-delay:.12s}.sz-nav.is-phone-menu.is-open .sz-nav__a:nth-child(6){animation-delay:.16s}
 }
-/* a narrow phone: the menu button is its icon alone (its name stays for screen readers) */
-@media (max-width:420px){
-  .sz-nav.is-phone-menu .sz-nav__menu,.sz-nav.is-phone-menu .sz-nav__menu:is(:hover,:focus,:active){width:40px;padding:0;justify-content:center}
-  .sz-nav__menu > span:last-child{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-}
 @keyframes szn-in{from{opacity:0;transform:translateY(-4px)}}
 
 /* ---------- the glass bar: the container that holds a Nav Menu with "Glass bar" on ----------
@@ -149,19 +144,21 @@
 .sz-nav .sz-nav__go:focus-visible{outline:2.5px solid rgba(255,107,44,.85);outline-offset:3px}
 @media (max-width:767px){.sz-nav.is-phone-menu .sz-nav__menu{margin-right:2px}}
 
-/* a narrow phone: the bar never runs past the screen. Its items may shrink (the menu and
-   "Let's chat" stay whole; the name gives way first, with an ellipsis), and "Let's chat" goes compact. */
-:is(.e-con,.elementor-section):has(> .elementor-widget-sz-nav.sz-nav-glass-yes, > .e-con-inner > .elementor-widget-sz-nav.sz-nav-glass-yes) > .elementor-element,
-:is(.e-con,.elementor-section):has(> .e-con-inner > .elementor-widget-sz-nav.sz-nav-glass-yes) > .e-con-inner > .elementor-element{min-width:0;flex-shrink:1}
-.elementor-widget-sz-nav{min-width:0}
-.sz-nav{min-width:0}
-.sz-brand{min-width:0;max-width:100%}
-.sz-brand__t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* a narrow phone: "Let's chat" goes compact */
+.sz-brand__t{white-space:nowrap}
 @media (max-width:420px){
   .sz-nav .sz-nav__go,.sz-nav .sz-nav__go:is(:hover,:focus,:visited){padding:0 14px;font-size:13px}
 }
 @media (max-width:350px){
   .sz-nav .sz-nav__go,.sz-nav .sz-nav__go:is(:hover,:focus,:visited){padding:0 11px;margin-left:2px}
 }
-/* rather than cut the name, set it a little smaller on the narrowest phones */
-@media (max-width:350px){.sz-brand .sz-brand__t{font-size:16px !important;letter-spacing:.01em !important}}
+/* When the bar is short of room (header.js measures it; nothing is guessed from the screen width)
+   it gives way in steps, and the name is never cut or hidden:
+   sz-fit-1  the menu button keeps its icon, its word goes (still read by screen readers)
+   sz-fit-2  the menu button goes
+   sz-fit-3  the name stacks: first name above, last name below */
+.sz-navbar.sz-fit-1 .sz-nav.is-phone-menu .sz-nav__menu:not(#sz-x){width:40px;padding:0;justify-content:center}
+.sz-navbar.sz-fit-1 .sz-nav__menu > span:last-child{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.sz-navbar.sz-fit-2 .sz-nav.is-phone-menu .sz-nav__menu:not(#sz-x){display:none}
+.sz-navbar.sz-fit-3 .sz-brand__t{display:inline-flex;flex-direction:column;font-size:.78em;line-height:.98;white-space:nowrap}
+.sz-navbar.sz-fit-3 .sz-brand__t b{display:block}
