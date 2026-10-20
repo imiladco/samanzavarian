@@ -128,6 +128,9 @@ MANUAL = {
         'st_cta_bg_background': 'classic', 'st_cta_bg_color': '#0D1B2A', 'st_cta_c': '#FFFFFF',
         'st_cta_radius': {'top': '99', 'right': '99', 'bottom': '99', 'left': '99', 'unit': 'px', 'isLinked': True},
     },
+    'sz-flinks': {'col_w': {'unit': 'px', 'size': 160}, 'col_gap': {'d': {'unit': 'px', 'size': 56}, 'm': {'unit': 'px', 'size': 24}}, 'row_gap': {'unit': 'px', 'size': 32}, 'row_h': {'unit': 'px', 'size': 38}, 'icon_size': {'unit': 'px', 'size': 16}},
+    'sz-totop': {'size': {'d': {'unit': 'px', 'size': 96}, 'm': {'unit': 'px', 'size': 76}}, 'speed': {'unit': 'px', 'size': 22}},
+    'sz-mailrow': {'gap': {'unit': 'px', 'size': 10}, 'st_mail_h': {'d': {'unit': 'px', 'size': 56}, 'm': {'unit': 'px', 'size': 52}}},
 }
 for w, items in MANUAL.items():
     for cn, v in items.items():

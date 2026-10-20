@@ -4,6 +4,43 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.40.0 — The footer: Footer Links, Back to Top, Mail Row, and {star}
+**Footer Links** (one widget for "On this page" and "Elsewhere"). It is one
+list where a heading starts a new column, so the columns share one grid and
+one set of styles. On phones the columns go two across.
+- Links to email, phone, Behance, LinkedIn, WhatsApp, Telegram and
+  Instagram get their icon automatically.
+- Under the pointer: the words step aside, an orange line draws along the
+  row (and leaves the way it came), the icon tips, and links that leave the
+  site show ↗.
+- The rows rise in, column after column, the first time the footer is seen.
+- "Sits on: dark / light" sets the colours for either background.
+
+**Back to Top**, the scalloped sticker.
+- The ring text is repeated as many times as you choose, and it always
+  closes the circle exactly.
+- The ring turns on its own layer, so it costs no repaint, and it stops off
+  screen.
+- It is slapped on (a turn and a spring) the first time it comes into view.
+- Under the pointer it tips and the ring speeds up, then eases back down.
+- On a click the arrow takes off and comes back from below, the page glides
+  to the top, and keyboard focus moves there too.
+
+**Mail Row**, the email pill and Copy.
+- Under the pointer the envelope is sent off and comes back.
+- Copy turns into a green "Copied" with a tick that draws itself, without
+  changing width, and screen readers hear it.
+- If the browser will not copy, the mail app opens instead.
+- An optional subject line.
+- Copy stays hidden on phones as in the design (a switch shows it).
+
+**{star}** in a Text Editor or Heading ("since 2020.{star}") gives the
+footer's orange star after the last word. It turns slowly while in view,
+pauses off screen, and springs in the first time its paragraph is seen. The
+editor preview shows it as you type.
+
+All three widgets have full Style tabs with the design's values filled in.
+
 ## 0.39.0 — "Let's chat" on the bar; the Post-production scene at rest
 **Nav Menu: "Let's chat" built in.** The bar now ends in the design's dark
 pill (40px, `#contact`), on desktop and on phones, with no separate Button

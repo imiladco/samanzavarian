@@ -14,6 +14,7 @@ defined( 'ABSPATH' ) || exit;
  *   {icon:words}          a pill with the icon's navy tile
  *   {icon*:words}         …with an orange tile
  *   {icon:words|#link}    …that links (e.g. #work-photo opens that filter)
+ *   {star}                the footer's little orange star, turning ("since 2020.{star}")
  *
  * Only known icon names are turned (anything else in braces stays text).
  * The pills are made on the server, so they are plain HTML: indexable,
@@ -30,6 +31,9 @@ final class Inline_Icons {
 
 	/** {icon(*):words(|link)} — the words never contain braces, pipes or tags. */
 	public const PATTERN = '/\{([a-z]+)(\*?):([^{}|<>]+?)(?:\|([^{}<>\s]+))?\}([.,;:!?…]*)/u';
+
+	/** {star}: a four-pointed star after the last word, turning slowly (tokens.css). */
+	public const STAR = '<span class="sz-star" aria-hidden="true"><svg viewBox="0 0 40 40" focusable="false"><path d="M20 3c1.2 9.6 4.4 13.8 17 17-12.6 3.2-15.8 7.4-17 17-1.2-9.6-4.4-13.8-17-17 12.6-3.2 15.8-7.4 17-17z"/></svg></span>';
 
 	/** Elementor's Text Editor and Heading, and v4's Paragraph and Heading. */
 	private const WIDGETS = [ 'text-editor', 'heading', 'e-paragraph', 'e-heading' ];
@@ -62,6 +66,8 @@ final class Inline_Icons {
 	/** Every {icon:words} with a known icon, as a pill; the rest untouched. */
 	public static function convert( string $html ): string {
 		$i = 0;
+
+		$html = str_replace( '{star}', self::STAR, $html );
 
 		return (string) preg_replace_callback(
 			self::PATTERN,
@@ -144,7 +150,7 @@ final class Inline_Icons {
 				'separator'       => 'before',
 				'content_classes' => 'elementor-descriptor',
 				'raw'             => '<details><summary style="cursor:pointer;font-weight:600">' . esc_html__( 'Words with icons', 'samanzavarian-widgets' ) . '</summary>'
-					. '<p style="margin:8px 0">' . wp_kses( __( 'Write <code>{cam:photography}</code> for a pill with an icon, <code>{spark*:AI video}</code> for an orange tile, <code>{cam:photography|#work-photo}</code> to make it a link. For the design\'s statement type, add <code>sz-statement</code> under Advanced → CSS Classes.', 'samanzavarian-widgets' ), [ 'code' => [] ] ) . '</p>'
+					. '<p style="margin:8px 0">' . wp_kses( __( 'Write <code>{cam:photography}</code> for a pill with an icon, <code>{spark*:AI video}</code> for an orange tile, <code>{cam:photography|#work-photo}</code> to make it a link, and <code>{star}</code> for the footer\'s turning star ("since 2020.{star}"). For the design\'s statement type, add <code>sz-statement</code> under Advanced → CSS Classes.', 'samanzavarian-widgets' ), [ 'code' => [] ] ) . '</p>'
 					. '<style>.sz-tokhelp svg{width:12px;height:12px}</style><div class="sz-tokhelp" style="line-height:1">' . $tiles . '</div></details>',
 			]
 		);

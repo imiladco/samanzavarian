@@ -36,6 +36,7 @@ final class Assets {
 		'sz-promise'       => 'widgets/promise.css',
 		'sz-hero'          => 'widgets/hero.css',
 		'sz-header'        => 'widgets/header.css',
+		'sz-footer'        => 'widgets/footer.css',
 	];
 
 	/** handle => path under assets/js. Frontend scripts, loaded in the footer, no jQuery. */
@@ -55,6 +56,7 @@ final class Assets {
 		'sz-promise'       => 'promise.js',
 		'sz-hero'          => 'hero.js',
 		'sz-header'        => 'header.js',
+		'sz-footer'        => 'footer.js',
 	];
 
 	public static function boot(): void {

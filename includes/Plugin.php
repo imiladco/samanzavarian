@@ -33,6 +33,9 @@ final class Plugin {
 		Widgets\Dock::class,
 		Widgets\Brand_Mark::class,
 		Widgets\Nav_Menu::class,
+		Widgets\Footer_Links::class,
+		Widgets\Back_To_Top::class,
+		Widgets\Mail_Row::class,
 	];
 
 	public const CATEGORY = 'samanzavarian';

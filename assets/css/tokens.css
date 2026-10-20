@@ -35,3 +35,12 @@ a.sz-tok:focus-visible{outline:2.5px solid rgba(255,107,44,.85);outline-offset:2
 .is-sz-armed.is-sz-lit .sz-tok{background-color:#fff;box-shadow:0 1px 1px rgba(13,27,42,.03),0 2px 6px rgba(13,27,42,.04),inset 0 0 0 1px rgba(13,27,42,.05);transition-delay:calc(var(--i,0) * 150ms + 80ms)}
 .is-sz-armed.is-sz-lit .sz-tok__tile{opacity:1;transform:none;transition-delay:calc(var(--i,0) * 150ms)}
 @media (prefers-reduced-motion:reduce){.sz-tok,.sz-tok__tile{transition:none}}
+/* {star}: the footer's star after the last word. It turns slowly while in view (tokens.js
+   pauses it off screen) and arrives with a spring the first time its paragraph is seen. */
+.sz-star{display:inline-block;width:.42em;height:.42em;margin-left:.16em;vertical-align:middle;position:relative;top:-.12em;line-height:0;color:var(--sz-orange,#FF6B2C);transition:transform .9s cubic-bezier(.34,1.56,.64,1)}
+.sz-star svg{display:block;width:100%;height:100%;fill:currentColor;animation:sz-star-turn 14s linear infinite;animation-play-state:paused}
+.sz-star.is-run svg{animation-play-state:running}
+.is-sz-armed:not(.is-sz-lit) .sz-star{transform:scale(0) rotate(-140deg)}
+.is-sz-lit .sz-star{transition-delay:.35s}
+@keyframes sz-star-turn{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.sz-star svg{animation:none}.is-sz-armed .sz-star{transform:none}}

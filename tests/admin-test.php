@@ -119,6 +119,20 @@ szw_ok( false === strpos( szw_render( [ 'phone' => 'hide' ], 'sz-nav' ), 'sz-nav
 $n2 = szw_render( [ 'cta' => 'yes', 'hide' => 'yes' ], 'sz-nav' );
 szw_ok( false !== strpos( $n2, 'class="sz-nav__cta" href="#contact"' ) && false !== strpos( $n2, 'data-hide' ), 'Nav Menu: the sheet\'s button and stepping aside, when switched on' );
 
+// footer
+$fl = szw_render( [], 'sz-flinks' );
+szw_ok( 2 === substr_count( $fl, 'class="sz-flinks__col"' ) && 9 === substr_count( $fl, 'sz-flinks__a' ) - substr_count( $fl, 'sz-flinks__a::' ) && 2 === substr_count( $fl, '<h4 class="sz-flinks__h">' ), 'Footer Links: a heading starts a column; two columns, nine links' );
+szw_ok( 3 === substr_count( $fl, 'sz-flinks__out' ) && 4 === substr_count( $fl, 'class="szi sz-flinks__ic"' ), 'Footer Links: known places get their icon by themselves; links that leave the site show their arrow' );
+szw_ok( 'wa' === \Samanzavarian_Widgets\Widgets\Footer_Links::known_icon( 'https://wa.me/1' ) && '' === \Samanzavarian_Widgets\Widgets\Footer_Links::known_icon( '#work' ), 'Footer Links: icons by address' );
+$tt = szw_render( [], 'sz-totop' );
+szw_ok( false !== strpos( $tt, 'href="#top"' ) && false !== strpos( $tt, 'aria-label="Back to top"' ) && 2 === substr_count( $tt, 'BACK TO TOP' ) && false !== strpos( $tt, 'textLength="232.4"' ) && 3 === substr_count( $tt, '<svg' ), 'Back to Top: the ring closes exactly, three layers, a name for screen readers' );
+szw_ok( 16 === substr_count( \Samanzavarian_Widgets\Widgets\Back_To_Top::scallop(), 'Q' ), 'Back to Top: sixteen scallops' );
+$mr = szw_render( [], 'sz-mailrow' );
+szw_ok( false !== strpos( $mr, 'href="mailto:saman.zavarian@gmail.com"' ) && false !== strpos( $mr, 'data-copy="saman.zavarian@gmail.com"' ) && false !== strpos( $mr, 'role="status"' ) && false === strpos( $mr, 'has-copy-phone' ), 'Mail Row: the pill opens mail, Copy copies and says so, hidden on phones by default' );
+szw_ok( '' === szw_render( [ 'email' => 'not an address' ], 'sz-mailrow' ) && false === strpos( szw_render( [ 'copy' => '' ], 'sz-mailrow' ), 'sz-mailrow__copy' ), 'Mail Row: nothing without an address; no Copy when switched off' );
+$star = \Samanzavarian_Widgets\Inline_Icons::convert( '<p>since 2020.{star}</p>' );
+szw_ok( false !== strpos( $star, '2020.<span class="sz-star" aria-hidden="true"><svg' ) && false === strpos( $star, '{star}' ), 'The {star} code becomes the footer\'s star' );
+
 // the Style tab's defaults: the design's values, fluid ones as formulas, the phone one apart
 $sd = require SZW_PATH . 'includes/style-defaults.php';
 $fs = $sd['sz-htitle']['st_all_type_font_size'] ?? [];

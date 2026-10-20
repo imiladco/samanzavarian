@@ -8,7 +8,16 @@
 			return;
 		}
 		var seen = [];
-		document.querySelectorAll( '.sz-tok' ).forEach( function ( t ) {
+		// {star}: turns only while it can be seen
+		var stars = new IntersectionObserver( function ( es ) {
+			es.forEach( function ( e ) {
+				e.target.classList.toggle( 'is-run', e.isIntersecting );
+			} );
+		} );
+		document.querySelectorAll( '.sz-star' ).forEach( function ( st ) {
+			stars.observe( st );
+		} );
+		document.querySelectorAll( '.sz-tok, .sz-star' ).forEach( function ( t ) {
 			var box = t.closest( '.elementor-widget, [data-e-type="widget"]' ) || t.parentElement;
 			if ( seen.indexOf( box ) < 0 ) {
 				seen.push( box );

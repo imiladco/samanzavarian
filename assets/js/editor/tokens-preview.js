@@ -38,7 +38,29 @@
 				nodes.push( n );
 			}
 		}
+		var STAR = '<svg viewBox="0 0 40 40" focusable="false"><path d="M20 3c1.2 9.6 4.4 13.8 17 17-12.6 3.2-15.8 7.4-17 17-1.2-9.6-4.4-13.8-17-17 12.6-3.2 15.8-7.4 17-17z"/></svg>';
 		nodes.forEach( function ( node ) {
+			// {star} first: the footer's star (Inline_Icons::STAR)
+			if ( node.nodeValue.indexOf( '{star}' ) > -1 ) {
+				var bits = node.nodeValue.split( '{star}' ), f = document.createDocumentFragment();
+				bits.forEach( function ( b, k ) {
+					if ( k ) {
+						var st = document.createElement( 'span' );
+						st.className = 'sz-star';
+						st.setAttribute( 'aria-hidden', 'true' );
+						st.innerHTML = STAR;
+						f.appendChild( st );
+					}
+					var tn = document.createTextNode( b );
+					f.appendChild( tn );
+				} );
+				var lastText = f.lastChild;
+				node.parentNode.replaceChild( f, node );
+				node = lastText;
+				if ( node.nodeValue.indexOf( '{' ) < 0 ) {
+					return;
+				}
+			}
 			var text = node.nodeValue, frag = document.createDocumentFragment(), last = 0, m, changed = false;
 			RE.lastIndex = 0;
 			while ( ( m = RE.exec( text ) ) ) {

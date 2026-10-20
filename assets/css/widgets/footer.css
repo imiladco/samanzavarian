@@ -1,0 +1,121 @@
+/* Footer widgets: Footer Links (sz-flinks), Back to Top (sz-totop), Mail Row (sz-mailrow).
+   Values from the design's footer: a dark closing card. "sz-on-light" (the Sits on control)
+   turns the links and the Copy button for a light background. */
+
+/* ---------------- Footer Links ---------------- */
+.sz-flinks{--szf-col:160px;--szf-line:rgba(255,255,255,.06);--szf-accent:var(--sz-orange);
+  display:grid;grid-auto-flow:column;grid-auto-columns:var(--szf-col);column-gap:56px;row-gap:32px;align-items:start;font-family:var(--sz-font)}
+.sz-flinks .sz-flinks__h{margin:0 0 6px;height:22px;display:flex;align-items:center;font-family:var(--sz-font);font-size:13px;font-weight:500;line-height:1.2;letter-spacing:0;text-transform:none;color:#8E9AA8}
+.sz-flinks__list{list-style:none;margin:0;padding:0;display:grid}
+.sz-flinks__list li{margin:0;padding:0}
+.sz-flinks .sz-flinks__a{position:relative;display:flex;align-items:center;gap:10px;height:38px;font-size:15px;font-weight:500;line-height:1.2;color:#E6EAEE;text-decoration:none;
+  box-shadow:inset 0 -1px 0 var(--szf-line);transition:color .2s}
+.sz-flinks__list li:last-child .sz-flinks__a{box-shadow:none}
+/* the line under the pointer: drawn from the left, and it leaves to the right */
+.sz-flinks__a::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--szf-accent);transform:scaleX(0);transform-origin:right;transition:transform .45s var(--sz-ease);pointer-events:none}
+.sz-flinks__t{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:transform .35s var(--sz-spring)}
+.sz-flinks__ic{flex:none;width:16px;height:16px;font-size:16px;color:var(--sz-orange);stroke:var(--sz-orange);transition:transform .45s var(--sz-spring)}
+.sz-flinks__ic:not(.szi){fill:currentColor}
+.sz-flinks__out{flex:none;width:14px;height:14px;margin-left:auto;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;opacity:0;transform:translate(-5px,5px);transition:opacity .2s,transform .35s var(--sz-spring)}
+@media (hover:hover){
+  .sz-flinks .sz-flinks__a:hover{color:#fff}
+  .sz-flinks__a:hover::after{transform:scaleX(1);transform-origin:left}
+  .sz-flinks__a:hover .sz-flinks__t{transform:translateX(4px)}
+  .sz-flinks__a:hover .sz-flinks__ic{transform:rotate(-8deg) scale(1.12)}
+  .sz-flinks__a:hover .sz-flinks__out{opacity:.7;transform:none}
+}
+.sz-flinks__a:focus-visible{outline:2px solid var(--szf-accent);outline-offset:2px;border-radius:4px}
+.sz-flinks__a:active .sz-flinks__t{transform:translateX(4px) scale(.97)}
+.sz-on-light .sz-flinks{--szf-line:var(--sz-line)}
+.sz-on-light .sz-flinks .sz-flinks__h{color:var(--sz-t3)}
+.sz-on-light .sz-flinks .sz-flinks__a{color:var(--sz-ink)}
+@media (hover:hover){.sz-on-light .sz-flinks .sz-flinks__a:hover{color:var(--sz-navy)}}
+@media (max-width:767px){.sz-flinks{grid-auto-flow:row;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:24px}}
+/* first time in view: the rows rise, column after column */
+.sz-flinks.is-armed .sz-flinks__h,.sz-flinks.is-armed .sz-flinks__a{opacity:0;translate:0 10px}
+.sz-flinks.is-lit .sz-flinks__h,.sz-flinks.is-lit .sz-flinks__a{opacity:1;translate:0 0;transition:opacity .5s var(--sz-ease),translate .7s var(--sz-spring),color .2s;transition-delay:calc(var(--c,0)*90ms + var(--i,0)*35ms)}
+.sz-flinks.is-lit .sz-flinks__h{transition-delay:calc(var(--c,0)*90ms)}
+
+/* ---------------- Back to Top ---------------- */
+.sz-totop-wrap{display:flex;justify-content:flex-end}
+.sz-totop{--szt-sticker:var(--sz-orange);--szt-text:var(--sz-navy);--szt-disc:var(--sz-navy);--szt-arrow:#fff;--szt-turn:22s;
+  position:relative;display:block;flex:none;width:96px;height:96px;border-radius:50%;
+  box-shadow:0 14px 24px -8px rgba(0,0,0,.4);-webkit-tap-highlight-color:transparent;
+  transition:transform .5s var(--sz-spring),box-shadow .4s}
+.sz-totop svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+.sz-totop__sticker path{fill:var(--szt-sticker)}
+.sz-totop__ring text{font-family:var(--sz-font);font-size:9px;font-weight:700;letter-spacing:2.2px;fill:var(--szt-text)}
+.sz-totop__core circle{fill:var(--szt-disc)}
+.sz-totop__arrow path{fill:none;stroke:var(--szt-arrow);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.sz-totop__arrow{transform-box:fill-box;transform-origin:center}
+/* the ring is a layer of its own: turning it is compositing, not painting */
+.sz-totop.has-spin .sz-totop__ring{will-change:transform;animation:szt-turn var(--szt-turn) linear infinite}
+@keyframes szt-turn{to{transform:rotate(360deg)}}
+@media (hover:hover){
+  .sz-totop:hover{transform:rotate(-10deg) scale(1.05);box-shadow:0 20px 30px -10px rgba(0,0,0,.45)}
+  .sz-totop:hover .sz-totop__arrow{animation:szt-hop .7s var(--sz-spring)}
+}
+.sz-totop:active{transform:scale(.94);transition-duration:.15s}
+.sz-totop:focus-visible{outline:3px solid rgba(255,255,255,.85);outline-offset:4px}
+@keyframes szt-hop{40%{transform:translateY(-3px)}}
+/* a click: the arrow takes off and comes back from below */
+.sz-totop.is-launch .sz-totop__arrow{animation:szt-launch .8s var(--sz-ease)}
+@keyframes szt-launch{
+  0%{transform:none}
+  38%{transform:translateY(-26px);opacity:0}
+  39%{transform:translateY(22px);opacity:0}
+  100%{transform:none;opacity:1}
+}
+/* first time in view: slapped on */
+.sz-totop.is-armed{transform:rotate(-120deg) scale(.4);opacity:0}
+.sz-totop.is-lit{transition:transform .9s var(--sz-spring),opacity .3s}
+@media (max-width:767px){.sz-totop{width:76px;height:76px}}
+
+/* ---------------- Mail Row ---------------- */
+.sz-mailrow{--szm-h:56px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;font-family:var(--sz-font)}
+.sz-mailrow .sz-mailrow__mail{display:inline-flex;align-items:center;gap:12px;min-width:0;height:var(--szm-h);padding:0 22px 0 9px;border-radius:99px;background:#fff;color:var(--sz-ink);
+  font-size:17px;font-weight:600;line-height:1.2;text-decoration:none;box-shadow:0 14px 30px -14px rgba(0,0,0,.6);transition:transform .35s var(--sz-spring),box-shadow .35s}
+.sz-mailrow__addr{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sz-mailrow__app{width:38px;height:38px;border-radius:99px;font-size:18px;overflow:hidden}
+.sz-mailrow__app svg{width:18px;height:18px}
+.sz-mailrow__env{display:grid;place-items:center}
+@media (hover:hover){
+  .sz-mailrow .sz-mailrow__mail:hover{transform:translateY(-2px);box-shadow:0 20px 34px -14px rgba(0,0,0,.6)}
+  .sz-mailrow__mail:hover .sz-mailrow__env{animation:szm-send .75s var(--sz-ease)}
+}
+/* the envelope is sent: out at the top right, back in from the bottom left */
+@keyframes szm-send{
+  0%{transform:none}
+  40%{transform:translate(22px,-22px) rotate(-12deg);opacity:0}
+  41%{transform:translate(-22px,22px);opacity:0}
+  100%{transform:none;opacity:1}
+}
+.sz-mailrow .sz-mailrow__mail:active{transform:scale(.97);transition-duration:.15s}
+.sz-mailrow .sz-mailrow__mail:focus-visible,.sz-mailrow .sz-mailrow__copy:focus-visible{outline:2.5px solid rgba(255,107,44,.85);outline-offset:3px}
+.sz-mailrow .sz-mailrow__copy{display:inline-grid;align-items:center;justify-items:center;flex:none;height:var(--szm-h);margin:0;padding:0 22px;border:0;border-radius:99px;overflow:hidden;cursor:pointer;
+  background:rgba(255,255,255,.08);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);color:#fff;font-family:var(--sz-font);font-size:13px;font-weight:600;line-height:1.2;letter-spacing:0;text-transform:none;
+  transition:transform .3s var(--sz-spring),background-color .25s,color .25s}
+@media (hover:hover){.sz-mailrow .sz-mailrow__copy:hover{background:rgba(255,255,255,.14)}}
+.sz-mailrow .sz-mailrow__copy:active{transform:scale(.94)}
+.sz-mailrow .sz-mailrow__copy.is-done{background:rgba(48,180,108,.18);color:#9BE3BC}
+/* both words share one place, so the button never changes width */
+.sz-mailrow__l{grid-area:1/1;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:transform .45s var(--sz-spring),opacity .2s}
+.sz-mailrow__l.is-b{transform:translateY(120%);opacity:0}
+.sz-mailrow__l svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:24;stroke-dashoffset:24}
+.sz-mailrow__copy.is-done .is-a{transform:translateY(-120%);opacity:0}
+.sz-mailrow__copy.is-done .is-b{transform:none;opacity:1}
+.sz-mailrow__copy.is-done .is-b svg{stroke-dashoffset:0;transition:stroke-dashoffset .4s .12s var(--sz-ease)}
+.sz-mailrow__sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.sz-on-light .sz-mailrow .sz-mailrow__mail{box-shadow:var(--sz-s2)}
+.sz-on-light .sz-mailrow .sz-mailrow__copy{background:#fff;box-shadow:var(--sz-s1),inset 0 0 0 1px var(--sz-line);color:var(--sz-ink)}
+@media (hover:hover){.sz-on-light .sz-mailrow .sz-mailrow__copy:hover{background:var(--sz-fill)}}
+.sz-on-light .sz-mailrow .sz-mailrow__copy.is-done{background:#E9F7EF;color:#17633C}
+@media (max-width:767px){
+  .sz-mailrow .sz-mailrow__mail{font-size:14px;--szm-h:52px;height:52px;padding-right:18px}
+  .sz-mailrow:not(.has-copy-phone) .sz-mailrow__copy{display:none}
+}
+
+@media (prefers-reduced-motion:reduce){
+  .sz-totop.has-spin .sz-totop__ring,.sz-totop__arrow,.sz-mailrow__env{animation:none!important}
+  .sz-flinks.is-armed .sz-flinks__h,.sz-flinks.is-armed .sz-flinks__a,.sz-totop.is-armed{opacity:1;translate:none;transform:none}
+}
