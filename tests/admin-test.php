@@ -113,9 +113,10 @@ szw_ok( 4 === substr_count( $d, '<a class="sz-dock__a' ) && 1 === substr_count( 
 $h = szw_render( [], 'sz-brand' );
 szw_ok( false !== strpos( $h, 'class="sz-brand' ) && false !== strpos( $h, '<b>Zavarian</b>' ) && false !== strpos( $h, 'href="#top"' ) && false !== strpos( $h, 'aria-label="Saman Zavarian, back to top"' ), 'Brand Mark: the name, the orange word, back to top, a name for screen readers' );
 $n = szw_render( [], 'sz-nav' );
-szw_ok( 3 === substr_count( $n, 'class="sz-nav__a"' ) && false !== strpos( $n, 'aria-controls="sz-nav-' ) && false !== strpos( $n, 'data-hide' ) && false !== strpos( $n, 'sz-nav-glass-yes' ), 'Nav Menu: three links, a phone menu button tied to its sheet, the glass bar that steps aside' );
+szw_ok( 3 === substr_count( $n, 'class="sz-nav__a"' ) && false !== strpos( $n, 'aria-controls="sz-nav-' ) && false === strpos( $n, 'data-hide' ) && false !== strpos( $n, 'sz-nav-glass-yes' ) && false === strpos( $n, 'sz-nav__cta' ), 'Nav Menu: three links, a phone menu button tied to its sheet, the glass bar that stays put, no button in the sheet' );
 szw_ok( false === strpos( szw_render( [ 'phone' => 'hide' ], 'sz-nav' ), 'sz-nav__menu' ), 'Nav Menu: no menu button when phones hide the links' );
-szw_ok( false !== strpos( $n, 'class="sz-nav__cta" href="#contact"' ) && false !== strpos( $n, "Let&#039;s chat" ) && false === strpos( szw_render( [ 'cta' => '' ], 'sz-nav' ), 'sz-nav__cta' ), 'Nav Menu: "Let\'s chat" at the foot of the phone menu, and it can be switched off' );
+$n2 = szw_render( [ 'cta' => 'yes', 'hide' => 'yes' ], 'sz-nav' );
+szw_ok( false !== strpos( $n2, 'class="sz-nav__cta" href="#contact"' ) && false !== strpos( $n2, 'data-hide' ), 'Nav Menu: the sheet\'s button and stepping aside, when switched on' );
 
 // the Style tab's defaults: the design's values, fluid ones as formulas, the phone one apart
 $sd = require SZW_PATH . 'includes/style-defaults.php';

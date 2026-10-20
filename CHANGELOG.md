@@ -4,6 +4,12 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.36.0 — The header stays; "Let's chat" only on the bar
+- The glass header no longer steps aside while scrolling down: it is always
+  at the top. ("Step aside while scrolling down" is still there, off.)
+- "Let's chat" is on the bar only, not repeated at the foot of the phone
+  menu. (The sheet's button is still an option, off.)
+
 ## 0.35.0 — "Let's chat" in the phone menu
 The phone menu ends with the design's dark "Let's chat" pill, full width,
 with its orange chat tile: the next step right under the links. It comes in

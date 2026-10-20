@@ -15,11 +15,11 @@ defined( 'ABSPATH' ) || exit;
  * - Under the pointer one white pill glides from link to link; the link of
  *   the section on screen keeps its own (a #section link on this page).
  * - On a phone, where the design simply hid the links, a menu button opens
- *   them in a glass sheet (Escape, a tap outside or a link closes it), with
- *   "Let's chat" at its foot, full width.
+ *   them in a glass sheet (Escape, a tap outside or a link closes it); a
+ *   button at its foot is optional (the bar's own Button is the call).
  * - "Glass bar": the container the menu sits in becomes the design's
- *   frosted pill, floating at the top of the window; it steps out of the
- *   way while you scroll down and comes back as soon as you scroll up.
+ *   frosted pill, floating at the top of the window, always there (it can
+ *   be set to step aside while scrolling down).
  *   Done in CSS (:has), so it is right before any script runs.
  */
 class Nav_Menu extends Widget_Base {
@@ -78,7 +78,7 @@ class Nav_Menu extends Widget_Base {
 			]
 		);
 		$this->add_control( 'menu_label', [ 'label' => esc_html__( 'Menu button (phones)', 'samanzavarian-widgets' ), 'type' => Controls_Manager::TEXT, 'default' => 'Menu' ] );
-		$this->add_control( 'cta', [ 'label' => esc_html__( 'Button at the foot of the phone menu', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'separator' => 'before' ] );
+		$this->add_control( 'cta', [ 'label' => esc_html__( 'Button at the foot of the phone menu', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SWITCHER, 'default' => '', 'return_value' => 'yes', 'separator' => 'before' ] );
 		$this->add_control( 'cta_text', [ 'label' => esc_html__( 'Button text', 'samanzavarian-widgets' ), 'type' => Controls_Manager::TEXT, 'default' => "Let's chat", 'condition' => [ 'cta' => 'yes' ] ] );
 		$this->add_control( 'cta_link', [ 'label' => esc_html__( 'Button link', 'samanzavarian-widgets' ), 'type' => Controls_Manager::URL, 'default' => [ 'url' => '#contact' ], 'dynamic' => [ 'active' => true ], 'condition' => [ 'cta' => 'yes' ] ] );
 		$this->add_control( 'phone', [ 'label' => esc_html__( 'On phones', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SELECT, 'default' => 'menu', 'options' => [ 'menu' => esc_html__( 'A menu button', 'samanzavarian-widgets' ), 'hide' => esc_html__( 'Hidden (as in the design)', 'samanzavarian-widgets' ), 'show' => esc_html__( 'Shown as on a computer', 'samanzavarian-widgets' ) ] ] );
@@ -86,7 +86,7 @@ class Nav_Menu extends Widget_Base {
 
 		$this->start_controls_section( 'section_bar', [ 'label' => esc_html__( 'Header bar', 'samanzavarian-widgets' ) ] );
 		$this->add_control( 'glass', [ 'label' => esc_html__( 'Glass bar', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'prefix_class' => 'sz-nav-glass-', 'description' => esc_html__( 'The container this menu is in becomes the design\'s frosted pill, floating at the top of the window. Put the Brand Mark, this menu and a Button in one container (a row).', 'samanzavarian-widgets' ) ] );
-		$this->add_control( 'hide', [ 'label' => esc_html__( 'Step aside while scrolling down', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SWITCHER, 'default' => 'yes', 'return_value' => 'yes', 'condition' => [ 'glass' => 'yes' ] ] );
+		$this->add_control( 'hide', [ 'label' => esc_html__( 'Step aside while scrolling down', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SWITCHER, 'default' => '', 'return_value' => 'yes', 'condition' => [ 'glass' => 'yes' ] ] );
 		$this->add_responsive_control( 'bar_w', [ 'label' => esc_html__( 'Bar width', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SLIDER, 'size_units' => [ 'px' ], 'range' => [ 'px' => [ 'min' => 280, 'max' => 1400 ] ], 'selectors' => [ '{{WRAPPER}}' => '--sz-bar-w: {{SIZE}}{{UNIT}};' ], 'condition' => [ 'glass' => 'yes' ] ] );
 		$this->add_responsive_control( 'bar_top', [ 'label' => esc_html__( 'Distance from the top', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SLIDER, 'size_units' => [ 'px' ], 'range' => [ 'px' => [ 'min' => 0, 'max' => 60 ] ], 'selectors' => [ '{{WRAPPER}}' => '--sz-bar-top: {{SIZE}}{{UNIT}};' ], 'condition' => [ 'glass' => 'yes' ] ] );
 		$this->end_controls_section();
@@ -107,7 +107,7 @@ class Nav_Menu extends Widget_Base {
 		}
 		$phone = in_array( $s['phone'] ?? 'menu', [ 'menu', 'hide', 'show' ], true ) ? $s['phone'] : 'menu';
 		$id    = 'sz-nav-' . $this->get_id();
-		printf( '<nav class="sz-nav sz-w is-phone-%s" aria-label="Primary" data-sz-nav%s>', esc_attr( $phone ), 'yes' === ( $s['glass'] ?? 'yes' ) && 'yes' === ( $s['hide'] ?? 'yes' ) ? ' data-hide' : '' );
+		printf( '<nav class="sz-nav sz-w is-phone-%s" aria-label="Primary" data-sz-nav%s>', esc_attr( $phone ), 'yes' === ( $s['glass'] ?? 'yes' ) && 'yes' === ( $s['hide'] ?? '' ) ? ' data-hide' : '' );
 		if ( 'menu' === $phone ) {
 			printf( '<button type="button" class="sz-nav__menu" aria-expanded="false" aria-controls="%s"><span class="sz-nav__burger" aria-hidden="true"><i></i><i></i></span><span>%s</span></button>', esc_attr( $id ), esc_html( (string) ( $s['menu_label'] ?? 'Menu' ) ) );
 		}
@@ -120,7 +120,7 @@ class Nav_Menu extends Widget_Base {
 			}
 			echo '<a ' . $this->get_render_attribute_string( $key ) . '>' . esc_html( $x['text'] ) . '</a>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Elementor escapes
 		}
-		if ( 'menu' === $phone && 'yes' === ( $s['cta'] ?? 'yes' ) && '' !== trim( (string) ( $s['cta_text'] ?? '' ) ) ) {
+		if ( 'menu' === $phone && 'yes' === ( $s['cta'] ?? '' ) && '' !== trim( (string) ( $s['cta_text'] ?? '' ) ) ) {
 			$this->add_render_attribute( 'cta', 'class', 'sz-nav__cta' );
 			if ( ! empty( $s['cta_link']['url'] ) ) {
 				$this->add_link_attributes( 'cta', $s['cta_link'] );
