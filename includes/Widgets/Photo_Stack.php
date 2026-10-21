@@ -331,7 +331,7 @@ class Photo_Stack extends Widget_Base {
 					'tablet'  => esc_html__( 'Tablet', 'samanzavarian-widgets' ),
 					'mobile'  => esc_html__( 'Mobile', 'samanzavarian-widgets' ),
 				],
-				'description' => esc_html__( 'Once the whole deck is in view, scrolling on fans it out and brings the photos to the front one by one, each held about two seconds (a video to its end), then folds it back; in reverse when scrolling up. Scrolled straight past, it stays at rest. The page is never held. A hand on the photos always wins. Never in the editor or with reduced motion.', 'samanzavarian-widgets' ),
+				'description' => esc_html__( 'With the deck in view below the header, the scroll fans it out, brings the photos to the front one by one (a video plays) and folds it back, in step with the scroll; in reverse when scrolling up. Each photo stays at least a second; flicked past, it stays at rest. If its column has empty room below it, the deck holds still there while the text scrolls past. A hand on the photos always wins. Never in the editor or with reduced motion.', 'samanzavarian-widgets' ),
 			]
 		);
 

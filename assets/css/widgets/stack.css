@@ -141,3 +141,5 @@
   .sz-stack .sz-stack__card,.sz-stack__sticker,.sz-stack__lab,.sz-stack__cap{transition-duration:.01ms!important}
   .sz-stack__sticker.is-hop,.sz-stack__hint i{animation:none}
 }
+/* scroll-driven: beside the text, the deck holds still in its column (js/stack.js measures the room and the top) */
+body:not(.elementor-editor-active) .sz-stack-hold{position:sticky;top:var(--szk-hold,96px)}

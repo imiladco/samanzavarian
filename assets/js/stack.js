@@ -127,6 +127,10 @@
 			if ( this.scrollIo ) {
 				this.scrollIo.disconnect();
 			}
+			if ( this.driveRo ) {
+				this.driveRo.disconnect();
+				this.widget.classList.remove( 'sz-stack-hold' );
+			}
 			this.video( -1 );
 		}
 
@@ -551,19 +555,24 @@
 		}
 
 		/**
-		 * The page's scroll past the deck plays the hover: fan out, each photo to
-		 * the front in turn (its video plays), the first back, fold; backwards
-		 * when scrolling up. Read, never held.
+		 * The page's scroll past the deck plays the hover: fan out on the first
+		 * photo, each next one to the front (its video plays), fold back as it
+		 * was; backwards when scrolling up. The scroll is the playhead.
 		 *
-		 * The scroll says where the deck should be, a clock says how fast it may
-		 * get there: one step at a time, each photo held long enough to be taken
-		 * in, so a quick flick never shuffles photos under the eye. It only
-		 * starts once the whole deck is in view; out of view it is put back at
-		 * once, without playing what was missed.
+		 * The path is only the stretch where the deck is in view below the header
+		 * (four fifths of it at least), so nothing starts at the screen's foot or
+		 * changes under the header. Where its column is taller than it (beside the text on a
+		 * desktop) the deck holds still in it, centred, while the text scrolls
+		 * past: that room becomes path, without adding any to the page.
 		 *
-		 * States: 0 at rest, 1…N each photo in front (fanned), N+1 the first
-		 * back (fanned), N+2 at rest again. Edge-triggered: a photo the hand
-		 * chose stays until the next step; a hand fanning it keeps it fanned.
+		 * A clock is only a guard: a photo stays at least a second, so a flick
+		 * never shuffles; at a reading pace the photos follow the scroll exactly.
+		 * Half in view nothing changes; scrolled on past, it folds; out of view
+		 * it is put back at rest at once.
+		 *
+		 * States: 0 at rest, 1…N fanned with photo N in front, N+1 at rest again.
+		 * Edge-triggered: a photo the hand chose stays until the next step; a
+		 * hand fanning it keeps it fanned.
 		 */
 		scrollDrive() {
 			this.scrollOn = ( this.root.dataset.scroll || '' ).split( ' ' ).filter( Boolean );
@@ -575,15 +584,16 @@
 			this.state = 0;
 			this.moved = 0; // when the state last changed
 			this.wanted = 0; // since when the scroll has wanted another state
-			let raf = 0, near = false;
+			this.widget = this.root.closest( '.elementor-widget' ) || this.root;
+			let raf = 0, mraf = 0, near = false;
 			const frame = () => {
 				raf = 0;
-				if ( ! this.scrolls() ) {
+				if ( ! this.geo ) {
 					return;
 				}
 				if ( near ) {
 					this.follow();
-				} else if ( this.state > 0 && this.state < this.cards.length + 2 ) {
+				} else if ( this.state > 0 && this.state <= this.cards.length ) {
 					clearTimeout( this.driveT );
 					this.setState( this.target().t ); // gone by: at rest, as it was
 				}
@@ -591,8 +601,31 @@
 			this.queueDrive = () => {
 				raf = raf || requestAnimationFrame( frame );
 			};
-			this.on( window, 'scroll', () => near && this.queueDrive(), { passive: true } );
-			this.on( window, 'resize', this.queueDrive );
+			const remeasure = () => {
+				mraf = mraf || requestAnimationFrame( () => {
+					mraf = 0;
+					this.measureDrive();
+					this.queueDrive();
+				} );
+			};
+			this.trail = []; // recent scroll positions: how fast it is going
+			this.on( window, 'scroll', () => {
+				if ( near ) {
+					const now = performance.now();
+					this.trail.push( [ now, window.scrollY ] );
+					while ( this.trail.length > 2 && now - this.trail[ 0 ][ 0 ] > 300 ) {
+						this.trail.shift();
+					}
+					this.queueDrive();
+				}
+			}, { passive: true } );
+			this.on( window, 'resize', remeasure );
+			this.on( window, 'load', remeasure );
+			if ( 'ResizeObserver' in window ) {
+				this.driveRo = new ResizeObserver( remeasure );
+				this.driveRo.observe( document.body );
+				this.driveRo.observe( this.root );
+			}
 			if ( 'IntersectionObserver' in window ) {
 				this.scrollIo = new IntersectionObserver( ( es ) => {
 					near = es[ es.length - 1 ].isIntersecting;
@@ -601,76 +634,112 @@
 				this.scrollIo.observe( this.deck );
 			} else {
 				near = true;
-				this.queueDrive();
 			}
+			this.measureDrive();
+		}
+
+		/** Room kept free at the top for the header bar. */
+		inset() {
+			return Math.min( 96, document.documentElement.clientHeight * 0.1 );
 		}
 
 		/**
-		 * Where the scroll wants it, and how much of the deck is in view.
-		 * 0 as the deck's bottom comes fully in (5% above the screen's foot),
-		 * 1 as its top reaches 8% from the screen's top.
+		 * Only when sizes change: whether the deck holds in its column, and the
+		 * scroll positions where the path starts (the whole deck has come in)
+		 * and ends (its top reaches the header).
 		 */
-		target() {
-			const r = this.deck.getBoundingClientRect(), vh = document.documentElement.clientHeight, N = this.cards.length;
-			const from = vh * 0.95 - r.height, len = Math.max( 200, from - vh * 0.08 );
-			const p = ( from - r.top ) / len;
-			const seen = Math.max( 0, Math.min( r.bottom, vh ) - Math.max( r.top, 0 ) ) / ( r.height || 1 );
-			const t = p <= 0 ? 0 : ( p >= 1 ? N + 2 : 1 + Math.min( N, Math.floor( p * ( N + 1 ) ) ) );
-			// "in view": nine tenths of it, or of the screen for a deck taller than that
-			return { t, seen, whole: seen >= Math.min( 0.9, vh / ( r.height || 1 ) * 0.9 ) };
+		measureDrive() {
+			const w = this.widget, col = w.parentElement, vh = document.documentElement.clientHeight, inset = this.inset();
+			w.classList.remove( 'sz-stack-hold' );
+			w.style.removeProperty( '--szk-hold' );
+			if ( ! this.scrolls() ) {
+				this.geo = null;
+				return;
+			}
+			const y = window.scrollY, wr = w.getBoundingClientRect(), dr = this.deck.getBoundingClientRect();
+			const cr = col && col !== document.body ? col.getBoundingClientRect() : wr;
+			// held only over empty room: it is the last thing in a column taller than it (anything below would be covered)
+			const pad = col ? parseFloat( getComputedStyle( col ).paddingBottom ) || 0 : 0;
+			const dy = dr.top - wr.top, h = dr.height, Ws = wr.top + y, room = w.nextElementSibling ? 0 : cr.bottom - pad - wr.bottom;
+			const top = Math.max( inset, ( vh - wr.height ) / 2 );
+			const hold = room > 40 && wr.height + top <= vh;
+			if ( hold ) {
+				w.style.setProperty( '--szk-hold', Math.round( top ) + 'px' );
+				w.classList.add( 'sz-stack-hold' );
+			}
+			// from four fifths of the deck in at the foot to four fifths still in below the header
+			const y0 = Ws + dy + 0.8 * h - vh * 0.97;
+			const y1 = ( hold ? Ws + room : Ws ) + dy + 0.2 * h - inset;
+			this.geo = { y0, y1: Math.max( y1, y0 + 200 ) };
 		}
 
-		/** How long a state is held before the next may come: a photo is looked at, its video seen through. */
-		dwell( state ) {
-			const N = this.cards.length;
-			if ( state <= 0 || state >= N + 2 ) {
-				return 0;
-			}
-			const v = this.videos[ this.base[ ( state - 1 ) % N ] ];
-			const clip = v && this.autoplay && Number.isFinite( v.duration ) ? v.duration * 1000 : 0;
-			return Math.max( 2000, Math.min( 4500, clip ) );
+		/** Where the scroll wants it, and how much of the deck is in view below the header. */
+		target() {
+			const r = this.deck.getBoundingClientRect(), vh = document.documentElement.clientHeight, N = this.cards.length;
+			const p = ( window.scrollY - this.geo.y0 ) / ( this.geo.y1 - this.geo.y0 );
+			const seen = Math.max( 0, Math.min( r.bottom, vh ) - Math.max( r.top, this.inset() ) ) / ( r.height || 1 );
+			const t = p <= 0 ? 0 : ( p >= 1 ? N + 1 : 1 + Math.min( N - 1, Math.floor( p * N ) ) );
+			// "in view": three quarters of it, or of the screen for a deck taller than that
+			return { t, seen, whole: seen >= Math.min( 0.75, vh / ( r.height || 1 ) * 0.75 ) };
 		}
 
 		follow() {
 			clearTimeout( this.driveT );
-			const { t, seen, whole } = this.target(), now = Date.now();
+			const { t, seen, whole } = this.target(), now = Date.now(), N = this.cards.length;
+			const rest = t === 0 || t === N + 1;
 			if ( t === this.state ) {
 				this.wanted = 0;
 				return;
 			}
-			// mostly out of view: no show for nobody, straight to where it should be
+			// mostly out of view: straight to where it should be
 			if ( seen < 0.4 ) {
 				this.wanted = 0;
 				this.setState( t );
 				return;
 			}
-			// half in view: nothing starts or changes at the screen's edge; scrolled on past it, it folds
+			// half in view: nothing starts or changes at an edge; scrolled on past, it folds
 			if ( ! whole ) {
 				this.wanted = 0;
-				if ( t === 0 || t === this.cards.length + 2 ) {
+				if ( rest ) {
 					this.setState( t );
 				}
 				return;
 			}
+			// flicked past: it is not opened for a glimpse (looked at again in a moment)
+			const atRest = this.state === 0 || this.state === N + 1;
+			if ( atRest && this.speed() > 0.8 ) {
+				this.wanted = 0;
+				this.driveT = setTimeout( this.queueDrive, 120 );
+				return;
+			}
 			this.wanted = this.wanted || now;
-			// a breath before it moves (the deck is seen at rest first), then the hold of the current state
-			const ready = Math.max( this.wanted + 350, this.moved + this.dwell( this.state ) );
+			// the guard: a breath before it opens, a second for each photo
+			const ready = Math.max( this.wanted + ( atRest ? 300 : 0 ), this.moved + ( this.state > 0 && this.state <= N ? 1000 : 0 ) );
 			if ( now < ready ) {
 				this.driveT = setTimeout( this.queueDrive, ready - now + 16 );
 				return;
 			}
-			// scrolled on past it: after the photo in front has had its time, fold (the rest is not played through)
-			const rest = t === 0 || t === this.cards.length + 2;
-			this.setState( rest ? t : this.state + ( t > this.state ? 1 : -1 ) );
+			// one step at a time; from rest it opens on the photo the scroll is at
+			this.setState( rest || atRest ? t : this.state + ( t > this.state ? 1 : -1 ) );
 			this.wanted = 0;
 			if ( this.state !== t ) {
-				this.driveT = setTimeout( this.queueDrive, this.dwell( this.state ) + 16 );
+				this.driveT = setTimeout( this.queueDrive, 1016 );
 			}
 		}
 
+		/** The scroll's speed over the last 300ms, in px per ms. */
+		speed() {
+			const tr = this.trail, now = performance.now();
+			if ( tr.length < 2 || now - tr[ tr.length - 1 ][ 0 ] > 150 ) {
+				return 0; // standing still
+			}
+			const a = tr[ 0 ], b = tr[ tr.length - 1 ];
+			return Math.abs( b[ 1 ] - a[ 1 ] ) / Math.max( 50, b[ 0 ] - a[ 0 ] );
+		}
+
 		setState( s ) {
-			const N = this.cards.length, fan = s > 0 && s < N + 2 ? 1 : 0;
-			const card = fan && s <= N ? this.base[ s - 1 ] : this.base[ 0 ];
+			const N = this.cards.length, fan = s > 0 && s <= N ? 1 : 0;
+			const card = fan ? this.base[ s - 1 ] : this.base[ 0 ];
 			this.state = s;
 			this.moved = Date.now();
 			if ( fan !== this.peek ) {

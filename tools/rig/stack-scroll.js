@@ -25,7 +25,7 @@ const route = (ctx) => ctx.route(/^https:/, async (route) => { const rq = route.
       window.__log = []; const t0 = performance.now();
       const tick = () => {
         const r = deck.getBoundingClientRect(), vh = document.documentElement.clientHeight;
-        window.__log.push({ t: performance.now() - t0, front: cards.findIndex(c => c.dataset.slot === '0'), open: root.classList.contains('is-open'), play: cards.findIndex(c => { const v = c.querySelector('video'); return v && !v.paused; }), order: cards.map(c => c.dataset.slot).join(''), whole: r.top >= -1 && r.bottom <= vh + 1 });
+        window.__log.push({ t: performance.now() - t0, front: cards.findIndex(c => c.dataset.slot === '0'), open: root.classList.contains('is-open'), play: cards.findIndex(c => { const v = c.querySelector('video'); return v && !v.paused; }), order: cards.map(c => c.dataset.slot).join(''), whole: r.top >= -1 && r.bottom <= vh + 1, seen: Math.max(0, Math.min(r.bottom, vh) - Math.max(r.top, 0)) / r.height, lag: (() => { const s = window.szwStack.get(root); return s && s.geo && r.top >= s.inset() - 2 && r.bottom <= vh + 2 ? (s.state !== s.target().t ? 1 : 0) : -1; })() });
         requestAnimationFrame(tick);
       }; tick();
     });
@@ -39,11 +39,13 @@ const route = (ctx) => ctx.route(/^https:/, async (route) => { const rq = route.
       const runs = []; for (let i = 0; i < L.length; i++) { const k = L[i].open ? L[i].front : -1; if (!runs.length || runs[runs.length - 1].k !== k) runs.push({ k, t0: L[i].t, t1: L[i].t }); else runs[runs.length - 1].t1 = L[i].t; }
       const shown = runs.filter(r => r.k >= 0);
       const inner = shown.slice(0, -1); // the last one may be cut short by leaving the screen
-      const openEarly = L.some((e, i) => e.open && i > 0 && !L[i - 1].open && !e.whole);
+      const openEarly = L.some((e, i) => e.open && i > 0 && !L[i - 1].open && e.seen < 0.74);
       const end = L[L.length - 1];
       console.log('   ', label, shown.map(r => r.k + ':' + Math.round(r.t1 - r.t0) + 'ms').join(' → ') || '(never opened)', '| played', [...new Set(L.filter(e => e.play >= 0).map(e => e.play))].join(','));
-      ok(!openEarly, label + ': opens only with the whole deck in view');
-      ok(inner.every(r => r.t1 - r.t0 >= 1800), label + ': no photo in front for less than 1.8s (shortest ' + Math.round(Math.min(...inner.map(r => r.t1 - r.t0), Infinity)) + 'ms)');
+      ok(!openEarly, label + ': opens only with the deck (three quarters at least) in view');
+      const lagged = L.filter(e => e.lag >= 0); const lag = lagged.length ? lagged.filter(e => e.lag).length / lagged.length : 0;
+      ok(lag <= (label === 'flick' ? 1 : 0.2), label + ': follows the scroll (behind it ' + Math.round(lag * 100) + '% of the time in view)');
+      ok(inner.every(r => r.t1 - r.t0 >= 950), label + ': no photo in front for less than a second (shortest ' + Math.round(Math.min(...inner.map(r => r.t1 - r.t0), Infinity)) + 'ms)');
       if (wantAll) ok(new Set(shown.map(r => r.k)).size === 3, label + ': every photo comes to the front');
       ok(!end.open && end.order === '012' && end.play < 0, label + ': at rest again, as it was (' + end.order + ')');
     };
@@ -64,7 +66,7 @@ const route = (ctx) => ctx.route(/^https:/, async (route) => { const rq = route.
     await p.evaluate((y) => scrollTo({ top: y, behavior: 'instant' }), Math.max(0, deckTop - vh)); await p.waitForTimeout(800);
     m = await mark();
     for (let i = 0; i < 16; i++) { if (phone) await p.evaluate(() => scrollBy({ top: 120, behavior: 'instant' })); else await wheel(120); await p.waitForTimeout(90); }
-    await p.waitForTimeout(3000); await judge(m, 'flick', false);
+    await p.waitForTimeout(3000);  await judge(m, 'flick', false);
     ok(!errs.length, 'JS errors: ' + errs.join(' | '));
     await ctx.close();
   }

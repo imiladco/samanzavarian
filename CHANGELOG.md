@@ -4,6 +4,29 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.48.2 — Photo stack: in step with the scroll again, only where it is seen
+Live, 0.48.1 was out of tune: with the clock setting the pace, photos kept
+changing after the scroll had moved on, often with the deck under the header
+or leaving the screen. Measured on the live About me: the deck is fully in
+view for only ~330–450px of scroll, and the section is taller than the screen
+(1020px desktop, 1400px phone), so it cannot be held as a whole.
+- **The scroll is the playhead again**, over the stretch where at least four
+  fifths of the deck are in view below the header (~520px desktop, ~575px
+  phone: ~175–190px a photo). Three steps: fanned on the first photo, the
+  second, the third; then it folds back as it was. The extra "first back"
+  step is gone.
+- **A clock only as a guard**: each photo stays at least 1s, and a flick
+  (faster than 0.8px/ms over 300ms) never opens it. At a reading pace the
+  photos follow the scroll.
+- Under three quarters in view nothing changes; scrolled on past, it folds; out
+  of view, it is at rest at once. From rest it opens on the photo the scroll
+  is at (coming back up: the last).
+- **Holds beside a taller text** when its column has empty room below it (it
+  is the last thing in the column): it stays centred while the text scrolls
+  past, and that room becomes path. Never over anything below it.
+- `tools/rig/stack-scroll.js` also measures how often the deck is behind the
+  scroll while in view.
+
 ## 0.48.1 — Photo stack: the scroll sets the goal, a calm clock the pace
 On the live site 0.48.0 started too early (fanned while the deck was still
 coming up from the screen's foot) and changed photos faster than the eye
