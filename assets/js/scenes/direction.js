@@ -86,6 +86,8 @@
 
 		/** Restyle the three pictures, one after another. */
 		async function restyle( pics, how, accent ) {
+			// driven by the scroll (is-quick): half the time, so a chapter fits one turn of the wheel
+			const q = root.classList.contains( 'is-quick' );
 			[ 'a', 'b', 'c' ].forEach( ( slot, i ) => setTimeout( () => {
 				const clip = clips[ i ];
 				if ( ! clip ) {
@@ -118,9 +120,9 @@
 						setTimeout( () => scan.remove(), 300 );
 					}
 					api.refresh(); // videos in the new pictures
-				}, 950 );
-			}, i * 200 ) );
-			await api.time.wait( 1400 );
+				}, q ? 500 : 950 );
+			}, i * ( q ? 70 : 200 ) ) );
+			await api.time.wait( q ? 650 : 1400 );
 		}
 
 		async function show( route, letter, count ) {
@@ -198,7 +200,13 @@
 				palette( cfg.before.pal );
 				await restyle( cfg.before.pics, 'fade' );
 			} else if ( c <= count ) {
-				await show( cfg.routes[ c - 1 ], 'ABCDEFGH'[ c - 1 ], count );
+				// the route's palette, note and the three pictures at once: no pause before applying it
+				const route = cfg.routes[ c - 1 ], map = { letter: 'ABCDEFGH'[ c - 1 ], count, name: route.name };
+				szwText( head, fill( L.dir_route_title, map ) );
+				say( fill( L.dir_say_apply, map ), route.pal[ 1 ] || '#FF6B2C' );
+				swap( nt, route.note, 'span' );
+				palette( route.pal );
+				await restyle( route.pics, 'wipe', route.pal[ 1 ] || '#FF6B2C' );
 			} else {
 				const pick = cfg.routes[ choice ];
 				const map = { letter: 'ABCDEFGH'[ choice ], count, name: pick.name };
@@ -232,6 +240,7 @@
 			pause() {},
 			drive( on ) {
 				driven = on;
+				root.classList.toggle( 'is-quick', on );
 				if ( on ) {
 					started = true; // the story never starts while the scroll drives
 				} else if ( target >= 0 ) {

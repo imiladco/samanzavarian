@@ -265,6 +265,39 @@
 			api.done();
 		}
 
+		/**
+		 * Driven by the scroll, a piece-to-piece move must fit one turn of the wheel: the camera
+		 * goes straight across (no pull-back, no long push-in), about half a second, and the piece
+		 * is in focus as it lands. The cinematic version stays for the reel that plays by itself.
+		 */
+		async function hop( j ) {
+			const i = cur;
+			holding = false;
+			root.classList.remove( 'is-intro', 'is-out' );
+			items.forEach( ( e ) => e.classList.remove( 'is-target' ) );
+			showOnly( i === j ? [ j ] : [ i, j ] );
+			swap( brief, cfg.pieces[ j ].brief, 'div' );
+			if ( ok ) {
+				okBox.hidden = ! cfg.pieces[ j ].result;
+				swap( ok, cfg.pieces[ j ].result, 'em' );
+			}
+			focus( j );
+			warm( j );
+			const v = video( j );
+			if ( v ) {
+				v.currentTime = 0;
+			}
+			cur = j;
+			shownSec = -1;
+			szwText( hudN, pad( j + 1 ) + ' / ' + pad( n ) );
+			szwText( hudF, label( j, 0 ) );
+			bar.style.transform = 'scaleX(0)';
+			await move( cam( j, 1 ), Math.min( 650, 380 + Math.abs( j - i ) * 70 ) * glide, 'cubic-bezier(.33,0,.15,1)' );
+			showOnly( [ j ] );
+			shownAt = api.time.t;
+			holding = true;
+		}
+
 		/* ---- chapters: a scroll-driven Service Tabs shows the pieces one by one, in the editor's order ---- */
 		let driven = false, target = -1, placed = false, steering = false;
 		async function steer() {
@@ -273,25 +306,8 @@
 			}
 			steering = true;
 			while ( driven && target >= 0 && ( ! placed || target !== cur ) ) {
-				const j = target;
-				if ( ! placed ) {
-					// first time: from wherever the reel stands straight to the piece
-					placed = true;
-					root.classList.remove( 'is-intro' );
-					root.classList.add( 'is-out' );
-					items.forEach( ( e ) => e.classList.remove( 'is-target' ) );
-					items[ j ].classList.add( 'is-target' );
-					showOnly( [ j ] );
-					if ( ok ) {
-						okBox.hidden = ! cfg.pieces[ j ].result;
-						swap( ok, cfg.pieces[ j ].result, 'em' );
-					}
-					swap( brief, cfg.pieces[ j ].brief, 'div' );
-					await move( cam( j, OUT ), 520, 'cubic-bezier(.65,0,.35,1)' );
-					await pushIn( j );
-				} else {
-					await go( j );
-				}
+				placed = true;
+				await hop( target );
 			}
 			steering = false;
 		}

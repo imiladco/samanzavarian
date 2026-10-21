@@ -85,3 +85,8 @@
 .szs--direction .look-before-a{--wall:linear-gradient(#8ecbff,#d9f1ff);--floor:#7CB342;--light:rgba(255,245,160,.9);--lx:80%;--ly:10%;--prop:#FFFFFF;--sh:rgba(60,60,60,.3);--shb:3px;--shs:40deg;--g1:rgba(220,240,255,.7);--g2:rgba(70,110,170,.7);--glow:rgba(255,255,255,.4);--tilt:8deg;--cap:#C62828}
 .szs--direction .look-before-b{--wall:#9575CD;--floor:#FFF59D;--light:rgba(255,255,255,.5);--lx:20%;--prop:#F06292;--sh:rgba(200,0,0,.5);--shb:0px;--shs:55deg;--g1:rgba(255,255,255,.55);--g2:rgba(123,31,162,.7);--glow:rgba(255,255,0,.5);--tilt:-11deg;--cap:#43A047}
 .szs--direction .look-before-c{--wall:#E0E0E0;--floor:#26A69A;--fh:45%;--prop:#FF7043;--sh:transparent;--g1:rgba(255,255,255,.6);--g2:rgba(46,125,50,.7);--glow:transparent;--tilt:5deg;--cap:#1565C0;--grade:contrast(1.2) saturate(1.3)}
+
+/* driven by the scroll: a route lands in half the time (direction.js shortens its timings to match) */
+.szs--direction.is-quick .szs-dir__look.is-wipe{transition-duration:.45s}
+.szs--direction.is-quick .szs-dir__scan{transition-duration:.45s,.2s}
+.szs--direction.is-quick .szs-dir__swatch b{transition-duration:.3s,.3s}

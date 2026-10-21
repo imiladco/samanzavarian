@@ -4,6 +4,32 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.47.1 — Chapters that fit a turn of the wheel
+Live, 0.47.0 was not friendly to use. Measured with ordinary wheel scrolling
+(3 notches, a pause, again): only 4 of the 6 showreel pieces were ever seen,
+the scene was caught mid-transition 86% of the time, and each piece was in
+focus for about 0.2s. Two causes:
+- **A transition longer than a step.** Each piece-to-piece move was the
+  reel's cinematic one (pull back, glide, push in: about 2s), while a step
+  was about 210px, two notches.
+- **Steps squeezed by the budget.** The section capped steps at about 23%
+  of the screen.
+
+Changes:
+- Driven by the scroll, the AI showreel moves straight to the next piece in
+  about half a second, and the piece is in focus as it lands. Creative
+  direction applies a route's palette, note and pictures at once, in half
+  the time (is-quick). The cinematic versions stay for the reel that plays
+  by itself (phones, tablets, wherever the section is not pinned).
+- No step is shorter than 32% of the screen, about one natural turn of the
+  wheel. The defaults are 40% per chapter, and the section may be up to 520%
+  of the screen.
+
+Measured the same way (tools/rig/ux-wheel.js), on the live site's own
+content with these files: all 6 pieces seen in focus, about 1.7s each, never
+caught mid-transition. Chapters, keys, links and autoplay where not pinned
+all pass as before.
+
 ## 0.47.0 — Chapters, finished: preload, keys, weights; and a fix for tab clicks
 The four items left from the chapters plan.
 - **Preload.** As a piece comes into view, the videos of the pieces either

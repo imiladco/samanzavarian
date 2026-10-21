@@ -162,8 +162,8 @@ class Service_Tabs extends Widget_Nested_Base {
 			60,
 			esc_html__( 'The section holds still while the page\'s scroll opens one service after another, and back again when scrolling up. A scene with chapters (the AI showreel\'s pieces, the direction routes) shows them one by one on the way. A tab clicked takes the page to its place.', 'samanzavarian-widgets' ),
 			static function ( $w ) {
-				$w->add_control( 'pin_chapter', [ 'label' => esc_html__( 'Scroll for each chapter of a scene', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SLIDER, 'size_units' => [ 'px' ], 'range' => [ 'px' => [ 'min' => 20, 'max' => 100 ] ], 'default' => [ 'unit' => 'px', 'size' => 35 ], 'description' => esc_html__( 'In hundredths of the screen\'s height.', 'samanzavarian-widgets' ) ] );
-				$w->add_control( 'pin_budget', [ 'label' => esc_html__( 'Longest the section may get', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SLIDER, 'size_units' => [ 'px' ], 'range' => [ 'px' => [ 'min' => 150, 'max' => 1000 ] ], 'default' => [ 'unit' => 'px', 'size' => 400 ], 'description' => esc_html__( 'In hundredths of the screen\'s height, all steps together. More content makes the steps shorter, not the page longer.', 'samanzavarian-widgets' ) ] );
+				$w->add_control( 'pin_chapter', [ 'label' => esc_html__( 'Scroll for each chapter of a scene', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SLIDER, 'size_units' => [ 'px' ], 'range' => [ 'px' => [ 'min' => 20, 'max' => 100 ] ], 'default' => [ 'unit' => 'px', 'size' => 40 ], 'description' => esc_html__( 'In hundredths of the screen\'s height. Never less than 32: a step needs about one turn of the wheel.', 'samanzavarian-widgets' ) ] );
+				$w->add_control( 'pin_budget', [ 'label' => esc_html__( 'Longest the section may get', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SLIDER, 'size_units' => [ 'px' ], 'range' => [ 'px' => [ 'min' => 150, 'max' => 1000 ] ], 'default' => [ 'unit' => 'px', 'size' => 520 ], 'description' => esc_html__( 'In hundredths of the screen\'s height, all steps together. More content makes the steps shorter, not the page longer.', 'samanzavarian-widgets' ) ] );
 			}
 		);
 
@@ -823,6 +823,9 @@ class Service_Tabs extends Widget_Nested_Base {
 	/** Lead-in and lead-out of the scroll-driven path, in hundredths of the screen height. */
 	private const PIN_EDGE = 15;
 
+	/** No step shorter than this (hundredths of the screen): about one natural turn of a mouse wheel. */
+	private const MIN_STEP = 32.0;
+
 	protected function render(): void {
 		$settings = $this->get_settings_for_display();
 		$tabs     = isset( $settings['tabs'] ) && is_array( $settings['tabs'] ) ? array_values( $settings['tabs'] ) : [];
@@ -846,7 +849,7 @@ class Service_Tabs extends Widget_Nested_Base {
 
 		$this->panels = [];
 		// the path: a step per tab after the first, and a lead-in and lead-out (half a step's worth each)
-		$path = self::path( $this->chapters( count( $tabs ) ), (int) Pin_Controls::step( $settings, 60 ), (int) ( $settings['pin_chapter']['size'] ?? 35 ), (int) ( $settings['pin_budget']['size'] ?? 400 ) );
+		$path = self::path( $this->chapters( count( $tabs ) ), (int) Pin_Controls::step( $settings, 60 ), (int) ( $settings['pin_chapter']['size'] ?? 40 ), (int) ( $settings['pin_budget']['size'] ?? 520 ) );
 		// numbers written by hand: json_encode prints 38.329999… on hosts with a long serialize_precision
 		$num = static fn( float $v ): string => rtrim( rtrim( number_format( $v, 2, '.', '' ), '0' ), '.' );
 		echo Pin_Controls::open( $settings, $num( $path['len'] ) . 'svh', 'tabs', [ 'stops' => '[' . implode( ',', array_map( $num, $path['stops'] ) ) . ']', 'map' => wp_json_encode( $path['map'] ), 'total' => $num( $path['len'] ), 'n' => count( $tabs ) ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside
@@ -966,7 +969,8 @@ class Service_Tabs extends Widget_Nested_Base {
 	 * The scroll path, in hundredths of the screen height: a resting point (stop) for every
 	 * chapter of every tab, a lead-in and a lead-out. A step to the next tab is $tab long,
 	 * a step to the next chapter $chapter × its weight. All steps together keep within the
-	 * budget: more content makes the steps shorter (never under 20), not the page longer.
+	 * budget: more content makes the steps shorter, not the page longer, down to MIN_STEP (a
+	 * step must still take a turn of the wheel; past that the page does grow).
 	 *
 	 * @param array<int, float[]> $chapters
 	 * @return array{len: float, stops: float[], map: int[][]}
@@ -988,7 +992,7 @@ class Service_Tabs extends Widget_Nested_Base {
 		$at   = (float) self::PIN_EDGE;
 		$stops = [ round( $at, 2 ) ];
 		foreach ( $gaps as $g ) {
-			$at     += max( 20.0, $g * $k );
+			$at     += max( self::MIN_STEP, $g * $k );
 			$stops[] = round( $at, 2 );
 		}
 		return [ 'len' => round( $at + self::PIN_EDGE, 2 ), 'stops' => $stops, 'map' => $map ];
