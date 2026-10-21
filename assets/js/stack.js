@@ -114,7 +114,7 @@
 			this.off.forEach( ( f ) => f() );
 			this.timers.forEach( clearTimeout );
 			clearTimeout( this.closeT );
-			clearTimeout( this.driveT );
+			clearTimeout( this.rejoinT );
 			if ( this.ro ) {
 				this.ro.disconnect();
 			}
@@ -405,6 +405,9 @@
 			let type = 'mouse', down = null, swiped = 0;
 
 			this.on( this.deck, 'pointerdown', ( e ) => {
+				if ( e.pointerType === 'mouse' ) {
+					this.grab(); // a finger may only be scrolling the page: its tap or swipe takes it
+				}
 				type = e.pointerType;
 				down = e.pointerType === 'mouse' ? null : { x: e.clientX, y: e.clientY };
 			} );
@@ -420,6 +423,7 @@
 					return;
 				}
 				swiped = Date.now();
+				this.grab();
 				if ( ! this.fanned() ) {
 					this.setOpen( true );
 				} else {
@@ -432,6 +436,7 @@
 				if ( ! el || Date.now() - swiped < 400 ) {
 					return;
 				}
+				this.grab();
 				const card = this.cards.indexOf( el ), keyboard = e.detail === 0;
 				if ( this.order[ 0 ] !== card ) {
 					if ( this.fanned() ) {
@@ -448,6 +453,9 @@
 			} );
 
 			this.on( this.deck, 'keydown', ( e ) => {
+				if ( [ 'Escape', 'ArrowLeft', 'ArrowRight', 'Enter', ' ' ].includes( e.key ) ) {
+					this.grab();
+				}
 				if ( e.key === 'Escape' && this.fanned() && ! this.editOpen ) {
 					this.setOpen( false, true );
 					this.cards[ this.order[ 0 ] ].focus();
@@ -465,6 +473,7 @@
 
 			this.on( document, 'pointerdown', ( e ) => {
 				if ( this.fanned() && e.pointerType !== 'mouse' && ! this.deck.contains( e.target ) ) {
+					this.grab();
 					this.setOpen( false, true );
 				}
 			} );
@@ -474,6 +483,8 @@
 				// cursor is not one (the browser says enter, and moves, all the same: without movement)
 				this.on( this.deck, 'pointermove', ( e ) => {
 					if ( e.pointerType === 'mouse' && ( e.movementX || e.movementY ) ) {
+						this.hovering = true;
+						this.grab();
 						clearTimeout( this.closeT );
 						if ( ! this.open ) {
 							this.setOpen( true );
@@ -483,6 +494,7 @@
 				// a little grace, so a hand that slips off the edge does not close it
 				this.on( this.deck, 'pointerleave', ( e ) => {
 					if ( e.pointerType === 'mouse' ) {
+						this.hovering = false;
 						clearTimeout( this.closeT );
 						this.closeT = setTimeout( () => this.setOpen( false ), 220 );
 					}
@@ -567,25 +579,21 @@
 		}
 
 		/**
-		 * The page's scroll past the deck plays the hover: fan out on the first
-		 * photo, each next one to the front (its video plays), fold back as it
-		 * was; backwards when scrolling up. The scroll is the playhead.
+		 * The page's scroll is the playhead of the hover: every pixel of it moves
+		 * the photos a little, so the deck is seen to follow the scroll. Fanning
+		 * out, each next photo arcing to the front, folding back as it was: all
+		 * are positions between keyframes, worked out from the scroll, never
+		 * set off by it. The scroll stops, it stops there; back up, it runs back.
+		 * Between the moves each photo rests in front a while (its video plays).
 		 *
-		 * The path is only the stretch where the deck is in view below the header
-		 * (four fifths of it at least coming in, all of it at the end, so it folds
-		 * in full view), so nothing starts at the screen's foot or changes under
-		 * the header. Where its column is taller than it (beside the text on a
-		 * desktop) the deck holds still in it, centred, while the text scrolls
-		 * past: that room becomes path, without adding any to the page.
+		 * Keyframes: at rest, fanned on photo 1, on photo 2 (it swapped with 1),
+		 * on photo 3, at rest again in the first order. The path is the stretch
+		 * where the deck is in view below the header; where its column has
+		 * empty room below it, the deck also holds still in it, centred.
 		 *
-		 * A clock is only a guard: a photo stays at least a second, so a flick
-		 * never shuffles; at a reading pace the photos follow the scroll exactly.
-		 * Half in view nothing changes; scrolled on past, it folds; out of view
-		 * it is put back at rest at once.
-		 *
-		 * States: 0 at rest, 1…N fanned with photo N in front, N+1 at rest again.
-		 * Edge-triggered: a photo the hand chose stays until the next step; a
-		 * hand fanning it keeps it fanned.
+		 * A hand on the deck (a moving mouse, a tap, a key) takes it over as it
+		 * is, with every gesture it has; the scroll takes it back once the hand
+		 * has gone and the page has moved on.
 		 */
 		scrollDrive() {
 			this.scrollOn = ( this.root.dataset.scroll || '' ).split( ' ' ).filter( Boolean );
@@ -593,22 +601,62 @@
 				this.scrollOn = [];
 				return;
 			}
-			this.base = this.order.slice();
-			this.state = 0;
-			this.moved = 0; // when the state last changed
-			this.wanted = 0; // since when the scroll has wanted another state
+			const base = this.order.slice(), N = this.cards.length;
+			// the keyframes: { order, f } (f: how far fanned)
+			this.keys = [ { order: base, f: 0 }, { order: base, f: 1 } ];
+			for ( let i = 1; i < N; i++ ) {
+				const o = this.keys[ this.keys.length - 1 ].order.slice(), k = o.indexOf( base[ i ] );
+				[ o[ 0 ], o[ k ] ] = [ o[ k ], o[ 0 ] ];
+				this.keys.push( { order: o, f: 1 } );
+			}
+			this.keys.push( { order: base, f: 0 } );
+			// the timeline: a move between keyframes, a rest on each fanned one; folding takes longest
+			const moves = this.keys.length - 1, rests = N, fold = 1.8;
+			const unit = 1 / ( ( moves - 1 ) + fold + rests * 1.1 );
+			this.line = [];
+			let at = 0;
+			for ( let k = 0; k < moves; k++ ) {
+				const len = ( k === moves - 1 ? fold : 1 ) * unit;
+				this.line.push( { from: at, to: at + len, a: k, b: k + 1 } );
+				at += len;
+				if ( k < moves - 1 ) {
+					this.line.push( { from: at, to: at + 1.1 * unit, a: k + 1, b: k + 1 } );
+					at += 1.1 * unit;
+				}
+			}
 			this.widget = this.root.closest( '.elementor-widget' ) || this.root;
+			this.q = -1; // the progress shown (eases after the scroll's)
+			this.keyAt = -1;
+			this.hand = false;
 			let raf = 0, mraf = 0, near = false;
 			const frame = () => {
 				raf = 0;
 				if ( ! this.geo ) {
 					return;
 				}
-				if ( near ) {
-					this.follow();
-				} else if ( this.state > 0 && this.state <= this.cards.length ) {
-					clearTimeout( this.driveT );
-					this.setState( this.target().t ); // gone by: at rest, as it was
+				const p = this.progress();
+				if ( this.hand ) {
+					// the hand gone and the page moved on (or the deck out of view): the scroll again
+					if ( ( ! this.hovering && Math.abs( window.scrollY - this.handY ) > 140 ) || ! near ) {
+						this.release();
+					} else {
+						return;
+					}
+				}
+				// out of view, or the first time: straight there; in view: eased by time (not frames),
+				// so a wheel's steps glide and it lands in about a third of a second on any screen
+				const now = performance.now(), dt = this.qt ? Math.min( 100, now - this.qt ) : 16, d = p - this.q;
+				this.qt = now;
+				if ( ! near || this.q < 0 || Math.abs( d ) < 0.0008 ) {
+					this.q = p;
+				} else {
+					this.q += d * ( 1 - Math.exp( -dt / 90 ) );
+				}
+				this.scrub( this.q );
+				if ( this.q !== p ) {
+					raf = requestAnimationFrame( frame );
+				} else {
+					this.qt = 0; // landed: the next scroll starts a new glide
 				}
 			};
 			this.queueDrive = () => {
@@ -618,32 +666,22 @@
 				mraf = mraf || requestAnimationFrame( () => {
 					mraf = 0;
 					this.measureDrive();
+					this.keyAt = -1;
 					this.queueDrive();
 				} );
 			};
-			this.trail = []; // recent scroll positions: how fast it is going
-			this.on( window, 'scroll', () => {
-				if ( near ) {
-					const now = performance.now();
-					this.trail.push( [ now, window.scrollY ] );
-					while ( this.trail.length > 2 && now - this.trail[ 0 ][ 0 ] > 300 ) {
-						this.trail.shift();
-					}
-					this.queueDrive();
-				}
-			}, { passive: true } );
+			this.on( window, 'scroll', () => near && this.queueDrive(), { passive: true } );
 			this.on( window, 'resize', remeasure );
 			this.on( window, 'load', remeasure );
 			if ( 'ResizeObserver' in window ) {
 				this.driveRo = new ResizeObserver( remeasure );
 				this.driveRo.observe( document.body );
-				this.driveRo.observe( this.root );
 			}
 			if ( 'IntersectionObserver' in window ) {
 				this.scrollIo = new IntersectionObserver( ( es ) => {
 					near = es[ es.length - 1 ].isIntersecting;
 					this.queueDrive();
-				}, { rootMargin: '25% 0px' } );
+				}, { rootMargin: '15% 0px' } );
 				this.scrollIo.observe( this.deck );
 			} else {
 				near = true;
@@ -658,18 +696,19 @@
 
 		/**
 		 * Only when sizes change: whether the deck holds in its column, and the
-		 * scroll positions where the path starts (the whole deck has come in)
-		 * and ends (its top reaches the header).
+		 * scroll positions where the path starts (half the deck in, at the
+		 * screen's foot) and ends (its top at the header: it folds in full view).
 		 */
 		measureDrive() {
 			const w = this.widget, col = w.parentElement, vh = document.documentElement.clientHeight, inset = this.inset();
 			w.classList.remove( 'sz-stack-hold' );
 			w.style.removeProperty( '--szk-hold' );
 			if ( ! this.scrolls() ) {
-				this.geo = null;
-				if ( this.state ) {
-					clearTimeout( this.driveT );
-					this.setState( 0 ); // not on at this width: at rest
+				if ( this.geo ) {
+					this.geo = null;
+					this.release();
+					this.toKey( 0 ); // not on at this width: at rest
+					this.root.classList.remove( 'is-scrub' );
 				}
 				return;
 			}
@@ -684,93 +723,110 @@
 				w.style.setProperty( '--szk-hold', Math.round( top ) + 'px' );
 				w.classList.add( 'sz-stack-hold' );
 			}
-			// from four fifths of the deck in at the foot to its top at the header: it folds in full view
-			const y0 = Ws + dy + 0.8 * h - vh * 0.97;
+			const y0 = Ws + dy + 0.5 * h - vh;
 			const y1 = ( hold ? Ws + room : Ws ) + dy - inset;
-			this.geo = { y0, y1: Math.max( y1, y0 + 200 ) };
+			this.geo = { y0, y1: Math.max( y1, y0 + 240 ) };
 		}
 
-		/** Where the scroll wants it, and how much of the deck is in view below the header. */
-		target() {
-			const r = this.deck.getBoundingClientRect(), vh = document.documentElement.clientHeight, N = this.cards.length;
-			const p = ( window.scrollY - this.geo.y0 ) / ( this.geo.y1 - this.geo.y0 );
-			const seen = Math.max( 0, Math.min( r.bottom, vh ) - Math.max( r.top, this.inset() ) ) / ( r.height || 1 );
-			const t = p <= 0 ? 0 : ( p >= 1 ? N + 1 : 1 + Math.min( N - 1, Math.floor( p * N ) ) );
-			// "in view": three quarters of it, or of the screen for a deck taller than that
-			return { t, seen, whole: seen >= Math.min( 0.75, vh / ( r.height || 1 ) * 0.75 ) };
+		progress() {
+			return Math.max( 0, Math.min( 1, ( window.scrollY - this.geo.y0 ) / ( this.geo.y1 - this.geo.y0 ) ) );
 		}
 
-		follow() {
-			clearTimeout( this.driveT );
-			const { t, seen, whole } = this.target(), now = Date.now(), N = this.cards.length;
-			const rest = t === 0 || t === N + 1;
-			if ( t === this.state ) {
-				this.wanted = 0;
-				return;
+		/** The deck at keyframe k, through the usual rendering (slots, captions, labels, video). */
+		toKey( k ) {
+			const key = this.keys[ k ];
+			this.keyAt = k;
+			this.order = key.order.slice();
+			this.peek = key.f;
+			this.render();
+		}
+
+		/** The photos where progress q puts them. */
+		scrub( q ) {
+			const seg = this.line.find( ( s ) => q <= s.to ) || this.line[ this.line.length - 1 ];
+			const raw = seg.to > seg.from ? ( q - seg.from ) / ( seg.to - seg.from ) : 1;
+			const t = Math.max( 0, Math.min( 1, raw ) ), e = t * t * ( 3 - 2 * t ); // eased within the move
+			const near = seg.a === seg.b || t < 0.5 ? seg.a : seg.b;
+			this.root.classList.add( 'is-scrub' );
+			if ( near !== this.keyAt ) {
+				this.toKey( near ); // slots, captions, the front photo's video: of the nearer keyframe
 			}
-			// mostly out of view: straight to where it should be
-			if ( seen < 0.4 ) {
-				this.wanted = 0;
-				this.setState( t );
-				return;
-			}
-			// half in view: nothing starts or changes at an edge; scrolled on past, it folds
-			if ( ! whole ) {
-				this.wanted = 0;
-				if ( rest ) {
-					this.setState( t );
+			if ( seg.a === seg.b ) {
+				if ( this.moving ) {
+					this.moving = false;
+					this.cards.forEach( ( el ) => {
+						el.style.zIndex = '';
+					} );
+					this.render(); // resting on a keyframe: exactly on it
 				}
 				return;
 			}
-			// flicked past: it is not opened for a glimpse (looked at again in a moment)
-			const atRest = this.state === 0 || this.state === N + 1;
-			if ( atRest && this.speed() > 0.8 ) {
-				this.wanted = 0;
-				this.driveT = setTimeout( this.queueDrive, 120 );
+			this.moving = true;
+			const W = this.deck.offsetWidth, H = this.deck.offsetHeight;
+			if ( ! W ) {
 				return;
 			}
-			this.wanted = this.wanted || now;
-			// the guard: a breath before it opens, a second for each photo
-			const ready = Math.max( this.wanted + ( atRest ? 300 : 0 ), this.moved + ( this.state > 0 && this.state <= N ? 1000 : 0 ) );
-			if ( now < ready ) {
-				this.driveT = setTimeout( this.queueDrive, ready - now + 16 );
-				return;
-			}
-			// one step at a time; from rest it opens on the photo the scroll is at
-			this.setState( rest || atRest ? t : this.state + ( t > this.state ? 1 : -1 ) );
-			this.wanted = 0;
-			if ( this.state !== t ) {
-				this.driveT = setTimeout( this.queueDrive, 1016 );
-			}
-		}
-
-		/** The scroll's speed over the last 300ms, in px per ms. */
-		speed() {
-			const tr = this.trail, now = performance.now();
-			if ( tr.length < 2 || now - tr[ tr.length - 1 ][ 0 ] > 150 ) {
-				return 0; // standing still
-			}
-			const a = tr[ 0 ], b = tr[ tr.length - 1 ];
-			return Math.abs( b[ 1 ] - a[ 1 ] ) / Math.max( 50, b[ 0 ] - a[ 0 ] );
-		}
-
-		setState( s ) {
-			const N = this.cards.length, fan = s > 0 && s <= N ? 1 : 0;
-			const card = fan ? this.base[ s - 1 ] : this.base[ 0 ];
-			this.state = s;
-			this.moved = Date.now();
-			if ( fan !== this.peek ) {
-				this.peek = fan;
-				if ( ! this.open ) {
-					this.render();
+			const sp = this.spread( W, H ), A = this.keys[ seg.a ], B = this.keys[ seg.b ];
+			const arc = Math.sin( Math.PI * e ), fan = A.f > 0 && B.f > 0;
+			this.cards.forEach( ( el, card ) => {
+				const sa = A.order.indexOf( card ), sb = B.order.indexOf( card );
+				const pa = this.pose0( sa, A.f, W, H, sp ), pb = this.pose0( sb, B.f, W, H, sp );
+				const p = {};
+				[ 'x', 'y', 'r', 's' ].forEach( ( k ) => {
+					p[ k ] = pa[ k ] + ( pb[ k ] - pa[ k ] ) * e;
+				} );
+				if ( fan && sb === 0 && sa !== 0 ) {
+					p.y -= arc * 0.07 * H; // coming to the front: over the deck
+					p.s += arc * 0.035;
+				} else if ( fan && sa === 0 && sb !== 0 ) {
+					p.y += arc * 0.02 * H; // the old front dips under
+					p.s -= arc * 0.03;
 				}
+				el.style.transform = this.css( p );
+				// stacking: the one coming forward is on top from just before half-way
+				const slot = e < 0.45 ? sa : sb;
+				el.style.zIndex = String( 10 - slot + ( sb === 0 && e >= 0.45 ? 1 : 0 ) );
+			} );
+		}
+
+		/** A slot's pose, as render() draws it (the front photo steps back a little when short of room). */
+		pose0( slot, f, W, H, sp ) {
+			const p = this.place( slot, f, W, H, sp );
+			if ( slot === 0 ) {
+				p.s *= 1 - Math.min( 0.12, Math.max( 0, ( W * 0.34 - sp ) / W ) * 0.8 ) * f;
 			}
-			if ( this.order[ 0 ] !== card ) {
-				this.bring( card, 'scroll', card === this.base[ 0 ] ? this.base : null );
-			} else if ( ! fan && this.order.join() !== this.base.join() ) {
-				this.order = this.base.slice(); // at rest: as it was
-				this.render();
+			return p;
+		}
+
+		/** A hand on the deck: it takes it over as it is (the nearer keyframe). */
+		grab() {
+			if ( ! this.keys || ! this.geo ) {
+				return;
 			}
+			this.handY = window.scrollY;
+			if ( this.hand ) {
+				return;
+			}
+			this.hand = true;
+			this.root.classList.remove( 'is-scrub' );
+			this.cards.forEach( ( el ) => {
+				el.style.zIndex = '';
+			} );
+			this.open = this.keys[ this.keyAt < 0 ? 0 : this.keyAt ].f > 0;
+			this.render();
+		}
+
+		/** The scroll takes it back: it glides to where the scroll is. */
+		release() {
+			if ( ! this.hand ) {
+				return;
+			}
+			this.hand = false;
+			this.open = false;
+			this.keyAt = -1;
+			this.root.classList.add( 'is-rejoin' );
+			clearTimeout( this.rejoinT );
+			this.rejoinT = setTimeout( () => this.root.classList.remove( 'is-rejoin' ), 600 );
 		}
 	}
 

@@ -4,6 +4,33 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.50.0 — Photo stack: the scroll is the playhead
+Live, 0.48–0.49 did what they were built to do, and still showed no logic: the
+scroll set off discrete events (open, swap, fold) behind guards and timers, so
+nothing happened for a while, then something jumped, on a clock's say. The
+cause and the effect could not be seen. Rebuilt as a scrubbed timeline:
+- **Every bit of scroll moves the photos a little**: the fan opens by degrees,
+  the next photo arcs over the deck to the front in step with the scroll (the
+  old front dips under), and it folds back to the first order at the end. All
+  are positions between keyframes (at rest, fanned on photo 1, 2, 3, at rest),
+  worked out from the scroll position: the same position always gives the same
+  picture, coming down or going up.
+- **The scroll stops, the photos stop**; back up, they run back. Each photo
+  rests in front for a stretch between the moves; its video plays there.
+- **Eased by time, not frames** (about a third of a second): a wheel's steps
+  glide, on any screen.
+- The path: from half the deck in at the screen's foot to its top at the
+  header (~590px desktop, ~630px phone on the live About me); folding takes
+  the longest stretch. Holds in an empty column, as before.
+- **A hand takes it over** as it is (a moving mouse, a click, a tap, a swipe,
+  a key; a finger scrolling the page is not one), with every gesture it had;
+  once the hand has gone and the page moved 140px, the photos glide back to
+  where the scroll is.
+- No timers, guards or speed gates left in it. `tools/rig/stack-scrub.js`
+  judges exactly this (one position one picture, stops with the scroll, no
+  jumps, the order, the hand; also `LIVE=1`); it replaces stack-scroll.js and
+  stack-hand.js.
+
 ## 0.49.0 — The showreel plays on when the scroll rests; Photo stack: hand and scroll agree
 **AI visual production played by itself no more** once its tabs were
 scroll-driven (desktop and phones on the live site): the scene only moved with

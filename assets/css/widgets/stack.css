@@ -143,3 +143,7 @@
 }
 /* scroll-driven: beside the text, the deck holds still in its column (js/stack.js measures the room and the top) */
 body:not(.elementor-editor-active) .sz-stack-hold{position:sticky;top:var(--szk-hold,96px)}
+/* scroll-driven: the scroll places the photos every frame (eased in js): no transition of their own;
+   handed back from a hand, they glide to where the scroll is */
+.sz-stack.is-scrub:not(.is-rejoin) .sz-stack__card{transition:box-shadow .4s}
+.sz-stack.is-rejoin .sz-stack__card{transition:transform .5s cubic-bezier(.25,.8,.3,1),box-shadow .4s}
