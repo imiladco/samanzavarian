@@ -27,6 +27,15 @@
  * play()/pause() may be called any number of times. Hand controls a factory
  * wires up always work.
  *
+ * Chapters (optional; for a scroll-driven Service Tabs): a scene whose story
+ * has chapters (the showreel's pieces, the direction's routes) may return
+ *   drive( on )   the page's scroll takes over (on) or gives back (off): while
+ *                 driven, the scene does not move on by itself
+ *   show( k )     go to chapter k, with the scene's own transition; called
+ *                 again before one ends, it goes straight to the latest k
+ * and say how many it has in PHP (Service_Panel::chapters), so the page has
+ * its height from the first paint. A scene without them is one chapter.
+ *
  * Stage: every scene draws on a fixed design stage (.szs-stage). It is
  * scaled here to the panel's width and height (the stylesheet has a stepped
  * guess for the first paint). Transforms only: scaling never shifts layout.
@@ -144,7 +153,8 @@
 
 	function update( svc, state ) {
 		const free = visible( svc ) && ! reduce.matches && ! paused( state );
-		const sceneOn = !! state.ctrl && 'static' !== state.mode && ! state.done;
+		// a scene the scroll drives keeps its clock (its transitions run on it) even after a "once" story
+		const sceneOn = !! state.ctrl && 'static' !== state.mode && ( ! state.done || !! state.driven );
 
 		if ( state.root ) {
 			// is-live: on screen and allowed to move (placeholder footage keeps
@@ -227,6 +237,19 @@
 					preview: false,
 				};
 				panels.set( svc, state );
+				// chapters: the tabs' scroll tells the scene where it is (see the contract above)
+				svc.addEventListener( 'sz:driven', ( e ) => {
+					state.driven = !! e.detail.on;
+					if ( state.ctrl && state.ctrl.drive ) {
+						state.ctrl.drive( state.driven );
+					}
+				} );
+				svc.addEventListener( 'sz:chapter', ( e ) => {
+					state.chapter = e.detail.index;
+					if ( state.ctrl && state.ctrl.show && state.driven ) {
+						state.ctrl.show( state.chapter );
+					}
+				} );
 				if ( io ) {
 					io.observe( svc );
 				}
@@ -248,6 +271,13 @@
 						refresh();
 					},
 				} );
+				// the scroll may have spoken before the scene's script arrived
+				if ( state.driven && state.ctrl.drive ) {
+					state.ctrl.drive( true );
+					if ( state.ctrl.show && undefined !== state.chapter ) {
+						state.ctrl.show( state.chapter );
+					}
+				}
 			}
 		} );
 

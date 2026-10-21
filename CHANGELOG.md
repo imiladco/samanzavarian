@@ -4,6 +4,44 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.46.0 — Scenes have chapters: the scroll shows every piece and every route
+**A contract, not a special case.** A scene may declare chapters (in PHP,
+Service_Panel::chapters) and take two calls from the page (drive(on) and
+show(k)). The scroll engine knows nothing about what a chapter is. A scene
+without chapters has one and behaves as before, so Post-production and
+Content systems are unchanged. A future scene, or another widget, plugs in
+the same way.
+
+**What I do, scroll-driven (desktop):**
+- AI visual production: one chapter per delivered piece, in the editor's
+  order. The scroll moves the camera piece by piece (pull back, glide, push
+  in), videos play in real time, and scrolling up runs it back.
+- Creative direction: "before direction", each route in the editor's order,
+  then the client's choice.
+- Fast scroll: a scene goes straight to the latest chapter. Transitions never
+  queue up, and no piece in between takes focus.
+- Budget: all steps together keep within "Longest the section may get" (400%
+  of the screen by default), and each chapter keeps at least 20%. More
+  content makes the steps shorter, not the page longer. The path (a resting
+  point per chapter) is set in CSS from the first paint. Settle and
+  hysteresis apply at every resting point.
+- The line beside the open tab is now in segments, one per chapter.
+- Direct links to a chapter: #ai-visual-production-3.
+- Screen readers hear each new chapter ("AI visual production, 3 / 6").
+- Analytics: sz_service_chapter, sent once per chapter per page view, shows
+  how far people really get.
+- Wherever the section is not pinned (phones, reduced motion, the editor),
+  the scenes play by themselves as before.
+
+**Fix:** the scroll engine no longer reports a position while the path has no
+length (a moment of zero size could make the Career timeline throw).
+
+Tests (tools/rig/chapters-*.js): every chapter in order going down and
+exactly reversed going up; a fast scroll goes straight to the last chapter;
+deep link, announcement and analytics. The tabs behave as before (stops 15,
+75, 135, 195 when no scene has chapters). Selected work, Experience, mobile
+autoplay and performance (no slower than without the pin) are unchanged.
+
 ## 0.45.3 — Hero Title on phones: never seen at a wrong size
 Live, the title still changed size after it was shown. Three causes, each
 reproduced on the test site with WP Meteor installed and checked frame by

@@ -18,6 +18,17 @@
  */
 ( function () {
 	'use strict';
+	// text written into the existing text node: Elementor re-measures the page on every childList change
+	const szwText = ( el, str ) => {
+		const t = el.firstChild;
+		if ( t && t.nodeType === 3 && ! t.nextSibling ) {
+			if ( t.data !== str ) {
+				t.data = str;
+			}
+		} else {
+			el.textContent = str;
+		}
+	};
 
 	/**
 	 * Analytics: to Google Tag Manager's dataLayer when GTM is on the page,
@@ -108,40 +119,121 @@
 			if ( ! wrap || ! window.szwPin || ( window.elementorFrontend && window.elementorFrontend.isEditMode && window.elementorFrontend.isEditMode() ) ) {
 				return;
 			}
-			const n = +wrap.dataset.szPinN || this.tabs().length, step = +wrap.dataset.szPinStep || 60, edge = +wrap.dataset.szPinEdge || 15;
-			const H = 0.12; // hysteresis, in steps
-			// lengths in px follow the path's measured length (it is in svh)
-			const unit = ( len ) => len / ( ( n - 1 ) * step + 2 * edge );
-			const at = ( i, len ) => ( edge + i * step ) * unit( len );
-			let cur = this.current();
+			// the path, from the server (Service_Tabs::path): a resting point for every chapter of
+			// every tab, in hundredths of the screen height, and which tab and chapter each one is
+			let S, M;
+			try {
+				S = JSON.parse( wrap.dataset.szPinStops );
+				M = JSON.parse( wrap.dataset.szPinMap );
+			} catch ( e ) {
+				return;
+			}
+			const T = +wrap.dataset.szPinTotal || ( S[ S.length - 1 ] + S[ 0 ] );
+			const m = S.length, H = 0.12; // hysteresis: a share of the step being crossed
+			const unit = ( len ) => len / T;
+			const stopOf = ( tab, chap ) => Math.max( 0, M.findIndex( ( x ) => x[ 0 ] === tab && x[ 1 ] === chap ) );
+			// where each tab's stretch begins and ends (half-way to its neighbours), for its line
+			const span = ( tab ) => {
+				const idx = M.map( ( x, k ) => ( x[ 0 ] === tab ? k : -1 ) ).filter( ( k ) => k >= 0 );
+				const f = idx[ 0 ], l = idx[ idx.length - 1 ];
+				return [ f === 0 ? 0 : ( S[ f - 1 ] + S[ f ] ) / 2, l === m - 1 ? T : ( S[ l ] + S[ l + 1 ] ) / 2 ];
+			};
+			let j = stopOf( this.current(), 0 ), told = -1;
 			this.pinMute = 0;
+			const tell = () => {
+				const [ tab, chap ] = M[ j ];
+				const key = tab * 1000 + chap;
+				if ( key === told ) {
+					return;
+				}
+				told = key;
+				const panel = this.panels()[ tab ];
+				const svc = panel && panel.querySelector( '.sz-svc' );
+				const count = M.filter( ( x ) => x[ 0 ] === tab ).length;
+				if ( svc ) {
+					svc.dispatchEvent( new CustomEvent( 'sz:chapter', { detail: { index: chap, count } } ) );
+				}
+				this.root.style.setProperty( '--szt-chapters', count );
+				this.root.style.setProperty( '--szt-chapter', chap );
+				if ( count > 1 ) {
+					// said to screen readers: "AI visual production, 3 of 6"
+					szwText( this.say, this.title( tab ) + ', ' + ( chap + 1 ) + ' / ' + count );
+					// reported once per chapter and page view: how far people really get
+					if ( this.track && ! seen.has( key ) ) {
+						seen.add( key );
+						window.szwTrack( 'sz_service_chapter', { service_name: this.title( tab ), chapter: chap + 1, chapter_count: count } );
+					}
+				}
+			};
+			const seen = new Set();
+			this.say = document.createElement( 'span' );
+			this.say.className = 'sz-tabs__say';
+			this.say.setAttribute( 'aria-live', 'polite' );
+			this.say.appendChild( document.createTextNode( '' ) );
+			this.root.appendChild( this.say );
 			this.pin = window.szwPin( wrap, {
 				update: ( px, len ) => {
-					const u = unit( len ), raw = ( px / u - edge ) / step;
-					if ( raw >= cur + 0.5 + H || raw <= cur - 0.5 - H ) {
-						cur = Math.max( 0, Math.min( n - 1, Math.round( raw ) ) );
+					const p = px / unit( len );
+					// across as many resting points as the scroll went past (a fast scroll: straight to the last)
+					while ( j < m - 1 && p >= ( S[ j ] + S[ j + 1 ] ) / 2 + H * ( S[ j + 1 ] - S[ j ] ) ) {
+						j++;
 					}
-					if ( performance.now() > this.pinMute && cur !== this.current() ) {
-						this.select( cur, { scroll: true } );
+					while ( j > 0 && p <= ( S[ j - 1 ] + S[ j ] ) / 2 - H * ( S[ j ] - S[ j - 1 ] ) ) {
+						j--;
 					}
-					// the open tab's line: from where it opened to where the next one opens
-					const a = cur === 0 ? -edge / step : cur - 0.5, b = cur === n - 1 ? n - 1 + edge / step : cur + 0.5;
-					this.root.style.setProperty( '--szt-fill', Math.max( 0, Math.min( 1, ( raw - a ) / ( b - a ) ) ).toFixed( 3 ) );
+					const tab = M[ j ][ 0 ];
+					if ( performance.now() > this.pinMute && tab !== this.current() ) {
+						this.select( tab, { scroll: true } );
+					}
+					if ( performance.now() > this.pinMute ) {
+						tell();
+					}
+					// the open tab's line: across its whole stretch
+					const [ a, b ] = span( tab );
+					this.root.style.setProperty( '--szt-fill', Math.max( 0, Math.min( 1, ( p - a ) / ( b - a ) ) ).toFixed( 3 ) );
 				},
-				stops: ( len ) => this.tabs().map( ( t, i ) => at( i, len ) ),
+				stops: ( len ) => S.map( ( x ) => x * unit( len ) ),
 				settle: true,
-				live: ( on ) => this.root.classList.toggle( 'is-pinned', on ),
+				live: ( on ) => {
+					this.root.classList.toggle( 'is-pinned', on );
+					// scenes with chapters follow the scroll while pinned, and play by themselves otherwise
+					this.panels().forEach( ( panel ) => {
+						const svc = panel.querySelector( '.sz-svc' );
+						if ( svc ) {
+							svc.dispatchEvent( new CustomEvent( 'sz:driven', { detail: { on } } ) );
+						}
+					} );
+					told = -1;
+				},
 			} );
-			this.pinGo = ( i, smooth ) => {
-				cur = i;
+			this.pinGo = ( tab, smooth, chap = 0 ) => {
+				j = stopOf( tab, chap );
+				told = -1;
 				this.pinMute = performance.now() + ( smooth ? 900 : 50 );
-				this.pin.to( at( i, this.pin.length ), smooth );
+				this.pin.to( S[ j ] * unit( this.pin.length ), smooth );
 			};
-			// opened from the address (#post-production): the page goes to that tab's place
-			if ( this.pin.live && location.hash && this.current() > 0 ) {
-				const i = this.current();
-				requestAnimationFrame( () => this.pinGo( i, false ) );
+			// opened from the address: #post-production goes to that tab, #ai-visual-production-3 to
+			// its third chapter (when the tab's own id does not already end in a number)
+			const fromHash = ( smooth ) => {
+				const id = decodeURIComponent( location.hash.slice( 1 ) );
+				const mm = id.match( /^(.+)-(\d+)$/ );
+				const tabs = this.tabs();
+				let tab = tabs.findIndex( ( t ) => t.id === id ), chap = 0;
+				if ( tab < 0 && mm ) {
+					tab = tabs.findIndex( ( t ) => t.id === mm[ 1 ] );
+					chap = Math.max( 0, +mm[ 2 ] - 1 );
+				}
+				if ( tab < 0 || ! this.pin.live ) {
+					return false;
+				}
+				const has = M.some( ( x ) => x[ 0 ] === tab && x[ 1 ] === chap );
+				this.pinGo( tab, smooth, has ? chap : 0 );
+				return true;
+			};
+			if ( this.pin.live && location.hash ) {
+				requestAnimationFrame( () => fromHash( false ) );
 			}
+			window.addEventListener( 'hashchange', () => fromHash( true ) );
 		}
 
 		panels() {

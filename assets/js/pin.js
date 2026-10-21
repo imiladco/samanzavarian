@@ -42,6 +42,10 @@
 
 		const frame = () => {
 			raf = 0;
+			// no path (not measured yet, or a size of nothing for a moment): nothing to report
+			if ( ! on || ! ( len > 0 ) ) {
+				return;
+			}
 			const now = read();
 			if ( now !== px ) {
 				px = now;

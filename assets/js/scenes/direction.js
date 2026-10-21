@@ -149,13 +149,22 @@
 				palette( cfg.before.pal );
 				await restyle( cfg.before.pics, 'fade' );
 				await api.time.wait( 2800 );
+				if ( driven ) {
+					return;
+				}
 
 				// 2. the routes: the first (the design's), then the others in any order
 				const order = [ 0 ].concat( shuffle( cfg.routes.map( ( r, i ) => i ).slice( 1 ) ) );
 				const count = order.length;
 				for ( let n = 0; n < count; n++ ) {
+					if ( driven ) {
+						return; // the scroll took over
+					}
 					await show( cfg.routes[ order[ n ] ], 'ABCDEFGH'[ n ], count );
 					await api.time.wait( cfg.hold );
+				}
+				if ( driven ) {
+					return;
 				}
 
 				// 3. the client's choice
@@ -178,14 +187,61 @@
 			}
 		}
 
+		/* ---- chapters: a scroll-driven Service Tabs shows before, each route (the editor's order) and the choice ---- */
+		const count = cfg.routes.length;
+		const choice = cfg.choice ? Math.min( cfg.choice, count ) - 1 : 0;
+		async function chapter( c ) {
+			if ( 0 === c ) {
+				szwText( head, L.dir_note_title );
+				say( L.dir_say_before, cfg.before.pal[ 1 ] );
+				swap( nt, `<em>${ cfg.before.note }</em>`, 'span' );
+				palette( cfg.before.pal );
+				await restyle( cfg.before.pics, 'fade' );
+			} else if ( c <= count ) {
+				await show( cfg.routes[ c - 1 ], 'ABCDEFGH'[ c - 1 ], count );
+			} else {
+				const pick = cfg.routes[ choice ];
+				const map = { letter: 'ABCDEFGH'[ choice ], count, name: pick.name };
+				szwText( head, fill( L.dir_chosen, map ) );
+				say( fill( L.dir_say_chosen, map ), '#1F9D60' );
+				swap( nt, pick.note, 'span' );
+				palette( pick.pal );
+				await restyle( pick.pics, 'wipe', pick.pal[ 1 ] || '#FF6B2C' );
+			}
+		}
+		let driven = false, target = -1, at = -1, steering = false;
+		async function steer() {
+			if ( steering ) {
+				return; // the chapter under way ends, then the latest target follows
+			}
+			steering = true;
+			while ( driven && target >= 0 && target !== at ) {
+				at = target;
+				await chapter( at );
+			}
+			steering = false;
+		}
+
 		return {
 			play() {
-				if ( ! started ) {
+				if ( ! started && ! driven ) {
 					started = true;
 					run();
 				}
 			},
 			pause() {},
+			drive( on ) {
+				driven = on;
+				if ( on ) {
+					started = true; // the story never starts while the scroll drives
+				} else if ( target >= 0 ) {
+					started = false; // handed back: the story plays by itself again
+				}
+			},
+			show( k ) {
+				target = Math.max( 0, Math.min( count + 1, k | 0 ) );
+				steer();
+			},
 		};
 	}
 

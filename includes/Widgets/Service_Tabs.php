@@ -156,7 +156,16 @@ class Service_Tabs extends Widget_Nested_Base {
 		$this->content_tabs();
 		$this->content_note();
 		$this->content_settings();
-		Pin_Controls::controls( $this, [ 'desktop' ], 60, esc_html__( 'The section holds still while the page\'s scroll opens one service after another, and back again when scrolling up. A tab clicked takes the page to its place.', 'samanzavarian-widgets' ) );
+		Pin_Controls::controls(
+			$this,
+			[ 'desktop' ],
+			60,
+			esc_html__( 'The section holds still while the page\'s scroll opens one service after another, and back again when scrolling up. A scene with chapters (the AI showreel\'s pieces, the direction routes) shows them one by one on the way. A tab clicked takes the page to its place.', 'samanzavarian-widgets' ),
+			static function ( $w ) {
+				$w->add_control( 'pin_chapter', [ 'label' => esc_html__( 'Scroll for each chapter of a scene', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SLIDER, 'size_units' => [ 'px' ], 'range' => [ 'px' => [ 'min' => 20, 'max' => 100 ] ], 'default' => [ 'unit' => 'px', 'size' => 35 ], 'description' => esc_html__( 'In hundredths of the screen\'s height.', 'samanzavarian-widgets' ) ] );
+				$w->add_control( 'pin_budget', [ 'label' => esc_html__( 'Longest the section may get', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SLIDER, 'size_units' => [ 'px' ], 'range' => [ 'px' => [ 'min' => 150, 'max' => 1000 ] ], 'default' => [ 'unit' => 'px', 'size' => 400 ], 'description' => esc_html__( 'In hundredths of the screen\'s height, all steps together. More content makes the steps shorter, not the page longer.', 'samanzavarian-widgets' ) ] );
+			}
+		);
 
 		$this->style_layout();
 		$this->style_list();
@@ -837,8 +846,8 @@ class Service_Tabs extends Widget_Nested_Base {
 
 		$this->panels = [];
 		// the path: a step per tab after the first, and a lead-in and lead-out (half a step's worth each)
-		$step = (int) Pin_Controls::step( $settings, 60 );
-		echo Pin_Controls::open( $settings, 'calc(' . ( count( $tabs ) - 1 ) . ' * ' . $step . 'svh + ' . self::PIN_EDGE * 2 . 'svh)', 'tabs', [ 'step' => $step, 'edge' => self::PIN_EDGE, 'n' => count( $tabs ) ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside
+		$path = self::path( $this->chapters( count( $tabs ) ), (int) Pin_Controls::step( $settings, 60 ), (int) ( $settings['pin_chapter']['size'] ?? 35 ), (int) ( $settings['pin_budget']['size'] ?? 400 ) );
+		echo Pin_Controls::open( $settings, $path['len'] . 'svh', 'tabs', [ 'stops' => wp_json_encode( $path['stops'] ), 'map' => wp_json_encode( $path['map'] ), 'total' => $path['len'], 'n' => count( $tabs ) ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside
 		?>
 		<div <?php $this->print_render_attribute_string( 'root' ); ?>>
 			<div class="sz-tabs__nav">
@@ -921,6 +930,68 @@ class Service_Tabs extends Widget_Nested_Base {
 	 *
 	 * @param int $index
 	 */
+	/**
+	 * Each tab's chapters: what its Service Panel's scene says (Service_Panel::chapters), one
+	 * weight per chapter; a tab without a panel, or a scene without chapters, has one.
+	 *
+	 * @return array<int, float[]>
+	 */
+	private function chapters( int $n ): array {
+		$out      = [];
+		$children = $this->get_children();
+		for ( $i = 0; $i < $n; $i++ ) {
+			$panel   = isset( $children[ $i ] ) ? self::find_panel( $children[ $i ] ) : null;
+			$out[ $i ] = $panel ? Service_Panel::chapters( $panel->get_settings_for_display() ) : [ 1.0 ];
+		}
+		return $out;
+	}
+
+	/** The first Service Panel inside an element, at any depth. */
+	private static function find_panel( $el ) {
+		foreach ( $el->get_children() as $c ) {
+			if ( 'sz-service-panel' === $c->get_name() ) {
+				return $c;
+			}
+			$deep = self::find_panel( $c );
+			if ( $deep ) {
+				return $deep;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * The scroll path, in hundredths of the screen height: a resting point (stop) for every
+	 * chapter of every tab, a lead-in and a lead-out. A step to the next tab is $tab long,
+	 * a step to the next chapter $chapter × its weight. All steps together keep within the
+	 * budget: more content makes the steps shorter (never under 20), not the page longer.
+	 *
+	 * @param array<int, float[]> $chapters
+	 * @return array{len: float, stops: float[], map: int[][]}
+	 */
+	public static function path( array $chapters, int $tab, int $chapter, int $budget ): array {
+		$gaps = [];
+		$map  = [];
+		foreach ( array_values( $chapters ) as $t => $weights ) {
+			foreach ( array_values( $weights ?: [ 1.0 ] ) as $c => $w ) {
+				if ( $map ) {
+					$gaps[] = 0 === $c ? (float) $tab : $chapter * max( 0.25, (float) $w );
+				}
+				$map[] = [ $t, $c ];
+			}
+		}
+		$room = max( 0, $budget - 2 * self::PIN_EDGE );
+		$sum  = array_sum( $gaps );
+		$k    = $sum > $room && $sum > 0 ? $room / $sum : 1;
+		$at   = (float) self::PIN_EDGE;
+		$stops = [ round( $at, 2 ) ];
+		foreach ( $gaps as $g ) {
+			$at     += max( 20.0, $g * $k );
+			$stops[] = round( $at, 2 );
+		}
+		return [ 'len' => round( $at + self::PIN_EDGE, 2 ), 'stops' => $stops, 'map' => $map ];
+	}
+
 	public function print_child( $index ) {
 		$children = $this->get_children();
 

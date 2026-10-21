@@ -139,7 +139,11 @@ szw_ok( preg_match( '#<div class="sz-pin on-d" data-sz-pin="rail" style="--szp-t
 szw_ok( false === strpos( szw_render( [ 'pin_on' => [] ], 'sz-work' ), 'sz-pin' ), 'Selected work: no wrapper at all when scroll-driven is off everywhere' );
 szw_ok( 'on-d on-m' === \Samanzavarian_Widgets\Widgets\Pin_Controls::classes( [ 'pin_on' => [ 'mobile', 'desktop' ] ] ) && '60svh' === \Samanzavarian_Widgets\Widgets\Pin_Controls::step( [], 60 ), 'Scroll-driven: device classes and step length' );
 $pt = szw_render( [ 'tabs' => [ [ 'tab_title' => 'A' ], [ 'tab_title' => 'B' ], [ 'tab_title' => 'C' ], [ 'tab_title' => 'D' ] ] ], 'sz-service-tabs' );
-szw_ok( false !== strpos( $pt, 'data-sz-pin="tabs" data-sz-pin-step="60" data-sz-pin-edge="15" data-sz-pin-n="4" style="--szp-top:80px;--szp-len:calc(3 * 60svh + 30svh)"' ), 'What I do: scroll-driven on desktop, its path set from the first paint (three steps and the lead-in and lead-out)' );
+szw_ok( false !== strpos( $pt, 'data-sz-pin="tabs" data-sz-pin-stops="[15,75,135,195]" data-sz-pin-map="[[0,0],[1,0],[2,0],[3,0]]" data-sz-pin-total="210" data-sz-pin-n="4" style="--szp-top:80px;--szp-len:210svh"' ), 'What I do: scroll-driven on desktop, its path set from the first paint (a stop per tab, the lead-in and lead-out)' );
+$pp = \Samanzavarian_Widgets\Widgets\Service_Tabs::path( [ [ 1, 1, 1, 1, 1, 1 ], [ 1, 1, 1, 1, 1 ], [ 1 ], [ 1 ] ], 60, 35, 400 );
+szw_ok( 13 === count( $pp['stops'] ) && 400.0 === (float) $pp['len'] && [ 1, 4 ] === $pp['map'][10] && $pp['stops'][1] - $pp['stops'][0] >= 20, 'Scroll path: a stop per chapter, kept within the budget (more content, shorter steps, not a longer page)' );
+$pq = \Samanzavarian_Widgets\Widgets\Service_Tabs::path( array_fill( 0, 4, array_fill( 0, 30, 1 ) ), 60, 35, 400 );
+szw_ok( abs( ( $pq['stops'][1] - $pq['stops'][0] ) - 20 ) < 0.01, 'Scroll path: a chapter never gets less than its minimum scroll' );
 $pc = szw_render( [], 'sz-career' );
 szw_ok( preg_match( '#<div class="sz-pin on-m" data-sz-pin="timeline" data-sz-pin-step="45" data-sz-pin-edge="10" data-sz-pin-n="(\d+)" style="--szp-top:80px;--szp-len:calc\(\1 \* 45svh \+ 20svh\)"><div class="sz-pin__stage">\s*<div class="sz-cr #', $pc ), 'Experience: scroll-driven on phones only, a step per role, its path set from the first paint' );
 $star = \Samanzavarian_Widgets\Inline_Icons::convert( '<p>since 2020.{star}</p>' );

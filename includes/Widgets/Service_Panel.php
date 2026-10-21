@@ -717,6 +717,27 @@ class Service_Panel extends Widget_Base {
 		return $class ? $class::notes( $s ) : [];
 	}
 
+	/**
+	 * The scene's chapters, for a scroll-driven Service Tabs: one weight per chapter (a weight
+	 * of 1 is one chapter's worth of scroll). A scene without chapters has one.
+	 *
+	 * @param array<string,mixed> $s
+	 * @return float[]
+	 */
+	public static function chapters( array $s ): array {
+		if ( 'static' === self::motion( $s ) ) {
+			return [ 1.0 ];
+		}
+		switch ( (string) ( $s['scene'] ?? '' ) ) {
+			case 'ai': // a chapter per delivered piece, in the editor's order
+				$n = count( Scenes\AI_Showreel::pieces( $s ) );
+				return $n > 1 ? array_fill( 0, $n, 1.0 ) : [ 1.0 ];
+			case 'direction': // before any direction, each route, the client's choice
+				return array_fill( 0, count( Scenes\Direction_Routes::routes( $s ) ) + 2, 1.0 );
+		}
+		return [ 1.0 ];
+	}
+
 	protected function render(): void {
 		$s     = $this->get_settings_for_display();
 		$scene = (string) ( $s['scene'] ?? 'ai' );

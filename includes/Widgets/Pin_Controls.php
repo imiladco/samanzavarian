@@ -25,7 +25,7 @@ final class Pin_Controls {
 	 * @param string[] $on      devices on by default
 	 * @param int|null $step    default scroll per step, in % of the screen height; null: no step control
 	 */
-	public static function controls( Widget_Base $w, array $on, ?int $step, string $note ): void {
+	public static function controls( Widget_Base $w, array $on, ?int $step, string $note, ?callable $more = null ): void {
 		$w->start_controls_section( 'section_pin', [ 'label' => esc_html__( 'Scroll-driven', 'samanzavarian-widgets' ) ] );
 		$w->add_control(
 			'pin_on',
@@ -46,6 +46,9 @@ final class Pin_Controls {
 			$w->add_control( 'pin_step', [ 'label' => esc_html__( 'Scroll for each step', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SLIDER, 'size_units' => [ 'px' ], 'range' => [ 'px' => [ 'min' => 25, 'max' => 150 ] ], 'default' => [ 'unit' => 'px', 'size' => $step ], 'description' => esc_html__( 'In hundredths of the screen\'s height.', 'samanzavarian-widgets' ) ] );
 		}
 		$w->add_control( 'pin_top', [ 'label' => esc_html__( 'Holds this far from the top', 'samanzavarian-widgets' ), 'type' => Controls_Manager::SLIDER, 'size_units' => [ 'px' ], 'range' => [ 'px' => [ 'min' => 0, 'max' => 200 ] ], 'default' => [ 'unit' => 'px', 'size' => 80 ], 'description' => esc_html__( 'Room for the header bar.', 'samanzavarian-widgets' ) ] );
+		if ( $more ) {
+			$more( $w );
+		}
 		$w->add_control( 'pin_note', [ 'type' => Controls_Manager::RAW_HTML, 'raw' => esc_html( $note ) . ' ' . esc_html__( 'Never in the editor, with reduced motion, or when the section is taller than the screen; the parent containers must not clip (Overflow: Default).', 'samanzavarian-widgets' ), 'content_classes' => 'elementor-descriptor' ] );
 		$w->end_controls_section();
 	}

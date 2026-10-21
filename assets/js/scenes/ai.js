@@ -218,6 +218,9 @@
 				await api.time.wait( 250 );
 				await move( at( total / 2, ( W - 24 ) / total ), 1000, 'cubic-bezier(.55,0,.25,1)' );
 				await api.time.wait( 1300 );
+				if ( driven ) {
+					return; // the scroll took over: it places the pieces from here
+				}
 				root.classList.remove( 'is-intro' );
 				items[ 0 ].classList.add( 'is-target' );
 				showOnly( [ 0 ] );
@@ -233,8 +236,14 @@
 			queue = shuffle( items.map( ( e, k ) => k ).filter( ( k ) => k !== 0 ) );
 			for ( ;; ) {
 				await api.time.wait( Math.max( 0, secs( cur ) * 1000 - ( api.time.t - shownAt ) ) );
+				if ( driven ) {
+					return;
+				}
 				if ( left-- <= 0 ) {
 					break;
+				}
+				if ( driven ) {
+					return;
 				}
 				await go( next() );
 			}
@@ -247,14 +256,58 @@
 			api.done();
 		}
 
+		/* ---- chapters: a scroll-driven Service Tabs shows the pieces one by one, in the editor's order ---- */
+		let driven = false, target = -1, placed = false, steering = false;
+		async function steer() {
+			if ( steering ) {
+				return; // the transition under way ends at the latest target
+			}
+			steering = true;
+			while ( driven && target >= 0 && ( ! placed || target !== cur ) ) {
+				const j = target;
+				if ( ! placed ) {
+					// first time: from wherever the reel stands straight to the piece
+					placed = true;
+					root.classList.remove( 'is-intro' );
+					root.classList.add( 'is-out' );
+					items.forEach( ( e ) => e.classList.remove( 'is-target' ) );
+					items[ j ].classList.add( 'is-target' );
+					showOnly( [ j ] );
+					if ( ok ) {
+						okBox.hidden = ! cfg.pieces[ j ].result;
+						swap( ok, cfg.pieces[ j ].result, 'em' );
+					}
+					swap( brief, cfg.pieces[ j ].brief, 'div' );
+					await move( cam( j, OUT ), 520, 'cubic-bezier(.65,0,.35,1)' );
+					await pushIn( j );
+				} else {
+					await go( j );
+				}
+			}
+			steering = false;
+		}
+
 		return {
 			play() {
-				if ( ! started ) {
+				if ( ! started && ! driven ) {
 					started = true;
 					run();
 				}
 			},
 			pause() {}, // the clock stops, so the story simply holds where it is
+			drive( on ) {
+				driven = on;
+				if ( on ) {
+					started = true; // the story never starts while the scroll drives
+				} else if ( target >= 0 ) {
+					// handed back: the reel carries on by itself from the piece in view
+					started = false;
+				}
+			},
+			show( k ) {
+				target = Math.max( 0, Math.min( n - 1, k | 0 ) );
+				steer();
+			},
 		};
 	}
 

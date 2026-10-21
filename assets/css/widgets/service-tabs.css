@@ -196,6 +196,11 @@
 }
 
 /* scroll-driven: a line down the open tab's edge fills toward the next tab (service-tabs.js) */
-.sz-tabs.is-pinned .sz-tabs__hl::after{content:"";position:absolute;left:3px;top:18px;bottom:18px;width:3px;border-radius:3px;background:var(--sz-orange);
-  transform-origin:top;transform:scaleY(var(--szt-fill,0));opacity:.9}
-.sz-tabs.is-pinned .sz-tabs__hl::before{content:"";position:absolute;left:3px;top:18px;bottom:18px;width:3px;border-radius:3px;background:rgba(13,27,42,.07)}
+/* …in segments, one per chapter of the open tab's scene (--szt-chapters); the fill is clipped, not scaled, so the gaps stay put */
+.sz-tabs.is-pinned .sz-tabs__hl::before,.sz-tabs.is-pinned .sz-tabs__hl::after{content:"";position:absolute;left:3px;top:18px;bottom:18px;width:3px;border-radius:3px;
+  -webkit-mask:repeating-linear-gradient(#000 0 calc(100% / var(--szt-chapters,1) - 4px),transparent calc(100% / var(--szt-chapters,1) - 4px) calc(100% / var(--szt-chapters,1)));
+  mask:repeating-linear-gradient(#000 0 calc(100% / var(--szt-chapters,1) - 4px),transparent calc(100% / var(--szt-chapters,1) - 4px) calc(100% / var(--szt-chapters,1)))}
+.sz-tabs.is-pinned .sz-tabs__hl::before{background:rgba(13,27,42,.09)}
+.sz-tabs.is-pinned .sz-tabs__hl::after{background:var(--sz-orange);clip-path:inset(0 0 calc((1 - var(--szt-fill,0)) * 100%) 0)}
+.sz-tabs:not(.is-pinned) .sz-tabs__hl::before,.sz-tabs:not(.is-pinned) .sz-tabs__hl::after{content:none}
+.sz-tabs__say{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
