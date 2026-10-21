@@ -149,7 +149,16 @@
 			}
 		} );
 
+		/** The pieces either side start loading (videos are fetched only when shown): no empty frame on arrival. */
+		const warm = ( j ) => [ j - 1, j + 1 ].forEach( ( k ) => {
+			const v = k >= 0 && k < n ? video( k ) : null;
+			if ( v && 'auto' !== v.preload ) {
+				v.preload = 'auto';
+			}
+		} );
+
 		async function pushIn( j ) {
+			warm( j );
 			items[ j ].classList.remove( 'is-pull' );
 			void items[ j ].offsetWidth;
 			items[ j ].classList.add( 'is-pull' );
@@ -306,6 +315,7 @@
 			},
 			show( k ) {
 				target = Math.max( 0, Math.min( n - 1, k | 0 ) );
+				warm( target );
 				steer();
 			},
 		};

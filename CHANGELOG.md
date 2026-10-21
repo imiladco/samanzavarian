@@ -4,6 +4,30 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.47.0 — Chapters, finished: preload, keys, weights; and a fix for tab clicks
+The four items left from the chapters plan.
+- **Preload.** As a piece comes into view, the videos of the pieces either
+  side start loading (they are fetched only when shown), so the next chapter
+  never opens on an empty frame.
+- **Keys.** While focus is in the section, PageDown / PageUp and Space /
+  Shift+Space step exactly one chapter; a page's worth of scroll would skip
+  several. At either end they scroll the page on as usual. Space on a button
+  or a field keeps its own job.
+- **Weights.** A video piece gets 1.4× the scroll of a still: it has time to
+  play. This stays within the section's budget.
+- **Experience on desktop**, as set on the site, tested live: holds at 80px,
+  roles 1 to 6 in order going down, exactly back going up, no errors.
+
+**Fix found on the way.** When the page itself scrolled to a place (a tab
+clicked, a key, a #link), the tab and the chapter were held back for the
+scroll's 0.9s, so the in-between tabs would not flash. But the page usually
+arrived sooner, and then nothing reported the arrival: the scene stayed where
+it was. Now the place is told once the hold ends.
+
+Tests: tools/rig/chapters-keys.js (PageDown ×7 goes pieces 1→6 then into
+Creative direction, PageUp goes back, preload as above). The chapter, link,
+tab and phone tests and the PHP suite all pass.
+
 ## 0.46.1 — Chapters on phones; tidy numbers
 Tested on the live site after 0.46.0: desktop and phone, all 13 resting
 points in order, back up, a fast scroll, links to a chapter

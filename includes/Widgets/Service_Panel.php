@@ -724,14 +724,17 @@ class Service_Panel extends Widget_Base {
 	 * @param array<string,mixed> $s
 	 * @return float[]
 	 */
+	/** A chapter that is a video gets this much more scroll than a still: it has time to play. */
+	public const VIDEO_WEIGHT = 1.4;
+
 	public static function chapters( array $s ): array {
 		if ( 'static' === self::motion( $s ) ) {
 			return [ 1.0 ];
 		}
 		switch ( (string) ( $s['scene'] ?? '' ) ) {
-			case 'ai': // a chapter per delivered piece, in the editor's order
-				$n = count( Scenes\AI_Showreel::pieces( $s ) );
-				return $n > 1 ? array_fill( 0, $n, 1.0 ) : [ 1.0 ];
+			case 'ai': // a chapter per delivered piece, in the editor's order; a video gets more scroll than a still
+				$pieces = Scenes\AI_Showreel::pieces( $s );
+				return count( $pieces ) > 1 ? array_map( static fn( $p ) => $p['video'] ? self::VIDEO_WEIGHT : 1.0, $pieces ) : [ 1.0 ];
 			case 'direction': // before any direction, each route, the client's choice
 				return array_fill( 0, count( Scenes\Direction_Routes::routes( $s ) ) + 2, 1.0 );
 		}

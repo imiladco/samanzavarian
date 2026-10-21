@@ -206,11 +206,44 @@
 					told = -1;
 				},
 			} );
+			// keyboard: while focus is in the section, the page keys step one chapter (a page's worth
+			// of scroll would skip several); at either end they scroll the page on as usual
+			this.root.addEventListener( 'keydown', ( e ) => {
+				if ( ! this.pin.live || e.altKey || e.ctrlKey || e.metaKey ) {
+					return;
+				}
+				const fwd = 'PageDown' === e.key || ( ' ' === e.key && ! e.shiftKey );
+				const back = 'PageUp' === e.key || ( ' ' === e.key && e.shiftKey );
+				if ( ! fwd && ! back ) {
+					return;
+				}
+				// Space is a button's or a field's own key
+				if ( ' ' === e.key && e.target.closest( 'button, a, input, textarea, select, [contenteditable="true"]' ) ) {
+					return;
+				}
+				const to = j + ( fwd ? 1 : -1 );
+				if ( to < 0 || to >= m ) {
+					return;
+				}
+				e.preventDefault();
+				const [ tab, chap ] = M[ to ];
+				this.pinGo( tab, true, chap );
+			} );
 			this.pinGo = ( tab, smooth, chap = 0 ) => {
 				j = stopOf( tab, chap );
 				told = -1;
-				this.pinMute = performance.now() + ( smooth ? 900 : 50 );
+				const mute = smooth ? 900 : 50;
+				this.pinMute = performance.now() + mute;
 				this.pin.to( S[ j ] * unit( this.pin.length ), smooth );
+				// the page usually arrives before the mute ends, and then no scroll is left to report it:
+				// say where it is now (the tab, and the chapter to its scene)
+				clearTimeout( this.unmute );
+				this.unmute = setTimeout( () => {
+					if ( M[ j ][ 0 ] !== this.current() ) {
+						this.select( M[ j ][ 0 ], { scroll: true } );
+					}
+					tell();
+				}, mute + 30 );
 			};
 			// opened from the address: #post-production goes to that tab, #ai-visual-production-3 to
 			// its third chapter (when the tab's own id does not already end in a number)

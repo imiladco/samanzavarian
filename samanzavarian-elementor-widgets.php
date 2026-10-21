@@ -3,7 +3,7 @@
  * Plugin Name:       Saman Zavarian — Elementor Widgets
  * Plugin URI:        https://samanzavarian.com/
  * Description:       Custom Elementor widgets for samanzavarian.com, built from the site's design system.
- * Version:           0.46.1
+ * Version:           0.47.0
  * Requires at least: 6.2
  * Requires PHP:      7.4
  * Author:            imiladco
@@ -19,7 +19,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'SZW_VERSION', '0.46.1' );
+define( 'SZW_VERSION', '0.47.0' );
 define( 'SZW_FILE', __FILE__ );
 define( 'SZW_PATH', plugin_dir_path( __FILE__ ) );
 define( 'SZW_URL', plugin_dir_url( __FILE__ ) );

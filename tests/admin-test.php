@@ -146,6 +146,8 @@ $pq = \Samanzavarian_Widgets\Widgets\Service_Tabs::path( array_fill( 0, 4, array
 szw_ok( abs( ( $pq['stops'][1] - $pq['stops'][0] ) - 20 ) < 0.01, 'Scroll path: a chapter never gets less than its minimum scroll' );
 $pc = szw_render( [], 'sz-career' );
 szw_ok( preg_match( '#<div class="sz-pin on-m" data-sz-pin="timeline" data-sz-pin-step="45" data-sz-pin-edge="10" data-sz-pin-n="(\d+)" style="--szp-top:80px;--szp-len:calc\(\1 \* 45svh \+ 20svh\)"><div class="sz-pin__stage">\s*<div class="sz-cr #', $pc ), 'Experience: scroll-driven on phones only, a step per role, its path set from the first paint' );
+$wv = \Samanzavarian_Widgets\Widgets\Service_Panel::chapters( [ 'scene' => 'ai', 'ai_pieces' => [ [ 'media' => [ 'url' => 'https://x.test/a.mp4' ] ], [ 'media' => [ 'url' => 'https://x.test/b.jpg' ] ], [ 'media' => [ 'url' => 'https://x.test/c.mp4' ] ] ] ] );
+szw_ok( [ 1.4, 1.0, 1.4 ] === $wv, 'Chapters: a video piece gets more scroll than a still' );
 $star = \Samanzavarian_Widgets\Inline_Icons::convert( '<p>since 2020.{star}</p>' );
 szw_ok( false !== strpos( $star, '2020.<span class="sz-star" aria-hidden="true"><svg' ) && false === strpos( $star, '{star}' ), 'The {star} code becomes the footer\'s star' );
 
