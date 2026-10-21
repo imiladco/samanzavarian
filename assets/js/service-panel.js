@@ -33,6 +33,9 @@
  *                 driven, the scene does not move on by itself
  *   show( k )     go to chapter k, with the scene's own transition; called
  *                 again before one ends, it goes straight to the latest k
+ *   resumes       true: when the scroll rests ({ on: false, idle: true }) the
+ *                 scene plays on by itself from the chapter in view, until
+ *                 the scroll moves again; without it the scene holds
  * and say how many it has in PHP (Service_Panel::chapters), so the page has
  * its height from the first paint. A scene without them is one chapter.
  *
@@ -239,9 +242,17 @@
 				panels.set( svc, state );
 				// chapters: the tabs' scroll tells the scene where it is (see the contract above)
 				svc.addEventListener( 'sz:driven', ( e ) => {
-					state.driven = !! e.detail.on;
+					const on = !! e.detail.on;
+					// the scroll resting: only a scene that can play on from where it is takes over
+					if ( ! on && e.detail.idle && ! ( state.ctrl && state.ctrl.resumes ) ) {
+						return;
+					}
+					state.driven = on;
 					if ( state.ctrl && state.ctrl.drive ) {
-						state.ctrl.drive( state.driven );
+						state.ctrl.drive( on );
+					}
+					if ( e.detail.idle ) {
+						refresh();
 					}
 				} );
 				svc.addEventListener( 'sz:chapter', ( e ) => {

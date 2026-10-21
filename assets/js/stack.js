@@ -300,12 +300,20 @@
 			return this.open || this.peek >= 1;
 		}
 
-		setOpen( v ) {
+		/**
+		 * all: the hand closes what the scroll fanned too (a tap on the front photo, Esc, a tap
+		 * outside); a hover ending only ends the hover, the scroll's fan stays.
+		 */
+		setOpen( v, all ) {
 			if ( this.editOpen ) {
 				v = true;
 			}
-			if ( this.open === v ) {
+			const peek = ! v && all && this.peek >= 1;
+			if ( this.open === v && ! peek ) {
 				return;
+			}
+			if ( peek ) {
+				this.peek = 0; // until the scroll's next step
 			}
 			this.open = v;
 			this.taughtOpen = true;
@@ -435,13 +443,13 @@
 				}
 				// the front photo: a mouse fans by hovering, so its click is for touch and keys
 				if ( keyboard || type !== 'mouse' || ! this.fine ) {
-					this.setOpen( ! this.open );
+					this.setOpen( ! this.fanned(), true );
 				}
 			} );
 
 			this.on( this.deck, 'keydown', ( e ) => {
-				if ( e.key === 'Escape' && this.open && ! this.editOpen ) {
-					this.setOpen( false );
+				if ( e.key === 'Escape' && this.fanned() && ! this.editOpen ) {
+					this.setOpen( false, true );
 					this.cards[ this.order[ 0 ] ].focus();
 				} else if ( ( e.key === 'ArrowLeft' || e.key === 'ArrowRight' ) && this.fanned() ) {
 					e.preventDefault();
@@ -456,16 +464,20 @@
 			} );
 
 			this.on( document, 'pointerdown', ( e ) => {
-				if ( this.open && e.pointerType !== 'mouse' && ! this.deck.contains( e.target ) ) {
-					this.setOpen( false );
+				if ( this.fanned() && e.pointerType !== 'mouse' && ! this.deck.contains( e.target ) ) {
+					this.setOpen( false, true );
 				}
 			} );
 
 			if ( this.fine ) {
-				this.on( this.deck, 'pointerenter', ( e ) => {
-					if ( e.pointerType === 'mouse' ) {
+				// a hover is a hand moving over it: the page scrolling the deck under a still
+				// cursor is not one (the browser says enter, and moves, all the same: without movement)
+				this.on( this.deck, 'pointermove', ( e ) => {
+					if ( e.pointerType === 'mouse' && ( e.movementX || e.movementY ) ) {
 						clearTimeout( this.closeT );
-						this.setOpen( true );
+						if ( ! this.open ) {
+							this.setOpen( true );
+						}
 					}
 				} );
 				// a little grace, so a hand that slips off the edge does not close it
@@ -560,8 +572,9 @@
 		 * was; backwards when scrolling up. The scroll is the playhead.
 		 *
 		 * The path is only the stretch where the deck is in view below the header
-		 * (four fifths of it at least), so nothing starts at the screen's foot or
-		 * changes under the header. Where its column is taller than it (beside the text on a
+		 * (four fifths of it at least coming in, all of it at the end, so it folds
+		 * in full view), so nothing starts at the screen's foot or changes under
+		 * the header. Where its column is taller than it (beside the text on a
 		 * desktop) the deck holds still in it, centred, while the text scrolls
 		 * past: that room becomes path, without adding any to the page.
 		 *
@@ -654,6 +667,10 @@
 			w.style.removeProperty( '--szk-hold' );
 			if ( ! this.scrolls() ) {
 				this.geo = null;
+				if ( this.state ) {
+					clearTimeout( this.driveT );
+					this.setState( 0 ); // not on at this width: at rest
+				}
 				return;
 			}
 			const y = window.scrollY, wr = w.getBoundingClientRect(), dr = this.deck.getBoundingClientRect();
@@ -667,9 +684,9 @@
 				w.style.setProperty( '--szk-hold', Math.round( top ) + 'px' );
 				w.classList.add( 'sz-stack-hold' );
 			}
-			// from four fifths of the deck in at the foot to four fifths still in below the header
+			// from four fifths of the deck in at the foot to its top at the header: it folds in full view
 			const y0 = Ws + dy + 0.8 * h - vh * 0.97;
-			const y1 = ( hold ? Ws + room : Ws ) + dy + 0.2 * h - inset;
+			const y1 = ( hold ? Ws + room : Ws ) + dy - inset;
 			this.geo = { y0, y1: Math.max( y1, y0 + 200 ) };
 		}
 

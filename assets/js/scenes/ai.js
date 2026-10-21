@@ -218,8 +218,16 @@
 			return queue.pop();
 		};
 
+		/** Waits, but gives way as soon as the scroll takes over. */
+		async function hold( ms ) {
+			const end = api.time.t + ms;
+			while ( ! driven && api.time.t < end ) {
+				await api.time.wait( Math.min( 200, end - api.time.t ) );
+			}
+		}
+
 		async function run() {
-			if ( cfg.overview ) {
+			if ( cfg.overview && ! resume ) {
 				// The whole reel first.
 				root.classList.add( 'is-out', 'is-intro' );
 				focus( -1 );
@@ -241,10 +249,11 @@
 			}
 
 			// "Play once": every other piece once, then home to the first.
+			// handed back by the scroll: on from the piece in view
 			let left = 'loop' === api.mode ? Infinity : n - 1;
-			queue = shuffle( items.map( ( e, k ) => k ).filter( ( k ) => k !== 0 ) );
+			queue = shuffle( items.map( ( e, k ) => k ).filter( ( k ) => k !== cur ) );
 			for ( ;; ) {
-				await api.time.wait( Math.max( 0, secs( cur ) * 1000 - ( api.time.t - shownAt ) ) );
+				await hold( Math.max( 0, secs( cur ) * 1000 - ( api.time.t - shownAt ) ) );
 				if ( driven ) {
 					return;
 				}
@@ -258,6 +267,9 @@
 			}
 			if ( cur !== 0 ) {
 				await go( 0 );
+			}
+			if ( driven ) {
+				return;
 			}
 			holding = false;
 			bar.style.transform = 'scaleX(0)';
@@ -299,12 +311,15 @@
 		}
 
 		/* ---- chapters: a scroll-driven Service Tabs shows the pieces one by one, in the editor's order ---- */
-		let driven = false, target = -1, placed = false, steering = false;
+		let driven = false, target = -1, placed = false, steering = false, resume = false, running = null;
 		async function steer() {
 			if ( steering ) {
 				return; // the transition under way ends at the latest target
 			}
 			steering = true;
+			if ( running ) {
+				await running; // the reel's move under way lands first (it stops there)
+			}
 			while ( driven && target >= 0 && ( ! placed || target !== cur ) ) {
 				placed = true;
 				await hop( target );
@@ -313,10 +328,13 @@
 		}
 
 		return {
+			resumes: true, // handed back while the scroll rests, the reel plays on from the piece in view
 			play() {
 				if ( ! started && ! driven ) {
 					started = true;
-					run();
+					running = run().finally( () => {
+						running = null;
+					} );
 				}
 			},
 			pause() {}, // the clock stops, so the story simply holds where it is
@@ -327,6 +345,7 @@
 				} else if ( target >= 0 ) {
 					// handed back: the reel carries on by itself from the piece in view
 					started = false;
+					resume = true;
 				}
 			},
 			show( k ) {

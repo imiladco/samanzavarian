@@ -171,8 +171,32 @@
 			this.say.setAttribute( 'aria-live', 'polite' );
 			this.say.appendChild( document.createTextNode( '' ) );
 			this.root.appendChild( this.say );
+			// the scroll resting on a chapter: the scene in view may play on by itself (a scene that
+			// "resumes", Service_Panel's contract); the scroll moving again takes it back where it is
+			const IDLE = 2500;
+			let idleT = 0, resting = false;
+			const handOver = ( on ) => this.panels().forEach( ( panel ) => {
+				const svc = panel.querySelector( '.sz-svc' );
+				if ( svc ) {
+					svc.dispatchEvent( new CustomEvent( 'sz:driven', { detail: { on, idle: true } } ) );
+				}
+			} );
+			const stir = () => {
+				clearTimeout( idleT );
+				if ( resting ) {
+					resting = false;
+					handOver( true );
+				}
+				idleT = setTimeout( () => {
+					if ( this.pin && this.pin.live ) {
+						resting = true;
+						handOver( false );
+					}
+				}, IDLE );
+			};
 			this.pin = window.szwPin( wrap, {
 				update: ( px, len ) => {
+					stir();
 					const p = px / unit( len );
 					// across as many resting points as the scroll went past (a fast scroll: straight to the last)
 					while ( j < m - 1 && p >= ( S[ j ] + S[ j + 1 ] ) / 2 + H * ( S[ j + 1 ] - S[ j ] ) ) {
@@ -195,6 +219,8 @@
 				stops: ( len ) => S.map( ( x ) => x * unit( len ) ),
 				settle: true,
 				live: ( on ) => {
+					clearTimeout( idleT );
+					resting = false;
 					this.root.classList.toggle( 'is-pinned', on );
 					// scenes with chapters follow the scroll while pinned, and play by themselves otherwise
 					this.panels().forEach( ( panel ) => {

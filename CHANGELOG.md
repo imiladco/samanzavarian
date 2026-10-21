@@ -4,6 +4,33 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.49.0 — The showreel plays on when the scroll rests; Photo stack: hand and scroll agree
+**AI visual production played by itself no more** once its tabs were
+scroll-driven (desktop and phones on the live site): the scene only moved with
+the scroll, so a visitor who stopped saw one piece forever. Now:
+- **The scroll resting 2.5s hands the reel back**: it plays on by itself from
+  the piece in view (no overview again), as before chapters. **Scrolling
+  again takes it back** where it is: the reel's move under way lands, nothing
+  new starts, the next chapter crossed is shown. Waits inside the reel give
+  way at once (checked every 200ms), so the scroll is never kept waiting.
+- Opt-in per scene (`resumes` in Service_Panel's contract): Creative
+  direction's chapters are whole states, so it holds on the one in view
+  instead of starting its story over.
+
+**Photo stack, the hand and the scroll** (an audit of every way they meet):
+- **A still cursor is not a hover.** The browser reports the deck scrolling
+  under a resting mouse as an enter: it fanned the deck early, outside the
+  scroll's path. Only a hand that moves over it fans it now.
+- **A hover ending no longer closes what the scroll fanned**; a tap on the
+  front photo, Esc and a tap outside now do (they could not: the close
+  returned early). The scroll's next step fans it again.
+- **It folds in full view**: the path ends with the deck's top at the header,
+  not a fifth under it.
+- A width where it is off puts it back at rest instead of leaving it fanned.
+- `tools/rig/stack-hand.js` (hand and scroll together), `tools/rig/ai-idle.js`
+  (the reel playing on when the scroll rests, taken back when it moves; also
+  `LIVE=1`); `stack-scroll.js` measures following the scroll at a reading pace.
+
 ## 0.48.2 — Photo stack: in step with the scroll again, only where it is seen
 Live, 0.48.1 was out of tune: with the clock setting the pace, photos kept
 changing after the scroll had moved on, often with the deck under the header
