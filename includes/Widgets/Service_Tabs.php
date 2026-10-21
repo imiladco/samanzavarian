@@ -847,7 +847,9 @@ class Service_Tabs extends Widget_Nested_Base {
 		$this->panels = [];
 		// the path: a step per tab after the first, and a lead-in and lead-out (half a step's worth each)
 		$path = self::path( $this->chapters( count( $tabs ) ), (int) Pin_Controls::step( $settings, 60 ), (int) ( $settings['pin_chapter']['size'] ?? 35 ), (int) ( $settings['pin_budget']['size'] ?? 400 ) );
-		echo Pin_Controls::open( $settings, $path['len'] . 'svh', 'tabs', [ 'stops' => wp_json_encode( $path['stops'] ), 'map' => wp_json_encode( $path['map'] ), 'total' => $path['len'], 'n' => count( $tabs ) ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside
+		// numbers written by hand: json_encode prints 38.329999… on hosts with a long serialize_precision
+		$num = static fn( float $v ): string => rtrim( rtrim( number_format( $v, 2, '.', '' ), '0' ), '.' );
+		echo Pin_Controls::open( $settings, $num( $path['len'] ) . 'svh', 'tabs', [ 'stops' => '[' . implode( ',', array_map( $num, $path['stops'] ) ) . ']', 'map' => wp_json_encode( $path['map'] ), 'total' => $num( $path['len'] ), 'n' => count( $tabs ) ] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped inside
 		?>
 		<div <?php $this->print_render_attribute_string( 'root' ); ?>>
 			<div class="sz-tabs__nav">

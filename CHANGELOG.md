@@ -4,6 +4,15 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.46.1 — Chapters on phones; tidy numbers
+Tested on the live site after 0.46.0: desktop and phone, all 13 resting
+points in order, back up, a fast scroll, links to a chapter
+(#service-ai-visual-4, #service-creative-direction-3), analytics, no errors.
+- Tabs in a row (phones): the chapter segments run along the bottom of the
+  open tab. Down its side, they could hardly be seen.
+- The path's numbers are written out by hand. On hosts with a long
+  serialize_precision, json_encode printed 38.329999999999998….
+
 ## 0.46.0 — Scenes have chapters: the scroll shows every piece and every route
 **A contract, not a special case.** A scene may declare chapters (in PHP,
 Service_Panel::chapters) and take two calls from the page (drive(on) and

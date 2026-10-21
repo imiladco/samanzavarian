@@ -202,5 +202,10 @@
   mask:repeating-linear-gradient(#000 0 calc(100% / var(--szt-chapters,1) - 4px),transparent calc(100% / var(--szt-chapters,1) - 4px) calc(100% / var(--szt-chapters,1)))}
 .sz-tabs.is-pinned .sz-tabs__hl::before{background:rgba(13,27,42,.09)}
 .sz-tabs.is-pinned .sz-tabs__hl::after{background:var(--sz-orange);clip-path:inset(0 0 calc((1 - var(--szt-fill,0)) * 100%) 0)}
+/* tabs in a row (phones): the segments run along the bottom of the open tab */
+.sz-tabs.is-pinned.is-row .sz-tabs__hl::before,.sz-tabs.is-pinned.is-row .sz-tabs__hl::after{left:16px;right:16px;top:auto;bottom:5px;width:auto;height:3px;
+  -webkit-mask:repeating-linear-gradient(90deg,#000 0 calc(100% / var(--szt-chapters,1) - 4px),transparent calc(100% / var(--szt-chapters,1) - 4px) calc(100% / var(--szt-chapters,1)));
+  mask:repeating-linear-gradient(90deg,#000 0 calc(100% / var(--szt-chapters,1) - 4px),transparent calc(100% / var(--szt-chapters,1) - 4px) calc(100% / var(--szt-chapters,1)))}
+.sz-tabs.is-pinned.is-row .sz-tabs__hl::after{clip-path:inset(0 calc((1 - var(--szt-fill,0)) * 100%) 0 0)}
 .sz-tabs:not(.is-pinned) .sz-tabs__hl::before,.sz-tabs:not(.is-pinned) .sz-tabs__hl::after{content:none}
 .sz-tabs__say{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}

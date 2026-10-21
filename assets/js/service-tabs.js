@@ -333,6 +333,7 @@
 
 			const row = getComputedStyle( this.list ).flexDirection.startsWith( 'row' );
 			this.list.setAttribute( 'aria-orientation', row ? 'horizontal' : 'vertical' );
+			this.root.classList.toggle( 'is-row', row ); // the progress line runs along the tab, not down it
 
 			const s = this.root.style;
 			s.setProperty( '--szt-hl-x', tab.offsetLeft + 'px' );
