@@ -96,6 +96,7 @@
 			this.on( window, 'resize', this.render );
 			this.render();
 			requestAnimationFrame( () => root.classList.add( 'is-ready' ) );
+			this.scrollDrive();
 			this.teach();
 			this.prime();
 		}
@@ -121,6 +122,9 @@
 			}
 			if ( this.near ) {
 				this.near.disconnect();
+			}
+			if ( this.scrollIo ) {
+				this.scrollIo.disconnect();
 			}
 			this.video( -1 );
 		}
@@ -162,7 +166,7 @@
 			if ( ! W ) {
 				return;
 			}
-			const f = this.open ? 1 : this.peek, sp = this.spread( W, H );
+			const f = this.open ? 1 : this.peek, sp = this.spread( W, H ), full = f >= 1;
 			// short of room (phones), the front photo steps back a little, so
 			// the ones beside it show more than a sliver
 			const shrink = 1 - Math.min( 0.12, Math.max( 0, ( W * 0.34 - sp ) / W ) * 0.8 ) * f;
@@ -171,7 +175,7 @@
 				if ( slot === 0 ) {
 					p.s *= shrink;
 				}
-				if ( this.open && card === this.hot && slot > 0 ) {
+				if ( full && card === this.hot && slot > 0 ) {
 					p.y -= W * 0.025; // the photo under the mouse rises: it can be picked
 					p.s += 0.015;
 				}
@@ -189,11 +193,12 @@
 				} else {
 					el.removeAttribute( 'aria-expanded' );
 					el.setAttribute( 'aria-label', this.labels.forward + ' ' + m.title );
-					el.tabIndex = this.open && this.bringOn ? 0 : -1;
+					el.tabIndex = full && this.bringOn ? 0 : -1;
 				}
 			} );
-			this.root.classList.toggle( 'is-open', this.open );
-			this.video( this.open && this.autoplay ? this.order[ 0 ] : -1 );
+			// fanned by the scroll looks and plays as fanned by the hand
+			this.root.classList.toggle( 'is-open', full );
+			this.video( full && this.autoplay ? this.order[ 0 ] : -1 );
 		}
 
 		/* ---------------- video ---------------- */
@@ -285,6 +290,11 @@
 
 		/* ---------------- state ---------------- */
 
+		/** Fanned by the hand or all the way by the scroll: a photo can be picked. */
+		fanned() {
+			return this.open || this.peek >= 1;
+		}
+
 		setOpen( v ) {
 			if ( this.editOpen ) {
 				v = true;
@@ -307,15 +317,22 @@
 			}
 		}
 
-		/** Bring a photo to the front: it arcs over the deck, the old front dips under. */
-		bring( card, from ) {
-			const slot = this.order.indexOf( card );
-			if ( slot <= 0 || ! this.bringOn ) {
+		/**
+		 * Bring a photo to the front: it arcs over the deck, the old front dips under.
+		 * The scroll may bring any photo and give the whole order (back to the first: as it was).
+		 */
+		bring( card, from, next ) {
+			const slot = this.order.indexOf( card ), scroll = from === 'scroll';
+			if ( slot <= 0 || ! ( this.bringOn || scroll ) ) {
 				return;
 			}
 			const old = this.order[ 0 ], a = this.pose[ card ], b = this.pose[ old ];
-			this.order[ 0 ] = card;
-			this.order[ slot ] = old;
+			if ( next ) {
+				this.order = next.slice();
+			} else {
+				this.order[ 0 ] = card;
+				this.order[ slot ] = old;
+			}
 			this.hot = -1;
 
 			const moving = [ this.cards[ card ], this.cards[ old ] ];
@@ -347,6 +364,9 @@
 				this.sticker.classList.remove( 'is-hop' );
 				void this.sticker.offsetWidth;
 				this.sticker.classList.add( 'is-hop' );
+			}
+			if ( scroll ) {
+				return; // not the visitor's doing: no hint learnt, nothing announced or reported
 			}
 			this.root.classList.add( 'is-taught' );
 			if ( this.live ) {
@@ -387,7 +407,7 @@
 					return;
 				}
 				swiped = Date.now();
-				if ( ! this.open ) {
+				if ( ! this.fanned() ) {
 					this.setOpen( true );
 				} else {
 					this.bring( this.beside( dx < 0 ? 1 : -1 ), 'swipe' );
@@ -401,7 +421,7 @@
 				}
 				const card = this.cards.indexOf( el ), keyboard = e.detail === 0;
 				if ( this.order[ 0 ] !== card ) {
-					if ( this.open ) {
+					if ( this.fanned() ) {
 						this.bring( card, keyboard ? 'key' : ( type === 'mouse' ? 'click' : 'tap' ) );
 					} else {
 						this.setOpen( true );
@@ -418,7 +438,7 @@
 				if ( e.key === 'Escape' && this.open && ! this.editOpen ) {
 					this.setOpen( false );
 					this.cards[ this.order[ 0 ] ].focus();
-				} else if ( ( e.key === 'ArrowLeft' || e.key === 'ArrowRight' ) && this.open ) {
+				} else if ( ( e.key === 'ArrowLeft' || e.key === 'ArrowRight' ) && this.fanned() ) {
 					e.preventDefault();
 					this.bring( this.beside( e.key === 'ArrowLeft' ? -1 : 1 ), 'key' );
 				}
@@ -469,7 +489,7 @@
 					if ( ! raf ) {
 						raf = requestAnimationFrame( () => {
 							raf = 0;
-							if ( this.open ) {
+							if ( this.fanned() ) {
 								this.render();
 							}
 						} );
@@ -504,8 +524,8 @@
 					return;
 				}
 				this.later( () => {
-					if ( this.taughtOpen ) {
-						return;
+					if ( this.taughtOpen || this.scrolls() ) {
+						return; // the scroll shows it better
 					}
 					this.peek = PEEK;
 					this.render();
@@ -516,6 +536,89 @@
 				}, 500 );
 			}, { threshold: [ 0, 0.6 ] } );
 			this.io.observe( this.deck );
+		}
+
+		/* ---------------- scroll-driven ---------------- */
+
+		/** On for this screen width (the stylesheet's breakpoints). */
+		scrolls() {
+			if ( ! this.scrollOn.length ) {
+				return false;
+			}
+			const w = window.innerWidth;
+			return this.scrollOn.includes( w > 1024 ? 'd' : ( w >= 768 ? 't' : 'm' ) );
+		}
+
+		/**
+		 * The page's scroll past the deck plays the hover: fan out, each photo to
+		 * the front in turn (its video plays), the first back, fold; backwards
+		 * when scrolling up. Read, never held. Edge-triggered: a step changes the
+		 * front photo only when it is entered, so a photo the hand chose stays
+		 * until the scroll moves on; a hand fanning it keeps it fanned.
+		 */
+		scrollDrive() {
+			this.scrollOn = ( this.root.dataset.scroll || '' ).split( ' ' ).filter( Boolean );
+			if ( ! this.scrollOn.length || this.reduce || this.edit || this.editOpen ) {
+				this.scrollOn = [];
+				return;
+			}
+			this.base = this.order.slice();
+			this.step = 0;
+			let raf = 0, near = false;
+			const frame = () => {
+				raf = 0;
+				if ( ! near || ! this.scrolls() ) {
+					return;
+				}
+				this.drive( this.progress() );
+			};
+			const queue = () => {
+				raf = raf || requestAnimationFrame( frame );
+			};
+			this.on( window, 'scroll', () => near && queue(), { passive: true } );
+			this.on( window, 'resize', queue );
+			if ( 'IntersectionObserver' in window ) {
+				this.scrollIo = new IntersectionObserver( ( es ) => {
+					near = es[ es.length - 1 ].isIntersecting;
+					queue();
+				}, { rootMargin: '25% 0px' } );
+				this.scrollIo.observe( this.deck );
+			} else {
+				near = true;
+				queue();
+			}
+		}
+
+		/** 0 as the deck's top comes a tenth into the screen, 1 as its bottom is 15% from the top. */
+		progress() {
+			const r = this.deck.getBoundingClientRect(), vh = document.documentElement.clientHeight;
+			const from = vh * 0.9, len = vh * 0.75 + r.height;
+			return Math.max( 0, Math.min( 1, ( from - r.top ) / len ) );
+		}
+
+		drive( p ) {
+			const N = this.cards.length, A = 0.1; // the fan opens over the first tenth, folds over the last
+			const f = Math.max( 0, Math.min( 1, p / A, ( 1 - p ) / A ) );
+			// between: N + 1 equal steps, each photo in front, then the first back before it folds
+			const x = ( p - A ) / ( 1 - 2 * A ) * ( N + 1 ), H = 0.15;
+			let k = this.step;
+			if ( x < k - H || x > k + 1 + H ) {
+				k = Math.max( 0, Math.min( N, Math.floor( x ) ) );
+			}
+			if ( Math.abs( f - this.peek ) > 0.002 || ( f >= 1 ) !== ( this.peek >= 1 ) ) {
+				this.peek = f;
+				this.root.classList.toggle( 'is-scrub', f > 0 && f < 1 );
+				if ( ! this.open ) {
+					this.render();
+				}
+			}
+			if ( k !== this.step ) {
+				this.step = k;
+				const card = this.base[ k % N ];
+				if ( this.order[ 0 ] !== card ) {
+					this.bring( card, 'scroll', card === this.base[ 0 ] ? this.base : null );
+				}
+			}
 		}
 	}
 

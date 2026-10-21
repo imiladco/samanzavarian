@@ -64,7 +64,9 @@ szw_ok( false === strpos( szw_render( [ 'sticker' => '' ], 'sz-stack' ), 'sz-sta
 
 $html = szw_render( [ 'hint' => '', 'bring' => '', 'peek' => '', 'parallax' => '', 'analytics' => '' ], 'sz-stack' );
 szw_ok( false === strpos( $html, 'sz-stack__hint' ) && false === strpos( $html, 'has-hint' ), 'hint off' );
-szw_ok( false !== strpos( $html, 'data-bring="0" data-peek="0" data-parallax="0" data-track="0"' ), 'behaviour switches reach the script' );
+szw_ok( false !== strpos( $html, 'data-bring="0" data-peek="0" data-parallax="0" data-scroll="d t m" data-track="0"' ), 'behaviour switches reach the script; scroll-driven on everywhere by default' );
+szw_ok( false !== strpos( szw_render( [ 'scroll_on' => [ 'mobile', 'desktop' ] ], 'sz-stack' ), 'data-scroll="d m"' ), 'scroll-driven: the chosen devices, in a fixed order' );
+szw_ok( false !== strpos( szw_render( [ 'scroll_on' => [] ], 'sz-stack' ), 'data-scroll=""' ), 'scroll-driven: off' );
 
 $html = szw_render( [ 'label_show' => 'Mehr Fotos', 'label_hover' => 'Zeigen' ], 'sz-stack' );
 szw_ok( false !== strpos( $html, 'Mehr Fotos' ) && false !== strpos( $html, '>Zeigen<' ), 'hints and labels are editable' );

@@ -4,6 +4,27 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.48.0 — Photo stack plays as the page scrolls past
+**Photo stack → Behaviour → Scroll-driven** (desktop, tablet and mobile by default).
+The scroll past the deck plays its hover, in step with the scroll: the photos
+fan out, each one comes to the front in turn (its video plays while it is
+there), the first comes back, and the deck folds as it was. Scrolling up runs
+it backwards. The page is never held: progress runs from the deck's top
+entering the lower tenth of the screen to its bottom passing 15% from the top,
+with even steps (about 240px a photo on a desktop, 180px on a phone).
+- **The hand always wins.** A step changes the front photo only as it is
+  entered, so a photo picked by hand stays until the scroll moves on, and a
+  hover keeps the deck fanned. Fanned by the scroll, a photo can be clicked,
+  tapped, swiped or arrowed forward as when fanned by hand.
+- While the scroll is fanning it the cards follow closely (no spring that
+  would overshoot on every frame); the arc to the front is the same as by hand.
+- Scroll-brought photos are not announced, not reported to analytics and do
+  not hide the hint. The first-view peek is skipped where the scroll shows it.
+- Never in the editor, with "Keep fanned in the editor", or reduced motion.
+- `tools/rig/stack-scroll.js`: a reader's wheel and swipe down and up past the
+  deck must fan it, bring every photo forward, play their videos and fold it
+  back in its order (also `LIVE=1`).
+
 ## 0.47.1 — Chapters that fit a turn of the wheel
 Live, 0.47.0 was not friendly to use. Measured with ordinary wheel scrolling
 (3 notches, a pause, again): only 4 of the 6 showreel pieces were ever seen,

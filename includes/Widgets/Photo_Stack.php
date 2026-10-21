@@ -317,6 +317,24 @@ class Photo_Stack extends Widget_Base {
 			);
 		}
 
+		$this->add_control(
+			'scroll_on',
+			[
+				'label'       => esc_html__( 'Scroll-driven', 'samanzavarian-widgets' ),
+				'type'        => Controls_Manager::SELECT2,
+				'multiple'    => true,
+				'label_block' => true,
+				'separator'   => 'before',
+				'default'     => [ 'desktop', 'tablet', 'mobile' ],
+				'options'     => [
+					'desktop' => esc_html__( 'Desktop', 'samanzavarian-widgets' ),
+					'tablet'  => esc_html__( 'Tablet', 'samanzavarian-widgets' ),
+					'mobile'  => esc_html__( 'Mobile', 'samanzavarian-widgets' ),
+				],
+				'description' => esc_html__( 'While the page scrolls past, the photos fan out, come to the front one by one (a video plays), then fold back; in reverse when scrolling up. The page is never held. A hand on the photos always wins. Never in the editor or with reduced motion.', 'samanzavarian-widgets' ),
+			]
+		);
+
 		$this->add_responsive_control(
 			'align',
 			[
@@ -568,6 +586,7 @@ class Photo_Stack extends Widget_Base {
 				'data-bring'     => $yes( 'bring' ) ? '1' : '0',
 				'data-peek'      => $yes( 'peek' ) ? '1' : '0',
 				'data-parallax'  => $yes( 'parallax' ) ? '1' : '0',
+				'data-scroll'    => $deck ? implode( ' ', array_intersect_key( Pin_Controls::DEVICES, array_flip( (array) ( $s['scroll_on'] ?? [] ) ) ) ) : '',
 				'data-track'     => $yes( 'analytics' ) ? '1' : '0',
 				'data-edit-open' => $yes( 'editor_open', '' ) && Elementor::$instance->editor->is_edit_mode() ? '1' : '0',
 				'data-labels'    => wp_json_encode( [ 'show' => $l['show'], 'hide' => $l['hide'], 'forward' => $l['forward'], 'front' => $l['front'] ] ),
