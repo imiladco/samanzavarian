@@ -4,6 +4,23 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.48.1 — Photo stack: the scroll sets the goal, a calm clock the pace
+On the live site 0.48.0 started too early (fanned while the deck was still
+coming up from the screen's foot) and changed photos faster than the eye
+settles on one (180–240px of scroll a photo, under a second at reading pace).
+The scroll now says where the deck should be; it gets there one step at a time:
+- **Starts once the whole deck is in view**, after a short breath, so the deck
+  is seen at rest first. Half in view nothing starts or changes.
+- **Each photo is held about 2s** before the next may come (a photo with a
+  video: to the clip's end, at most 4.5s), however fast the scroll.
+- **Scrolled on past it**, it folds back after the photo in front has had its
+  time instead of playing the rest through; **out of view** it is put back at
+  rest at once. A flick straight past never opens it.
+- Scrolling up plays it backwards in the same way.
+- `tools/rig/stack-scroll.js` now judges attention: no opening before the deck
+  is whole, no photo in front under 1.8s, every photo shown to a reader who
+  slows down at it, nothing under a flick, always at rest after (also `LIVE=1`).
+
 ## 0.48.0 — Photo stack plays as the page scrolls past
 **Photo stack → Behaviour → Scroll-driven** (desktop, tablet and mobile by default).
 The scroll past the deck plays its hover, in step with the scroll: the photos

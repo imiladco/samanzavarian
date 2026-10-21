@@ -114,6 +114,7 @@
 			this.off.forEach( ( f ) => f() );
 			this.timers.forEach( clearTimeout );
 			clearTimeout( this.closeT );
+			clearTimeout( this.driveT );
 			if ( this.ro ) {
 				this.ro.disconnect();
 			}
@@ -552,9 +553,17 @@
 		/**
 		 * The page's scroll past the deck plays the hover: fan out, each photo to
 		 * the front in turn (its video plays), the first back, fold; backwards
-		 * when scrolling up. Read, never held. Edge-triggered: a step changes the
-		 * front photo only when it is entered, so a photo the hand chose stays
-		 * until the scroll moves on; a hand fanning it keeps it fanned.
+		 * when scrolling up. Read, never held.
+		 *
+		 * The scroll says where the deck should be, a clock says how fast it may
+		 * get there: one step at a time, each photo held long enough to be taken
+		 * in, so a quick flick never shuffles photos under the eye. It only
+		 * starts once the whole deck is in view; out of view it is put back at
+		 * once, without playing what was missed.
+		 *
+		 * States: 0 at rest, 1…N each photo in front (fanned), N+1 the first
+		 * back (fanned), N+2 at rest again. Edge-triggered: a photo the hand
+		 * chose stays until the next step; a hand fanning it keeps it fanned.
 		 */
 		scrollDrive() {
 			this.scrollOn = ( this.root.dataset.scroll || '' ).split( ' ' ).filter( Boolean );
@@ -563,61 +572,118 @@
 				return;
 			}
 			this.base = this.order.slice();
-			this.step = 0;
+			this.state = 0;
+			this.moved = 0; // when the state last changed
+			this.wanted = 0; // since when the scroll has wanted another state
 			let raf = 0, near = false;
 			const frame = () => {
 				raf = 0;
-				if ( ! near || ! this.scrolls() ) {
+				if ( ! this.scrolls() ) {
 					return;
 				}
-				this.drive( this.progress() );
+				if ( near ) {
+					this.follow();
+				} else if ( this.state > 0 && this.state < this.cards.length + 2 ) {
+					clearTimeout( this.driveT );
+					this.setState( this.target().t ); // gone by: at rest, as it was
+				}
 			};
-			const queue = () => {
+			this.queueDrive = () => {
 				raf = raf || requestAnimationFrame( frame );
 			};
-			this.on( window, 'scroll', () => near && queue(), { passive: true } );
-			this.on( window, 'resize', queue );
+			this.on( window, 'scroll', () => near && this.queueDrive(), { passive: true } );
+			this.on( window, 'resize', this.queueDrive );
 			if ( 'IntersectionObserver' in window ) {
 				this.scrollIo = new IntersectionObserver( ( es ) => {
 					near = es[ es.length - 1 ].isIntersecting;
-					queue();
+					this.queueDrive();
 				}, { rootMargin: '25% 0px' } );
 				this.scrollIo.observe( this.deck );
 			} else {
 				near = true;
-				queue();
+				this.queueDrive();
 			}
 		}
 
-		/** 0 as the deck's top comes a tenth into the screen, 1 as its bottom is 15% from the top. */
-		progress() {
-			const r = this.deck.getBoundingClientRect(), vh = document.documentElement.clientHeight;
-			const from = vh * 0.9, len = vh * 0.75 + r.height;
-			return Math.max( 0, Math.min( 1, ( from - r.top ) / len ) );
+		/**
+		 * Where the scroll wants it, and how much of the deck is in view.
+		 * 0 as the deck's bottom comes fully in (5% above the screen's foot),
+		 * 1 as its top reaches 8% from the screen's top.
+		 */
+		target() {
+			const r = this.deck.getBoundingClientRect(), vh = document.documentElement.clientHeight, N = this.cards.length;
+			const from = vh * 0.95 - r.height, len = Math.max( 200, from - vh * 0.08 );
+			const p = ( from - r.top ) / len;
+			const seen = Math.max( 0, Math.min( r.bottom, vh ) - Math.max( r.top, 0 ) ) / ( r.height || 1 );
+			const t = p <= 0 ? 0 : ( p >= 1 ? N + 2 : 1 + Math.min( N, Math.floor( p * ( N + 1 ) ) ) );
+			// "in view": nine tenths of it, or of the screen for a deck taller than that
+			return { t, seen, whole: seen >= Math.min( 0.9, vh / ( r.height || 1 ) * 0.9 ) };
 		}
 
-		drive( p ) {
-			const N = this.cards.length, A = 0.1; // the fan opens over the first tenth, folds over the last
-			const f = Math.max( 0, Math.min( 1, p / A, ( 1 - p ) / A ) );
-			// between: N + 1 equal steps, each photo in front, then the first back before it folds
-			const x = ( p - A ) / ( 1 - 2 * A ) * ( N + 1 ), H = 0.15;
-			let k = this.step;
-			if ( x < k - H || x > k + 1 + H ) {
-				k = Math.max( 0, Math.min( N, Math.floor( x ) ) );
+		/** How long a state is held before the next may come: a photo is looked at, its video seen through. */
+		dwell( state ) {
+			const N = this.cards.length;
+			if ( state <= 0 || state >= N + 2 ) {
+				return 0;
 			}
-			if ( Math.abs( f - this.peek ) > 0.002 || ( f >= 1 ) !== ( this.peek >= 1 ) ) {
-				this.peek = f;
-				this.root.classList.toggle( 'is-scrub', f > 0 && f < 1 );
+			const v = this.videos[ this.base[ ( state - 1 ) % N ] ];
+			const clip = v && this.autoplay && Number.isFinite( v.duration ) ? v.duration * 1000 : 0;
+			return Math.max( 2000, Math.min( 4500, clip ) );
+		}
+
+		follow() {
+			clearTimeout( this.driveT );
+			const { t, seen, whole } = this.target(), now = Date.now();
+			if ( t === this.state ) {
+				this.wanted = 0;
+				return;
+			}
+			// mostly out of view: no show for nobody, straight to where it should be
+			if ( seen < 0.4 ) {
+				this.wanted = 0;
+				this.setState( t );
+				return;
+			}
+			// half in view: nothing starts or changes at the screen's edge; scrolled on past it, it folds
+			if ( ! whole ) {
+				this.wanted = 0;
+				if ( t === 0 || t === this.cards.length + 2 ) {
+					this.setState( t );
+				}
+				return;
+			}
+			this.wanted = this.wanted || now;
+			// a breath before it moves (the deck is seen at rest first), then the hold of the current state
+			const ready = Math.max( this.wanted + 350, this.moved + this.dwell( this.state ) );
+			if ( now < ready ) {
+				this.driveT = setTimeout( this.queueDrive, ready - now + 16 );
+				return;
+			}
+			// scrolled on past it: after the photo in front has had its time, fold (the rest is not played through)
+			const rest = t === 0 || t === this.cards.length + 2;
+			this.setState( rest ? t : this.state + ( t > this.state ? 1 : -1 ) );
+			this.wanted = 0;
+			if ( this.state !== t ) {
+				this.driveT = setTimeout( this.queueDrive, this.dwell( this.state ) + 16 );
+			}
+		}
+
+		setState( s ) {
+			const N = this.cards.length, fan = s > 0 && s < N + 2 ? 1 : 0;
+			const card = fan && s <= N ? this.base[ s - 1 ] : this.base[ 0 ];
+			this.state = s;
+			this.moved = Date.now();
+			if ( fan !== this.peek ) {
+				this.peek = fan;
 				if ( ! this.open ) {
 					this.render();
 				}
 			}
-			if ( k !== this.step ) {
-				this.step = k;
-				const card = this.base[ k % N ];
-				if ( this.order[ 0 ] !== card ) {
-					this.bring( card, 'scroll', card === this.base[ 0 ] ? this.base : null );
-				}
+			if ( this.order[ 0 ] !== card ) {
+				this.bring( card, 'scroll', card === this.base[ 0 ] ? this.base : null );
+			} else if ( ! fan && this.order.join() !== this.base.join() ) {
+				this.order = this.base.slice(); // at rest: as it was
+				this.render();
 			}
 		}
 	}
