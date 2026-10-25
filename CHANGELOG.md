@@ -4,6 +4,20 @@ Every change that ships bumps the version in `samanzavarian-elementor-widgets.ph
 (header `Version:` and `SZW_VERSION`, which also busts the asset cache) and adds
 an entry here. `tests/process-test.php` fails if the three disagree.
 
+## 0.50.1 — Mail row: its email pill's Height control is back
+The site's debug.log had "Cannot redeclare control with same name
+\"st_mail_h\"" (Elementor's Controls_Manager::add_control_to_stack) on
+every editor load. Style_Controls::box() named a section's Hover tab
+`{id}_h`, and Mail_Row adds an extra control with the key `h` (the email
+pill's Height): both `st_mail_h`. Elementor kept the tab and dropped the
+slider, so **Footer → Mail row → Email pill → Height** never appeared in the
+panel (the stylesheet's 56px, 52px on phones, still applied).
+- The Normal / Hover tabs are now `{id}_tab_n` / `{id}_tab_h`: names no value
+  control can have. Tabs hold no value, so nothing saved changes; the Height
+  slider registers under its original name `st_mail_h`.
+- Checked in the editor: the control is a slider again, and the notice is
+  gone from debug.log (reproduced on 0.50.0 first).
+
 ## 0.50.0 — Photo stack: the scroll is the playhead
 Live, 0.48–0.49 did what they were built to do, and still showed no logic: the
 scroll set off discrete events (open, swap, fold) behind guards and timers, so

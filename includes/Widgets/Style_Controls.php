@@ -39,14 +39,15 @@ final class Style_Controls {
 		$w->start_controls_section( $id, [ 'label' => $label, 'tab' => Controls_Manager::TAB_STYLE ] + ( isset( $o['condition'] ) ? [ 'condition' => $o['condition'] ] : [] ) );
 		if ( ! empty( $o['hover'] ) ) {
 			$w->start_controls_tabs( $id . '_tabs' );
-			$w->start_controls_tab( $id . '_n', [ 'label' => esc_html__( 'Normal', 'samanzavarian-widgets' ) ] );
+			// tabs are controls too: names no value control can have (an extra 'h' is a height, say)
+			$w->start_controls_tab( $id . '_tab_n', [ 'label' => esc_html__( 'Normal', 'samanzavarian-widgets' ) ] );
 		}
 		$w->add_group_control( Group_Control_Background::get_type(), [ 'name' => $id . '_bg', 'types' => [ 'classic', 'gradient' ], 'selector' => $selector ] );
 		$w->add_group_control( Group_Control_Border::get_type(), [ 'name' => $id . '_border', 'selector' => $selector ] );
 		$w->add_group_control( Group_Control_Box_Shadow::get_type(), [ 'name' => $id . '_shadow', 'selector' => $selector ] );
 		if ( ! empty( $o['hover'] ) ) {
 			$w->end_controls_tab();
-			$w->start_controls_tab( $id . '_h', [ 'label' => $o['hover_label'] ?? esc_html__( 'Hover', 'samanzavarian-widgets' ) ] );
+			$w->start_controls_tab( $id . '_tab_h', [ 'label' => $o['hover_label'] ?? esc_html__( 'Hover', 'samanzavarian-widgets' ) ] );
 			$w->add_group_control( Group_Control_Background::get_type(), [ 'name' => $id . '_bg_h', 'types' => [ 'classic', 'gradient' ], 'selector' => $o['hover'] ] );
 			$w->add_control( $id . '_bc_h', [ 'label' => esc_html__( 'Border colour', 'samanzavarian-widgets' ), 'type' => Controls_Manager::COLOR, 'selectors' => [ $o['hover'] => 'border-color: {{VALUE}};' ] ] );
 			$w->add_group_control( Group_Control_Box_Shadow::get_type(), [ 'name' => $id . '_shadow_h', 'selector' => $o['hover'] ] );
