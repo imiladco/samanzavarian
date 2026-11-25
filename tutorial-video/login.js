@@ -15,27 +15,34 @@ const { config, paths } = require('./lib/scenario');
   const context = await browser.newContext({ locale: 'fa-IR' });
   const page = await context.newPage();
   try {
-    await page.goto(`${site}/wp-login.php`, { waitUntil: 'domcontentloaded' });
-    if (await page.locator('.g-recaptcha, .h-captcha, .cf-turnstile, [name="cf-turnstile-response"]').count()) {
-      throw new Error('The login form has a CAPTCHA; headless login is not possible.');
-    }
     if (WP_USER && WP_PASS) {
+      await page.goto(`${site}/wp-login.php`, { waitUntil: 'domcontentloaded' });
+      if (await page.locator('.g-recaptcha, .h-captcha, .cf-turnstile, [name="cf-turnstile-response"]').count()) {
+        throw new Error('The login form has a CAPTCHA; headless login is not possible.');
+      }
       await page.fill('#user_login', WP_USER);
       await page.fill('#user_pass', WP_PASS);
+      await page.check('#rememberme').catch(() => {});
+      await Promise.all([page.waitForLoadState('domcontentloaded'), page.click('#wp-submit')]);
+      await page.waitForTimeout(1500);
+      if (await page.locator('#login_error').count()) throw new Error('WordPress rejected the login.');
     } else {
-      // Proxy mode: the environment's network secret injects `log` and `pwd`
-      // into the POST. Drop the empty fields so nothing collides with them.
-      await page.evaluate(() => {
-        for (const id of ['user_login', 'user_pass']) {
-          const el = document.getElementById(id);
-          el.removeAttribute('name'); el.removeAttribute('required');
-        }
+      // Proxy mode: the environment's "Body parameter" secret adds `log` and
+      // `pwd` to POSTs under /wp-login.php. It cannot inject into a GET, so the
+      // form is posted directly (with WordPress's test cookie set by hand).
+      const host = new URL(site).hostname;
+      await context.addCookies([{ name: 'wordpress_test_cookie', value: 'WP Cookie check', domain: host, path: '/', secure: true }]);
+      const res = await context.request.post(`${site}/wp-login.php`, {
+        form: { 'wp-submit': 'Log In', redirect_to: `${site}/wp-admin/`, testcookie: '1', rememberme: 'forever' },
+        maxRedirects: 0,
       });
+      const where = res.headers()['location'] || '';
+      if (res.status() === 502) throw new Error(`Proxy could not inject the secret: ${(await res.text()).slice(0, 120)}`);
+      if (res.status() !== 302 || /wp-login\.php/.test(where)) {
+        throw new Error(`WordPress did not accept the login (HTTP ${res.status()}${where ? ', to ' + new URL(where).pathname : ''}).`);
+      }
+      await page.goto(`${site}/wp-admin/`, { waitUntil: 'domcontentloaded' });
     }
-    await page.check('#rememberme').catch(() => {});
-    await Promise.all([page.waitForLoadState('domcontentloaded'), page.click('#wp-submit')]);
-    await page.waitForTimeout(1500);
-    if (await page.locator('#login_error').count()) throw new Error('WordPress rejected the login (see the login form).');
     if (!/\/wp-admin\//.test(page.url())) {
       await page.goto(`${site}/wp-admin/`, { waitUntil: 'domcontentloaded' });
     }
