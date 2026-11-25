@@ -1,0 +1,18 @@
+{
+  "site": "https://samanzavarian.com",
+  "brandName": "imiladco",
+  "tagline": "آموزش کار با پیشخوان سایت",
+  "outroText": "ممنون که همراه ما بودید",
+  "contact": [],
+  "logo": "branding/logo.png",
+  "color": "#E4572E",
+  "voice": "fa-IR-FaridNeural",
+  "rate": "-5%",
+  "introSeconds": 3.5,
+  "outroSeconds": 4,
+  "leadIn": 0.6,
+  "stepGap": 0.6,
+  "tail": 1.2,
+  "typingDelay": [60, 120],
+  "burnSubtitles": true
+}

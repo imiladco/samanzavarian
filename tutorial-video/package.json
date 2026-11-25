@@ -1,0 +1,18 @@
+{
+  "name": "tutorial-video",
+  "version": "1.0.0",
+  "description": "Narrated WordPress admin tutorials (Playwright + edge-tts + ffmpeg)",
+  "scripts": {
+    "setup": "./setup.sh",
+    "login": "node login.js",
+    "inspect": "node inspect.js",
+    "tts": "python3 tts.py",
+    "record": "node record.js",
+    "render": "node render.js",
+    "selftest": "python3 tts.py selftest && node record.js selftest && node render.js selftest"
+  },
+  "dependencies": {
+    "vazirmatn": "33.0.3"
+  },
+  "private": true
+}
