@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face { font-family: Vazirmatn; font-weight: 100 900; src: url("{{FONT}}") format("truetype"); }
+  :root { --brand: {{COLOR}}; }
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; }
+  body {
+    font-family: Vazirmatn, sans-serif; color: #fff;
+    background: radial-gradient(1200px 800px at 75% 30%, color-mix(in srgb, var(--brand) 55%, #0d1020) 0%, #0d1020 70%);
+    display: grid; place-items: center; text-align: center;
+  }
+  .wrap { display: grid; gap: 34px; justify-items: center; }
+  .wrap > * { opacity: 0; transform: translateY(26px); }
+  .go .wrap > * { animation: in .8s cubic-bezier(.2,.7,.2,1) forwards; }
+  .go .wrap > *:nth-child(2) { animation-delay: .18s; }
+  .go .wrap > *:nth-child(3) { animation-delay: .36s; }
+  .go .wrap > *:nth-child(4) { animation-delay: .54s; }
+  @keyframes in { to { opacity: 1; transform: none; } }
+  .logo { max-height: 150px; max-width: 520px; }
+  .brand { font-size: 46px; font-weight: 800; letter-spacing: -.5px; }
+  .bar { width: 120px; height: 8px; border-radius: 8px; background: var(--brand); }
+  h1 { font-size: 92px; font-weight: 900; line-height: 1.25; }
+  p { font-size: 40px; font-weight: 400; opacity: .82; line-height: 1.7; }
+  .contact { font-size: 36px; direction: ltr; unicode-bidi: plaintext; }
+</style>
+</head>
+<body>
+  <div class="wrap">{{BODY}}</div>
+</body>
+</html>

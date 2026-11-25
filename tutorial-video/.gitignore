@@ -1,0 +1,5 @@
+# session cookies: never commit
+auth.json
+node_modules/
+audio/
+output/

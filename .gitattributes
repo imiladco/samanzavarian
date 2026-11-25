@@ -1,0 +1,2 @@
+# Dev-only tooling, not part of the plugin package
+/tutorial-video export-ignore
