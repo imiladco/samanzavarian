@@ -29,6 +29,28 @@ def load_steps(name):
     return steps
 
 
+HARAKAT = re.compile("[\u064B-\u0652\u0670]")
+
+
+def load_lexicon():
+    f = os.path.join(ROOT, "branding", "pronunciation.json")
+    if not os.path.exists(f):
+        return []
+    lex = {k: v for k, v in json.load(open(f, encoding="utf-8")).items() if not k.startswith("_")}
+    return sorted(lex.items(), key=lambda kv: -len(kv[0]))
+
+
+def spoken(text, lexicon):
+    """Applies the pronunciation lexicon (whole words/phrases, longest first)."""
+    for word, say in lexicon:
+        text = re.sub(rf"(?<![\w\u200c]){re.escape(word)}(?![\w\u200c])", say, text)
+    return text
+
+
+def split_sentences(text):
+    return [s.strip() for s in re.findall(r"[^.!؟?]+[.!؟?]*", text) if s.strip()]
+
+
 def duration(path):
     out = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
                           "-of", "csv=p=0", path], capture_output=True, text=True, check=True)
@@ -54,14 +76,20 @@ async def main(name):
     voice, rate = cfg["voice"], cfg.get("rate", "+0%")
     out = os.path.join(ROOT, "audio", name)
     os.makedirs(out, exist_ok=True)
+    lexicon = load_lexicon()
     durations = {}
     for sid, text in load_steps(name):
-        key = hashlib.sha1(f"{voice}|{rate}|{text}".encode()).hexdigest()
+        say = spoken(text, lexicon)
+        key = hashlib.sha1(f"{voice}|{rate}|{say}".encode()).hexdigest()
         mp3, meta = os.path.join(out, f"{sid}.mp3"), os.path.join(out, f"{sid}.json")
         cached = os.path.exists(meta) and json.load(open(meta, encoding="utf-8")).get("key") == key
         if not cached:
-            sentences = await synth(text, voice, rate, mp3)
-            json.dump({"key": key, "text": text, "sentences": sentences},
+            sentences = await synth(say, voice, rate, mp3)
+            # Subtitles show the scenario's own wording, not the respelled one.
+            shown = split_sentences(text)
+            for i, x in enumerate(sentences):
+                x["text"] = shown[i] if len(shown) == len(sentences) else HARAKAT.sub("", x["text"])
+            json.dump({"key": key, "text": text, "spoken": say, "sentences": sentences},
                       open(meta, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
         durations[sid] = duration(mp3)
         print(f"{sid}: {durations[sid]:.2f}s{' (cached)' if cached else ''}")
