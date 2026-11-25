@@ -5,7 +5,7 @@
 // this machine.
 // Usage: node login.js
 const fs = require('fs');
-const { chromium } = require('playwright');
+const { chromium, request } = require('playwright');
 const { config, paths } = require('./lib/scenario');
 
 (async () => {
@@ -30,17 +30,26 @@ const { config, paths } = require('./lib/scenario');
       // Proxy mode: the environment's "Body parameter" secret adds `log` and
       // `pwd` to POSTs under /wp-login.php. It cannot inject into a GET, so the
       // form is posted directly (with WordPress's test cookie set by hand).
+      // Posted with Playwright's own HTTP client (honest "Playwright" user
+      // agent); the resulting session cookies are handed to the browser.
       const host = new URL(site).hostname;
-      await context.addCookies([{ name: 'wordpress_test_cookie', value: 'WP Cookie check', domain: host, path: '/', secure: true }]);
-      const res = await context.request.post(`${site}/wp-login.php`, {
+      const api = await request.newContext({
+        storageState: { cookies: [{ name: 'wordpress_test_cookie', value: 'WP Cookie check', domain: host, path: '/',
+          expires: -1, httpOnly: false, secure: true, sameSite: 'Lax' }], origins: [] },
+      });
+      const res = await api.post(`${site}/wp-login.php`, {
         form: { 'wp-submit': 'Log In', redirect_to: `${site}/wp-admin/`, testcookie: '1', rememberme: 'forever' },
         maxRedirects: 0,
       });
       const where = res.headers()['location'] || '';
       if (res.status() === 502) throw new Error(`Proxy could not inject the secret: ${(await res.text()).slice(0, 120)}`);
       if (res.status() !== 302 || /wp-login\.php/.test(where)) {
-        throw new Error(`WordPress did not accept the login (HTTP ${res.status()}${where ? ', to ' + new URL(where).pathname : ''}).`);
+        const m = (await res.text()).match(/id="login_error"[^>]*>([\s\S]*?)<\/div>/);
+        const why = m ? m[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim().slice(0, 200) : '';
+        throw new Error(`WordPress did not accept the login (HTTP ${res.status()}${why ? ': ' + why : ''}).`);
       }
+      await context.addCookies((await api.storageState()).cookies);
+      await api.dispose();
       await page.goto(`${site}/wp-admin/`, { waitUntil: 'domcontentloaded' });
     }
     if (!/\/wp-admin\//.test(page.url())) {
