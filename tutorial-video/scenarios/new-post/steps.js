@@ -18,8 +18,9 @@ const L = {
   inserter: /افزودن بلوک|Block Inserter|Toggle block inserter|Add block/i,
 };
 
-const SAMPLE_TITLE = 'پشت صحنه‌ی پروژه‌ی جدید';
-const SAMPLE_BODY = 'در این مطلب از روند شکل‌گیری پروژه‌ی تازه‌مان می‌گوییم.';
+// The site and its editor are English (LTR), so the sample post is too.
+const SAMPLE_TITLE = 'Behind the Scenes of Our New Project';
+const SAMPLE_BODY = 'In this post, we share how our latest project came together.';
 
 const canvas = (page) => page.frameLocator('iframe[name="editor-canvas"]');
 async function inEditor(page, sel) {
@@ -39,16 +40,18 @@ async function closeEditorPopups(page) {
   }).catch(() => {});
 }
 
-async function ensurePanelOpen(page, label) {
-  const btn = page.getByRole('button', { name: label }).first();
-  if ((await btn.getAttribute('aria-expanded')) === 'false') await btn.click();
-  return btn;
-}
-
 module.exports = {
   // Runs before recording starts.
   async prepare(page) {
     await page.locator('#adminmenu').waitFor();
+    // The editor's welcome guide would flash on screen; hide it from the first
+    // paint (visual only, in this browser). It is then closed with Escape.
+    await page.context().addInitScript(() => {
+      const css = '.components-modal__screen-overlay:has(.edit-post-welcome-guide, .editor-welcome-guide){display:none!important}';
+      document.addEventListener('DOMContentLoaded', () => {
+        const s = document.createElement('style'); s.textContent = css; document.head.append(s);
+      });
+    });
   },
 
   steps: {
@@ -63,9 +66,14 @@ module.exports = {
       await d.wait(500);
       const add = page.locator('#menu-posts .wp-submenu a').filter({ hasText: L.addPost }).first();
       await d.click(add);
-      await page.waitForURL(/post-new\.php/, { timeout: 30000 });
-      await page.waitForLoadState('networkidle').catch(() => {});
-      await closeEditorPopups(page);
+      // The server takes ~15 s to build this page: that wait is cut from the video.
+      await d.cut(async () => {
+        await page.waitForURL(/post-new\.php/, { timeout: 60000, waitUntil: 'commit' });
+        await page.locator('iframe[name="editor-canvas"], #title').first().waitFor({ timeout: 60000 });
+        await (await inEditor(page, '.editor-post-title, h1.wp-block-post-title, #title')).waitFor({ timeout: 30000 });
+        await d.wait(400);
+        await closeEditorPopups(page);
+      });
       await d.restoreCursor();
     },
 
@@ -106,8 +114,6 @@ module.exports = {
     },
 
     'step-06': async (d, page) => {
-      const panel = await ensurePanelOpen(page, L.featured);
-      await d.point(panel, { highlight: false });
       const btn = page.getByRole('button', { name: L.setFeatured }).first();
       await d.point(btn, { ms: 2600 });                 // highlight only, no click
       await d.unhighlight();

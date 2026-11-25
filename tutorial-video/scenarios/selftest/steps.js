@@ -3,6 +3,7 @@ module.exports = {
   steps: {
     s1: async (d, page) => { await d.click(page.locator('#t')); await d.type('سلام دنیا'); },
     s2: async (d, page) => {
+      await d.cut(() => d.wait(2500));   // exercises cutting dead time
       await d.click(page.locator('#c'));
       await d.point(page.locator('#pub'), { ms: 1500 }); await d.unhighlight();
     },

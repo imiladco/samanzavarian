@@ -12,9 +12,26 @@ class Director {
     this.y = 540;
     this.t0 = null;
     this.timeline = [];
+    this.cuts = [];      // stretches of the raw recording to drop (raw seconds)
+    this.cutTotal = 0;
   }
 
-  now() { return (Date.now() - this.t0) / 1000; }
+  raw() { return (Date.now() - this.t0) / 1000; }
+  // Time on the final video: raw time minus everything cut so far.
+  now() { return this.raw() - this.cutTotal; }
+
+  // Runs fn (e.g. waiting for a slow page load) and cuts its dead time from
+  // the video, keeping `keepMs` so the change of page still reads naturally.
+  async cut(fn, keepMs = 700) {
+    const a = this.raw();
+    await fn();
+    const b = this.raw();
+    const keep = keepMs / 1000;
+    if (b - a > keep + 0.2) {
+      this.cuts.push({ from: a + keep / 2, to: b - keep / 2 });
+      this.cutTotal += b - a - keep;
+    }
+  }
   wait(ms) { return sleep(ms); }
 
   async cursorTo(x, y, ms) {
@@ -68,8 +85,9 @@ class Director {
     await this.page.mouse.down();
     await sleep(90);
     await this.page.mouse.up();
-    await this.page.evaluate(() => window.__tv.press(false));
-    await this.unhighlight();
+    // A click may navigate; the old page's overlay is gone then, which is fine.
+    await this.page.evaluate(() => window.__tv.press(false)).catch(() => {});
+    await this.unhighlight().catch(() => {});
   }
 
   async type(text) {

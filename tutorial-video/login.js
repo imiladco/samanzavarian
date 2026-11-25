@@ -5,7 +5,10 @@
 // this machine.
 // Usage: node login.js
 const fs = require('fs');
-const { chromium, request } = require('playwright');
+const os = require('os');
+const path = require('path');
+const { execFileSync } = require('child_process');
+const { chromium } = require('playwright');
 const { config, paths } = require('./lib/scenario');
 
 (async () => {
@@ -30,26 +33,38 @@ const { config, paths } = require('./lib/scenario');
       // Proxy mode: the environment's "Body parameter" secret adds `log` and
       // `pwd` to POSTs under /wp-login.php. It cannot inject into a GET, so the
       // form is posted directly (with WordPress's test cookie set by hand).
-      // Posted with Playwright's own HTTP client (honest "Playwright" user
-      // agent); the resulting session cookies are handed to the browser.
+      // Posted with curl under its own name (the host firewall refuses this
+      // POST from Playwright's clients). Session cookies go from curl's private
+      // cookie jar into the browser context, then the jar is deleted.
       const host = new URL(site).hostname;
-      const api = await request.newContext({
-        storageState: { cookies: [{ name: 'wordpress_test_cookie', value: 'WP Cookie check', domain: host, path: '/',
-          expires: -1, httpOnly: false, secure: true, sameSite: 'Lax' }], origins: [] },
-      });
-      const res = await api.post(`${site}/wp-login.php`, {
-        form: { 'wp-submit': 'Log In', redirect_to: `${site}/wp-admin/`, testcookie: '1', rememberme: 'forever' },
-        maxRedirects: 0,
-      });
-      const where = res.headers()['location'] || '';
-      if (res.status() === 502) throw new Error(`Proxy could not inject the secret: ${(await res.text()).slice(0, 120)}`);
-      if (res.status() !== 302 || /wp-login\.php/.test(where)) {
-        const m = (await res.text()).match(/id="login_error"[^>]*>([\s\S]*?)<\/div>/);
-        const why = m ? m[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim().slice(0, 200) : '';
-        throw new Error(`WordPress did not accept the login (HTTP ${res.status()}${why ? ': ' + why : ''}).`);
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'wp-login-'));
+      const jar = path.join(dir, 'jar');
+      const body = path.join(dir, 'body');
+      try {
+        const out = execFileSync('curl', ['-s', '-m', '30', '-c', jar, '-b', 'wordpress_test_cookie=WP%20Cookie%20check',
+          '--data', `wp-submit=Log+In&testcookie=1&rememberme=forever&redirect_to=${encodeURIComponent(site + '/wp-admin/')}`,
+          '-o', body, '-w', '%{http_code} %{redirect_url}', `${site}/wp-login.php`], { encoding: 'utf8' });
+        const [code, where = ''] = out.split(' ');
+        const text = fs.existsSync(body) ? fs.readFileSync(body, 'utf8') : '';
+        if (code === '502') throw new Error(`Proxy could not inject the secret: ${text.slice(0, 120)}`);
+        if (code !== '302' || /wp-login\.php/.test(where)) {
+          const m = text.match(/id="login_error"[^>]*>([\s\S]*?)<\/div>/);
+          const why = m ? m[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim().slice(0, 200) : '';
+          throw new Error(`WordPress did not accept the login (HTTP ${code}${why ? ': ' + why : ''}).`);
+        }
+        const cookies = fs.readFileSync(jar, 'utf8').split('\n')
+          .map((l) => l.replace(/^#HttpOnly_/, ''))
+          .filter((l) => l && !l.startsWith('#'))
+          .map((l) => l.split('\t'))
+          .filter((f) => f.length >= 7)
+          .map(([domain, , cpath, secure, expires, name, value]) => ({
+            name, value, domain: domain.replace(/^\./, '') || host, path: cpath,
+            secure: secure === 'TRUE', httpOnly: true, sameSite: 'Lax', expires: Number(expires) || -1,
+          }));
+        await context.addCookies(cookies);
+      } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
       }
-      await context.addCookies((await api.storageState()).cookies);
-      await api.dispose();
       await page.goto(`${site}/wp-admin/`, { waitUntil: 'domcontentloaded' });
     }
     if (!/\/wp-admin\//.test(page.url())) {

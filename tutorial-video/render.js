@@ -68,9 +68,18 @@ const srtTime = (t) => {
   // Video: three segments at constant 30 fps; audio: each clip delayed to its step start.
   const inputs = ['-i', intro, '-i', path.join(p.out, 'raw.webm'), '-i', outro];
   steps.forEach((s) => inputs.push('-i', s.audio));
-  const norm = (i, dur) => `[${i}:v]trim=duration=${dur.toFixed(3)},setpts=PTS-STARTPTS,fps=30,` +
-    `scale=1920:1080:flags=lanczos,setsar=1,format=yuv420p,tpad=stop_mode=clone:stop_duration=1,trim=duration=${dur.toFixed(3)}[v${i}]`;
-  const graph = [norm(0, I), norm(1, M), norm(2, O), '[v0][v1][v2]concat=n=3:v=1:a=0[v]'];
+  const fit = (dur) => `scale=1920:1080:flags=lanczos,setsar=1,format=yuv420p,` +
+    `tpad=stop_mode=clone:stop_duration=1,trim=duration=${dur.toFixed(3)}`;
+  const norm = (i, dur) => `[${i}:v]trim=duration=${dur.toFixed(3)},setpts=PTS-STARTPTS,fps=30,${fit(dur)}[v${i}]`;
+  // The recording minus its cuts (page-load waits), joined back together.
+  const keep = [];
+  let at = 0;
+  for (const c of tl.cuts || []) { keep.push([at, c.from]); at = c.to; }
+  keep.push([at, (tl.rawTotal || M) + 1]);
+  const main = [`[1:v]fps=30,split=${keep.length}${keep.map((_, k) => `[r${k}]`).join('')}`,
+    ...keep.map(([a, b], k) => `[r${k}]trim=start=${a.toFixed(3)}:end=${b.toFixed(3)},setpts=PTS-STARTPTS[m${k}]`),
+    `${keep.map((_, k) => `[m${k}]`).join('')}concat=n=${keep.length}:v=1:a=0,${fit(M)}[v1]`];
+  const graph = [norm(0, I), ...main, norm(2, O), '[v0][v1][v2]concat=n=3:v=1:a=0[v]'];
   const delayed = steps.map((s, k) => {
     const ms = Math.round((I + s.start) * 1000);
     graph.push(`[${k + 3}:a]aresample=48000,adelay=${ms}:all=1[a${k}]`);

@@ -54,8 +54,12 @@ const { Director } = require('./lib/director');
     }
     await d.wait(cfg.tail * 1000);
     const total = d.now();
+    const rawTotal = d.raw();
     await page.screencast.stop();
-    fs.writeFileSync(path.join(p.out, 'timeline.json'), JSON.stringify({ total, steps: d.timeline }, null, 2));
+    // Step times are on the final (cut) timeline; cuts are in raw seconds.
+    fs.writeFileSync(path.join(p.out, 'timeline.json'),
+      JSON.stringify({ total, rawTotal, cuts: d.cuts, steps: d.timeline }, null, 2));
+    if (d.cuts.length) console.log(`cut ${d.cutTotal.toFixed(1)}s of page-load waiting`);
     console.log(`recorded ${total.toFixed(1)}s; writes blocked in browser: ${blocked.length}`);
     if (blocked.length) console.log('  ' + [...new Set(blocked)].join('\n  '));
   } finally {

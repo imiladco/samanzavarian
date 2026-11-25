@@ -41,7 +41,10 @@ def load_lexicon():
 
 
 def spoken(text, lexicon):
-    """Applies the pronunciation lexicon (whole words/phrases, longest first)."""
+    """Text for the voice: drops on-screen English labels written in
+    parentheses, e.g. «نوشته‌ها» (Posts), which only the subtitles show; then
+    applies the pronunciation lexicon (whole words/phrases, longest first)."""
+    text = re.sub(r"\s*\([A-Za-z][^)]*\)", "", text)
     for word, say in lexicon:
         text = re.sub(rf"(?<![\w\u200c]){re.escape(word)}(?![\w\u200c])", say, text)
     return text
@@ -80,7 +83,8 @@ async def main(name):
     durations = {}
     for sid, text in load_steps(name):
         say = spoken(text, lexicon)
-        key = hashlib.sha1(f"{voice}|{rate}|{say}".encode()).hexdigest()
+        # Keyed on the shown text too, so subtitle wording changes are picked up.
+        key = hashlib.sha1(f"{voice}|{rate}|{say}|{text}".encode()).hexdigest()
         mp3, meta = os.path.join(out, f"{sid}.mp3"), os.path.join(out, f"{sid}.json")
         cached = os.path.exists(meta) and json.load(open(meta, encoding="utf-8")).get("key") == key
         if not cached:
